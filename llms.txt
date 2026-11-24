@@ -1,0 +1,9 @@
+# @sharadox/account-web-library
+
+> Passwordless accounts for web applications (one-time codes to contacts, TOTP two-factor, roles and bans per application, OpenID Connect for people and agents), built on standards without an auth framework. 0.1.0: building blocks only.
+
+- /username: checkUsername(name) → { valid: true, username, key (lowercase) } | { valid: false, reason: "length" | "characters" }; rules /^[A-Za-z0-9]+(?:[-_.][A-Za-z0-9]+)*$/, 1–50 (USERNAME_MAXIMUM_LENGTH); usernameKey(name) → lowercase (unique index; abc = aBc)
+- /one-time-code: createOneTimeCode(length = 8) → digits (crypto.randomInt); hashOneTimeCode(code, { pepper (≥32 chars), purpose }) → base64url HMAC-SHA-256 of `${purpose}\n${code}`; matchesOneTimeCode(code, hash, options) → boolean, spaces ignored, constant-time
+- /totp: createTotpSecret() → 20 random bytes; totpCode(secret, nowMs, { digits = 6, period = 30 }) (RFC 6238 SHA-1); verifyTotp(secret, code, nowMs, { lastUsedStep }) → { valid: true, step } | { valid: false }, window ±1 step, steps ≤ lastUsedStep refused; totpUri({ issuer, account, secret }) → otpauth://totp/Issuer:account?secret=BASE32&issuer=…&algorithm=SHA1&digits=6&period=30
+- /base-32: encodeBase32(bytes) (RFC 4648, no padding); decodeBase32(text) (case, spaces, = ignored; throws on other characters)
+- License: Sharadox Open Source License 0.1.0
