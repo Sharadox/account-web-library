@@ -68,6 +68,27 @@ export interface CodeRequestTable {
   voided_at: Date | null;
 }
 
+/** One browser (the account site's cookie holds its token; only the token's hash is stored). */
+export interface BrowserSessionTable {
+  id: string;
+  token_hash: string;
+  created_at: Date;
+  last_seen_at: Date;
+  expires_at: Date;
+}
+
+/** One account signed in on one browser: a browser can hold any number of them (the account selector). */
+export interface AccountSessionTable {
+  id: string;
+  browser_session_id: string;
+  account_id: string;
+  created_at: Date;
+  last_seen_at: Date;
+  expires_at: Date;
+  /** When two-factor was last passed in this session; null without it. */
+  second_factor_at: Date | null;
+}
+
 /** The tables `migrateAccount` creates, for typing a Kysely instance. */
 export interface AccountDatabase {
   application: ApplicationTable;
@@ -75,4 +96,6 @@ export interface AccountDatabase {
   contact: ContactTable;
   audit_event: AuditEventTable;
   code_request: CodeRequestTable;
+  browser_session: BrowserSessionTable;
+  account_session: AccountSessionTable;
 }

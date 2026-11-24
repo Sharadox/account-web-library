@@ -19,4 +19,7 @@ First building blocks:
 - `createPersonAccount`, `usernameAvailability`, `changeUsername`, `findAccountByContact`, `addContact`,
   `verifyContact`, `removeContact`, `normalizeContact`, `recordAuditEvent` and `databaseError`;
 - one-time code requests in Postgres (`requestCode`, `verifyCode`, `pruneCodeRequests`) for sign-in, contact
-  verification and step-up.
+  verification and step-up;
+- sessions for the account selector (`signIn`, `readBrowserSession`, `signOut`, `revokeAccountSessions`,
+  `pruneSessions`, `createSessionToken`, `hashSessionToken`): one browser cookie, any number of accounts, a new token
+  at every sign-in.

@@ -151,6 +151,23 @@ pass the limit; after the last attempt even the right code is refused.
 
 ### `code-request-prune`: `pruneCodeRequests(database, { before })` → deleted count
 
+### Sessions and the account selector
+
+A browser holds one cookie with an opaque token (only its SHA-256 is stored). On the server, that browser session
+points to any number of account sessions, so the selector has no limit and the cookie never grows. Use a
+`__Host-` cookie: HttpOnly, Secure, SameSite=Lax, path `/`.
+
+- `signIn(database, { accountId, token?, secondFactor?, accountSessionSeconds = 30 days, browserSessionSeconds = 400 days, now? })`
+  → `{ token, browserSessionId, accountSessionId }`. Adds the account to the browser's accounts (or starts a
+  browser session). The browser gets a **new token at every sign-in**: set it as the cookie.
+- `readBrowserSession(database, { token, idleSeconds = 7 days, now? })` → `{ browserSessionId, accounts }` or
+  undefined. `accounts` are `{ accountSessionId, accountId, username, signedInAt, secondFactorAt }`, in sign-in
+  order, without ended or idle sessions. It marks them as seen.
+- `signOut(database, { token, accountId? })` → `{ signedOut }`: one account, or all and the browser session.
+- `revokeAccountSessions(database, { accountId, actorAccountId? })` → count: signed out on every browser.
+- `pruneSessions(database, { idleSeconds?, now? })` → `{ accountSessions, browserSessions }`, for a daily job.
+- `createSessionToken()`, `hashSessionToken(token)` (`session-token`).
+
 ### `contact-kind`: `normalizeContact({ kind, value })`, `CONTACT_KINDS`
 
 `email` in this version; unknown kinds and invalid values throw.

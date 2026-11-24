@@ -43,8 +43,10 @@ test("applies once, tracked in its own table, and knows the account application"
   expect(tables.rows.map(({ name }) => name)).toEqual([
     "account",
     "account_migration",
+    "account_session",
     "application",
     "audit_event",
+    "browser_session",
     "code_request",
     "contact",
   ]);
