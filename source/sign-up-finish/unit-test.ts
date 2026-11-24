@@ -29,8 +29,11 @@ test("creates the account with the proved contact and signs it in", async () => 
     ticket: ticket("ana@example.com"),
     identifier: "Ana",
     token: undefined,
+    userAgent: "Laptop",
     now: 1_000,
   });
+  const browser = await memory.database.selectFrom("browser_session").select("user_agent").executeTakeFirst();
+  expect(browser?.user_agent).toBe("Laptop");
   if (result.status !== "signed-in") throw new Error(result.status);
   const session = await readBrowserSession(memory.database, { token: result.token, now: 2_000 });
   expect(session!.accounts).toMatchObject([{ accountId: result.accountId, identifier: "Ana", name: "Ana Silva" }]);

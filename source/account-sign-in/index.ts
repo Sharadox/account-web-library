@@ -23,6 +23,7 @@ export async function signIn(
     accountId,
     token,
     secondFactor = false,
+    userAgent = null,
     accountSessionSeconds = 30 * DAY,
     browserSessionSeconds = 400 * DAY,
     now = Date.now(),
@@ -30,6 +31,7 @@ export async function signIn(
 ): Promise<SignInResult> {
   const at = new Date(now);
   const fresh = createSessionToken();
+  const device = userAgent?.slice(0, 500) ?? null;
   return database.transaction().execute(async (transaction) => {
     const browser = token
       ? await transaction
@@ -44,7 +46,7 @@ export async function signIn(
     if (browser) {
       await transaction
         .updateTable("browser_session")
-        .set({ token_hash: fresh.hash, last_seen_at: at })
+        .set({ token_hash: fresh.hash, last_seen_at: at, user_agent: device })
         .where("id", "=", browserSessionId)
         .execute();
     } else {
@@ -56,6 +58,7 @@ export async function signIn(
           created_at: at,
           last_seen_at: at,
           expires_at: new Date(now + browserSessionSeconds * 1000),
+          user_agent: device,
         })
         .execute();
     }

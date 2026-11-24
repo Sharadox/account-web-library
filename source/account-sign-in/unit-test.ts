@@ -29,6 +29,7 @@ test("signs in on a new browser: a browser session, an account session, and a to
     created_at: new Date(1_000),
     last_seen_at: new Date(1_000),
     expires_at: new Date(1_000 + 400 * 86_400_000),
+    user_agent: null,
   });
   const session = await memory.database.selectFrom("account_session").selectAll().executeTakeFirstOrThrow();
   expect(session).toEqual({
@@ -39,6 +40,7 @@ test("signs in on a new browser: a browser session, an account session, and a to
     last_seen_at: new Date(1_000),
     expires_at: new Date(1_000 + 30 * 86_400_000),
     second_factor_at: null,
+    step_up_at: null,
   });
   expect(
     await memory.database
@@ -70,6 +72,7 @@ test("signing in again with the same account replaces its session there", async 
     id: again.accountSessionId,
     created_at: new Date(5_000),
     second_factor_at: null,
+    step_up_at: null,
   });
 });
 
@@ -97,4 +100,22 @@ test("takes custom lifetimes and uses the current time by default", async () => 
   expect(Math.abs(session.created_at.getTime() - Date.now())).toBeLessThan(10_000);
   const browser = await memory.database.selectFrom("browser_session").selectAll().executeTakeFirstOrThrow();
   expect(browser.expires_at.getTime() - browser.created_at.getTime()).toBe(7_200_000);
+});
+
+test("remembers the browser's description, trimmed to 500 characters, for the list of devices", async () => {
+  const created = await createPersonAccount(memory.database, {
+    name: "A Person",
+    identifier: "device",
+    contact: { kind: "email", value: "device@example.com" },
+  });
+  if (!created.created) throw new Error("not created");
+  const first = await signIn(memory.database, { accountId: created.accountId, userAgent: "Firefox", now: 0 });
+  await signIn(memory.database, {
+    accountId: created.accountId,
+    token: first.token,
+    userAgent: "x".repeat(600),
+    now: 1,
+  });
+  const browser = await memory.database.selectFrom("browser_session").select("user_agent").executeTakeFirstOrThrow();
+  expect(browser.user_agent).toBe("x".repeat(500));
 });

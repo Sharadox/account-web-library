@@ -16,7 +16,7 @@ import type { SignUpFinish, SignUpFinishResult } from "@sharadox/account-web-lib
  */
 export async function finishSignUp(
   server: AccountServer,
-  { ticket, name, identifier, token, now = Date.now() }: SignUpFinish,
+  { ticket, name, identifier, token, userAgent = null, now = Date.now() }: SignUpFinish,
 ): Promise<SignUpFinishResult> {
   const reading = readTicket<{ contact: Contact }>(ticket, {
     secret: deriveSecret(server.secret, "sign-up-ticket"),
@@ -31,6 +31,6 @@ export async function finishSignUp(
     now,
   });
   if (!created.created) return { status: "refused", reason: created.reason };
-  const session = await signIn(server.database, { accountId: created.accountId, token, now });
+  const session = await signIn(server.database, { accountId: created.accountId, token, userAgent, now });
   return { status: "signed-in", accountId: created.accountId, token: session.token };
 }

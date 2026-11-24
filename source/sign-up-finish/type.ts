@@ -9,6 +9,8 @@ export interface SignUpFinish {
   identifier: string;
   /** The browser's current session cookie, if any. */
   token: string | undefined;
+  /** The browser's User-Agent, for the list of devices. */
+  userAgent?: string | null;
   /** Milliseconds since 1970 (now by default). */
   now?: number;
 }

@@ -242,6 +242,9 @@ export const accountMigrations: Migration[] = [
         used_at timestamptz,
         unique (account_id, code_hash)
       );
+
+      alter table browser_session add column user_agent text check (length(user_agent) <= 500);
+      alter table account_session add column step_up_at timestamptz;
     `,
   },
 ];

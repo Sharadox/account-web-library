@@ -15,8 +15,8 @@ importers:
         specifier: ^0.7.1
         version: 0.7.1
       '@sharadox/protection-web-library':
-        specifier: 0.1.0-development.9
-        version: 0.1.0-development.9(@electric-sql/pglite@0.5.16)(eslint@9.39.5)
+        specifier: 0.1.0-development.12
+        version: 0.1.0-development.12(@electric-sql/pglite@0.5.16)(eslint@9.39.5)
       '@sharadox/web-library':
         specifier: ^0.11.1
         version: 0.11.1
@@ -670,18 +670,6 @@ packages:
   '@rolldown/pluginutils@1.1.1':
     resolution: {integrity: sha512-glFIJDvLNDtJhT9qrMFWLPbvS+skxgt4L0K8Ei2YtnhPysAJnsI7nyxSJxKj4ADeKX0OLjC4ntRkwpLOoS3rwA==}
 
-  '@sharadox/database-web-library@0.1.0-development.6':
-    resolution: {integrity: sha512-i5LFYU5T7YnUJ++r4+nbuJm7Ea2HUTgDZSCGttpXSbokaR+Zpj1fRaKo/K/g9TiKPQyC8LgOysLktX40qgFp7A==}
-    engines: {node: '>=26'}
-    peerDependencies:
-      '@electric-sql/pglite': ^0.5.16
-      eslint: '>=9'
-    peerDependenciesMeta:
-      '@electric-sql/pglite':
-        optional: true
-      eslint:
-        optional: true
-
   '@sharadox/database-web-library@0.1.0-development.9':
     resolution: {integrity: sha512-wZk9mxfnL+Kfo1V/XenS7x5XckPdq7w8sk2KR52Jk65TPhs0erx5F8eGwvGg8SnMTcMZfkNSBmzeFaAyFkGaZg==}
     engines: {node: '>=26'}
@@ -720,8 +708,8 @@ packages:
     resolution: {integrity: sha512-SFqfnfMqr2KoK5w/KAwYOS4NQGkOYPLzLhY/O/pVNLpzGPC24C/djE/v/0Agh91HGaLQO591DV1QHvwJw07N3w==}
     engines: {node: '>=26'}
 
-  '@sharadox/protection-web-library@0.1.0-development.9':
-    resolution: {integrity: sha512-9/dF+x11eEUHNelV7KTBMD1K/C1LvNwHqU4nqnNk31SwJAJF+cNJtJ9S7yyAMDYRpfBMOwt+Z8Mmy3oDGxpODg==}
+  '@sharadox/protection-web-library@0.1.0-development.12':
+    resolution: {integrity: sha512-O1pRZPUXU+uHNheIgp167HoAb8N3GUrJQTuitXZ7J/jom1TO7fndACMpAeIh4v4tsWx1gRoTBYmLtXiIIvypvw==}
     engines: {node: '>=26'}
 
   '@sharadox/turborepo-configuration-web-library@0.1.4':
@@ -2401,16 +2389,6 @@ snapshots:
 
   '@rolldown/pluginutils@1.1.1': {}
 
-  '@sharadox/database-web-library@0.1.0-development.6(@electric-sql/pglite@0.5.16)(eslint@9.39.5)':
-    dependencies:
-      '@neondatabase/serverless': 1.2.1
-      '@sharadox/web-library': 0.11.1
-      kysely: 0.28.20
-      zod: 4.6.7
-    optionalDependencies:
-      '@electric-sql/pglite': 0.5.16
-      eslint: 9.39.5
-
   '@sharadox/database-web-library@0.1.0-development.9(@electric-sql/pglite@0.5.16)(eslint@9.39.5)':
     dependencies:
       '@neondatabase/serverless': 1.2.1
@@ -2447,9 +2425,9 @@ snapshots:
 
   '@sharadox/prettier-configuration-web-library@0.1.2': {}
 
-  '@sharadox/protection-web-library@0.1.0-development.9(@electric-sql/pglite@0.5.16)(eslint@9.39.5)':
+  '@sharadox/protection-web-library@0.1.0-development.12(@electric-sql/pglite@0.5.16)(eslint@9.39.5)':
     dependencies:
-      '@sharadox/database-web-library': 0.1.0-development.6(@electric-sql/pglite@0.5.16)(eslint@9.39.5)
+      '@sharadox/database-web-library': 0.1.0-development.9(@electric-sql/pglite@0.5.16)(eslint@9.39.5)
       '@sharadox/web-library': 0.11.1
       kysely: 0.28.20
     transitivePeerDependencies:

@@ -13,6 +13,8 @@ export interface SignInLimits {
   global: TokenBucketRule;
   /** Codes typed from one address group. */
   verificationsPerAddress: TokenBucketRule;
+  /** Two-factor codes typed for one account. */
+  secondFactorPerAccount: TokenBucketRule;
   /** The most codes each channel may send in a UTC day; past it, sending pauses (never spends). */
   dailySendsPerChannel: number;
   /** Leading zero bits of the proof of work. */

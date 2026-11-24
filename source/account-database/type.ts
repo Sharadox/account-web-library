@@ -122,6 +122,8 @@ export interface RecoveryCodeTable {
 export interface BrowserSessionTable {
   id: string;
   token_hash: string;
+  /** The browser's description (its User-Agent, at most 500 characters), for the list of devices. */
+  user_agent: ColumnType<string | null, string | null | undefined, string | null>;
   created_at: Date;
   last_seen_at: Date;
   expires_at: Date;
@@ -137,6 +139,8 @@ export interface AccountSessionTable {
   expires_at: Date;
   /** When two-factor was last passed in this session; null without it. */
   second_factor_at: Date | null;
+  /** When a fresh code last confirmed it is really them, for sensitive changes (`step-up`). */
+  step_up_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
 }
 
 /** The tables `migrateAccount` creates, for typing a Kysely instance. */

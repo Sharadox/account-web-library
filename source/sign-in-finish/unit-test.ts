@@ -49,9 +49,18 @@ test("signs an existing account in with the right code, joining the browser's ot
   });
   if (!created.created) throw new Error("not created");
   const { requestId, code } = await codeFor("ana@example.com");
-  const result = await finishSignIn(server, { requestId, code, address: "203.0.113.7", token: undefined, now: 1_000 });
+  const result = await finishSignIn(server, {
+    requestId,
+    code,
+    address: "203.0.113.7",
+    token: undefined,
+    userAgent: "Phone",
+    now: 1_000,
+  });
   if (result.status !== "signed-in") throw new Error(result.status);
   expect(result.accountId).toBe(created.accountId);
+  const browser = await memory.database.selectFrom("browser_session").select("user_agent").executeTakeFirstOrThrow();
+  expect(browser.user_agent).toBe("Phone");
   const session = await readBrowserSession(memory.database, { token: result.token, now: 2_000 });
   expect(session!.accounts.map(({ identifier }) => identifier)).toEqual(["ana"]);
 });

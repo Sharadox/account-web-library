@@ -6,6 +6,16 @@ What changed in each version of `@sharadox/account-web-library`, newest first.
 
 First building blocks:
 
+- account management: names (`checkAccountName`, `changeAccountName`), pictures (`preparePicture`,
+  `setAccountPicture`, `removeAccountPicture`, `PictureStorage`), contacts added with a code
+  (`startContactAddition`, `finishContactAddition`), step-up (`startStepUp`, `finishStepUp`, `hasFreshStepUp`),
+  two-factor (`startTotpSetup`, `confirmTotpSetup`, `removeTotp`, `totpStatus`, `regenerateRecoveryCodes`,
+  `finishSecondFactor`, `encryptSecret`), devices (`listAccountSessions`, `endAccountSession`), activity
+  (`listAccountActivity`), export (`exportAccount`) and deletion (`deleteAccount`); `sendCode`, `createTestPerson`;
+- identifiers (no longer "usernames") in one table for everything that can have one; names; 6-digit codes; no code
+  when the browser is already signed in to the contact's account; every id a UUIDv7 and every foreign key cascading
+  (migration `0004-identifier-name-picture-second-factor`);
+
 - identifiers (`checkIdentifier`, `identifierKey`);
 - one-time codes (`createOneTimeCode`, `hashOneTimeCode`, `matchesOneTimeCode`);
 - TOTP two-factor (`createTotpSecret`, `totpCode`, `verifyTotp`, `totpUri`), tested against the RFC 6238 vectors;

@@ -77,7 +77,7 @@ export function createEmailChannel({
     async send({ contact, code, purpose, language, expiresAt }: CodeDelivery) {
       if (contact.kind !== "email") throw new Error(`the email channel can't send to a "${contact.kind}" contact`);
       const words = language.toLowerCase().startsWith("pt") ? PORTUGUESE : ENGLISH;
-      const shown = code.replace(/(.{4})(?=.)/g, "$1 ");
+      const shown = code.replace(/(.{3})(?=.)/g, "$1 ");
       const minutes = Math.max(1, Math.ceil((expiresAt.getTime() - now()) / 60_000));
       const paragraphs = [words.lifetime(minutes), words.ignore, words.never];
       const html = emailLayout(

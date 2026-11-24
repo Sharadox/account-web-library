@@ -11,10 +11,12 @@ import type { SignInFinish, SignInFinishResult } from "@sharadox/account-web-lib
 
 /** How long a sign-up ticket lasts: time to choose an identifier. */
 const SIGN_UP_SECONDS = 900;
+/** How long the two-factor step may take once the emailed code passed. */
+const SECOND_FACTOR_SECONDS = 600;
 
 /**
  * The second step: the typed code. Guesses are limited per address group (and per request by `verifyCode`). With the
- * right code, an account with that contact is signed in on the browser (the new token goes in its cookie); a contact
+ * right code, an account with that contact is signed in (or, with two-factor on, gets a ticket for that step) on the browser (the new token goes in its cookie); a contact
  * with no account gets a sign-up ticket for choosing an identifier.
  *
  * @example
@@ -22,7 +24,7 @@ const SIGN_UP_SECONDS = 900;
  */
 export async function finishSignIn(
   server: AccountServer,
-  { requestId, code, address, token, now = Date.now() }: SignInFinish,
+  { requestId, code, address, token, userAgent = null, now = Date.now() }: SignInFinish,
 ): Promise<SignInFinishResult> {
   const rate = await limitRate(
     server.database,
@@ -52,6 +54,24 @@ export async function finishSignIn(
     return { status: "sign-up", ticket };
   }
   if (!found.signIn) return { status: "refused", reason: "unknown" };
-  const session = await signIn(server.database, { accountId: found.accountId, token, now });
+  const secondFactor = await server.database
+    .selectFrom("totp_credential")
+    .select("id")
+    .where("account_id", "=", found.accountId)
+    .where("confirmed_at", "is not", null)
+    .executeTakeFirst();
+  if (secondFactor) {
+    const ticket = createTicket(
+      { accountId: found.accountId },
+      {
+        secret: deriveSecret(server.secret, "second-factor-ticket"),
+        purpose: "second-factor",
+        lifetimeSeconds: SECOND_FACTOR_SECONDS,
+        now,
+      },
+    );
+    return { status: "second-factor", ticket };
+  }
+  const session = await signIn(server.database, { accountId: found.accountId, token, userAgent, now });
   return { status: "signed-in", accountId: found.accountId, token: session.token };
 }
