@@ -6,4 +6,8 @@
 - /one-time-code: createOneTimeCode(length = 8) → digits (crypto.randomInt); hashOneTimeCode(code, { pepper (≥32 chars), purpose }) → base64url HMAC-SHA-256 of `${purpose}\n${code}`; matchesOneTimeCode(code, hash, options) → boolean, spaces ignored, constant-time
 - /totp: createTotpSecret() → 20 random bytes; totpCode(secret, nowMs, { digits = 6, period = 30 }) (RFC 6238 SHA-1); verifyTotp(secret, code, nowMs, { lastUsedStep }) → { valid: true, step } | { valid: false }, window ±1 step, steps ≤ lastUsedStep refused; totpUri({ issuer, account, secret }) → otpauth://totp/Issuer:account?secret=BASE32&issuer=…&algorithm=SHA1&digits=6&period=30
 - /base-32: encodeBase32(bytes) (RFC 4648, no padding); decodeBase32(text) (case, spaces, = ignored; throws on other characters)
+- /effective-permissions: effectivePermissions({ application, resource?, now, defaultRole, roles: Role[] { id, application|null, permissions, exclusive }, grants: Grant[] { roleId, application|null, resource|null, startsAt, endsAt|null }, scope?, ownerPermissions? }) → Set; active exclusive (ban) roles override; else default ∪ active; keeps "<application>." and "account." permissions; ∩ scope ∩ ownerPermissions
+- /ban-length: banLength([{ schedule: (seconds | "permanent")[], previousOffenses }]) → max penalty (permanent wins); schedule[min(previousOffenses, last)]
+- /recovery-code: createRecoveryCodes(count = 10) → "XXXX-XXXX-XXXX" (alphabet 23456789ABCDEFGHJKMNPQRSTVWXYZ); normalizeRecoveryCode(code) → uppercase, no spaces or hyphens; hash with hashOneTimeCode(…, { purpose: "recovery:<account id>" })
+- /email-contact: normalizeEmail(address) → trimmed lowercase (throws if not x@y); emailLedgerForm(address) → also without +tag
 - License: Sharadox Open Source License 0.1.0

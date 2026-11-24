@@ -9,8 +9,9 @@ Passwordless accounts for web applications, built on open standards, with no aut
 
 One deployment per company. Everything company-specific is configuration.
 
-**Status: 0.1.0, building blocks.** Usernames, base 32, TOTP and one-time codes. Accounts, contacts, sessions, roles,
-bans and the OpenID Connect server come next (see `CHANGELOG.md`).
+**Status: 0.1.0, building blocks.** Usernames, one-time codes, TOTP, recovery codes, email contacts, effective
+permissions and ban lengths. Accounts, contacts, sessions, storage and the OpenID Connect server come next (see
+`CHANGELOG.md`).
 
 ## Install
 
@@ -61,6 +62,32 @@ const result = verifyTotp(secret, typed, Date.now(), { lastUsedStep });
 ### `base-32`: `encodeBase32(bytes)`, `decodeBase32(text)`
 
 RFC 4648 base 32 without padding. Decoding accepts lowercase, spaces and padding.
+
+### `effective-permissions`: `effectivePermissions({ application, resource?, now, defaultRole, roles, grants, scope?, ownerPermissions? })` → `Set<string>`
+
+What an account may do in one application, now:
+
+1. Active grants count: started, not ended, in the application or global, and for the whole application or the
+   resource asked.
+2. An active **exclusive** role (a ban) leaves only its own permissions.
+3. Otherwise the result is the default role plus every active role.
+4. Only the application's permissions (`platform.…`) and the account system's own (`account.…`) are kept.
+5. The result is limited to `scope` (a token or key) and to `ownerPermissions` (an agent's owner).
+
+### `ban-length`: `banLength([{ schedule, previousOffenses }])` → seconds or `"permanent"`
+
+- Each rule gives its schedule's penalty for this offense, and the last penalty repeats.
+- Several rules broken at once give the longest of their penalties.
+
+### `recovery-code`: `createRecoveryCodes(count = 10)`, `normalizeRecoveryCode(code)`
+
+Codes like `7KQM-W3HD-9TXA` (about 59 bits each), from characters that can't be misread. Hash each one with
+`hashOneTimeCode(normalizeRecoveryCode(code), { pepper, purpose: "recovery:<account id>" })`.
+
+### `email-contact`: `normalizeEmail(address)`, `emailLedgerForm(address)`
+
+- `normalizeEmail` trims and lowercases, and throws for text that isn't an email address.
+- `emailLedgerForm` also drops `+tags`, for the banned-contact ledger.
 
 ## License
 
