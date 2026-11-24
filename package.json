@@ -55,8 +55,10 @@
   "dependencies": {
     "@sharadox/database-web-library": "0.1.0-development.6",
     "@sharadox/email-web-library": "^0.7.1",
+    "@sharadox/protection-web-library": "0.1.0-development.9",
     "@sharadox/web-library": "^0.11.1",
-    "kysely": "^0.28.20"
+    "kysely": "^0.28.20",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.16",
