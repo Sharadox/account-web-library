@@ -12,7 +12,8 @@ afterEach(() => memory.close());
 
 test("finds the account a verified contact belongs to, in any spelling of the contact", async () => {
   const created = await createPersonAccount(memory.database, {
-    username: "luis",
+    name: "A Person",
+    identifier: "luis",
     contact: { kind: "email", value: "luis@example.com" },
   });
   if (!created.created) throw new Error("not created");
@@ -25,7 +26,8 @@ test("finds the account a verified contact belongs to, in any spelling of the co
 
 test("ignores unverified contacts and unknown ones", async () => {
   const created = await createPersonAccount(memory.database, {
-    username: "luis",
+    name: "A Person",
+    identifier: "luis",
     contact: { kind: "email", value: "luis@example.com" },
   });
   if (!created.created) throw new Error("not created");

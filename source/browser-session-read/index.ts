@@ -31,10 +31,14 @@ export async function readBrowserSession(
   const rows = await database
     .selectFrom("account_session")
     .innerJoin("account", "account.id", "account_session.account_id")
+    .innerJoin("identifier", "identifier.account_id", "account.id")
+    .leftJoin("account_picture", "account_picture.account_id", "account.id")
     .select([
       "account_session.id as accountSessionId",
       "account.id as accountId",
-      "account.username as username",
+      "identifier.value as identifier",
+      "account.name as name",
+      "account_picture.id as pictureId",
       "account_session.created_at as signedInAt",
       "account_session.second_factor_at as secondFactorAt",
     ])

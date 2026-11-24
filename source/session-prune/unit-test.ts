@@ -14,7 +14,8 @@ const day = 86_400_000;
 
 test("deletes ended and idle account sessions, and browser sessions that ended or hold no account", async () => {
   const result = await createPersonAccount(memory.database, {
-    username: "one",
+    name: "A Person",
+    identifier: "one",
     contact: { kind: "email", value: "one@example.com" },
   });
   if (!result.created) throw new Error("not created");

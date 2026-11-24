@@ -4,6 +4,7 @@ export interface AuditEvent {
   accountId?: string | null;
   /** Who did it, when not the account itself. */
   actorAccountId?: string | null;
+  /** The application's key (`platform`), stored as its id; it must exist. */
   application?: string | null;
   /** `<subject>.<verb>`: `account.created`, `contact.removed`, `role.granted`… */
   action: string;

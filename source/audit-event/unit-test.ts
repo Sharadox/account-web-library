@@ -9,6 +9,12 @@ beforeEach(async () => (memory = await createTestAccountDatabase()));
 afterEach(() => memory.close());
 
 test("records an event with its details and returns its UUIDv7", async () => {
+  await memory.database.insertInto("application").values({ key: "platform", name: "Platform" }).execute();
+  const platform = await memory.database
+    .selectFrom("application")
+    .select("id")
+    .where("key", "=", "platform")
+    .executeTakeFirstOrThrow();
   const id = await recordAuditEvent(memory.database, {
     accountId: "0198f5a2-7a4c-7000-8000-000000000001",
     actorAccountId: "0198f5a2-7a4c-7000-8000-000000000002",
@@ -24,7 +30,7 @@ test("records an event with its details and returns its UUIDv7", async () => {
       at: new Date(1_000),
       account_id: "0198f5a2-7a4c-7000-8000-000000000001",
       actor_account_id: "0198f5a2-7a4c-7000-8000-000000000002",
-      application: "platform",
+      application_id: platform.id,
       action: "role.granted",
       detail: { role: "manager" },
     },
@@ -34,6 +40,12 @@ test("records an event with its details and returns its UUIDv7", async () => {
 test("everything but the action is optional", async () => {
   await recordAuditEvent(memory.database, { action: "system.started" });
   const [event] = await memory.database.selectFrom("audit_event").selectAll().execute();
-  expect(event).toMatchObject({ account_id: null, actor_account_id: null, application: null, detail: {} });
+  expect(event).toMatchObject({ account_id: null, actor_account_id: null, application_id: null, detail: {} });
   expect(Math.abs(event!.at.getTime() - Date.now())).toBeLessThan(10_000);
+});
+
+test("refuses an application that doesn't exist", async () => {
+  await expect(recordAuditEvent(memory.database, { application: "nowhere", action: "x.y" })).rejects.toThrow(
+    /no application "nowhere"/,
+  );
 });

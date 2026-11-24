@@ -4,6 +4,8 @@ export interface SignInOptions {
   token?: string;
   /** Whether two-factor was passed for this sign-in. */
   secondFactor?: boolean;
+  /** The browser's User-Agent, shown in the list of devices (kept to 500 characters). */
+  userAgent?: string | null;
   /** 30 days by default. */
   accountSessionSeconds?: number;
   /** 400 days by default (the longest a browser keeps a cookie). */

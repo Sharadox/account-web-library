@@ -43,16 +43,26 @@ const codeFor = async (value: string, now = 0) => {
 
 test("signs an existing account in with the right code, joining the browser's other accounts", async () => {
   const created = await createPersonAccount(memory.database, {
-    username: "ana",
+    name: "A Person",
+    identifier: "ana",
     contact: { kind: "email", value: "ana@example.com" },
   });
   if (!created.created) throw new Error("not created");
   const { requestId, code } = await codeFor("ana@example.com");
-  const result = await finishSignIn(server, { requestId, code, address: "203.0.113.7", token: undefined, now: 1_000 });
+  const result = await finishSignIn(server, {
+    requestId,
+    code,
+    address: "203.0.113.7",
+    token: undefined,
+    userAgent: "Phone",
+    now: 1_000,
+  });
   if (result.status !== "signed-in") throw new Error(result.status);
   expect(result.accountId).toBe(created.accountId);
+  const browser = await memory.database.selectFrom("browser_session").select("user_agent").executeTakeFirstOrThrow();
+  expect(browser.user_agent).toBe("Phone");
   const session = await readBrowserSession(memory.database, { token: result.token, now: 2_000 });
-  expect(session!.accounts.map(({ username }) => username)).toEqual(["ana"]);
+  expect(session!.accounts.map(({ identifier }) => identifier)).toEqual(["ana"]);
 });
 
 test("for a contact with no account, gives a sign-up ticket instead", async () => {
@@ -83,7 +93,8 @@ test("refuses wrong codes with the reason, and limits guesses per address group"
 
 test("a contact that can't be used for signing in is refused like an unknown code", async () => {
   const created = await createPersonAccount(memory.database, {
-    username: "ana",
+    name: "A Person",
+    identifier: "ana",
     contact: { kind: "email", value: "ana@example.com" },
   });
   if (!created.created) throw new Error("not created");

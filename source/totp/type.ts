@@ -16,7 +16,7 @@ export type TotpVerification = { valid: true; step: number } | { valid: false };
 export interface TotpUriOptions {
   /** The company, shown above the code. */
   issuer: string;
-  /** Which account: the username. */
+  /** Which account: the identifier. */
   account: string;
   secret: Uint8Array;
 }

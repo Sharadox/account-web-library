@@ -20,7 +20,7 @@ const channel = createEmailChannel({
 
 const delivery = (overrides: Partial<Parameters<typeof channel.send>[0]> = {}) => ({
   contact: { kind: "email", value: "ana@example.com" },
-  code: "12345678",
+  code: "123456",
   purpose: "sign-in" as const,
   language: "en",
   expiresAt: new Date(600_000),
@@ -36,10 +36,10 @@ test("sends the code to the address, in the company's layout and as plain text, 
     to: "ana@example.com",
     subject: "Your Luis Pires Decor sign-in code",
   });
-  expect(message!.subject).not.toContain("1234");
-  expect(message!.html).toContain("1234 5678");
+  expect(message!.subject).not.toContain("123");
+  expect(message!.html).toContain("123 456");
   expect(message!.html).toContain('lang="en"');
-  expect(message!.text).toContain("1234 5678");
+  expect(message!.text).toContain("123 456");
   expect(message!.text).toContain("10 minutes");
   expect(message!.text).toContain("We will never ask you for this code.");
 });

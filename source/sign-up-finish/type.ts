@@ -3,9 +3,14 @@ import type { PersonAccountResult } from "@sharadox/account-web-library/person-a
 export interface SignUpFinish {
   /** From `finishSignIn`'s `sign-up` answer. */
   ticket: string;
-  username: string;
+  /** What the account shows, 1 to 50 characters (`checkAccountName`). */
+  name: string;
+  /** Without the `@`. */
+  identifier: string;
   /** The browser's current session cookie, if any. */
   token: string | undefined;
+  /** The browser's User-Agent, for the list of devices. */
+  userAgent?: string | null;
   /** Milliseconds since 1970 (now by default). */
   now?: number;
 }

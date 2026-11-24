@@ -1,11 +1,8 @@
-import { addressGroup } from "@sharadox/protection-web-library/address-group";
-import { limitRate } from "@sharadox/protection-web-library/rate-limit";
 import { redeemSolution } from "@sharadox/protection-web-library/solution-redemption";
-import { spendFromCap } from "@sharadox/protection-web-library/spending-cap";
-import { signInLimits } from "@sharadox/account-web-library/account-server";
 import type { AccountServer } from "@sharadox/account-web-library/account-server/type";
-import { recordAuditEvent } from "@sharadox/account-web-library/audit-event";
-import { requestCode } from "@sharadox/account-web-library/code-request";
+import { readBrowserSession } from "@sharadox/account-web-library/browser-session-read";
+import { sendCode } from "@sharadox/account-web-library/code-sending";
+import { findAccountByContact } from "@sharadox/account-web-library/contact-lookup";
 import { normalizeContact } from "@sharadox/account-web-library/contact-kind";
 import type { Contact } from "@sharadox/account-web-library/contact-kind/type";
 import { deriveSecret } from "@sharadox/account-web-library/secret-derivation";
@@ -16,11 +13,9 @@ import type { SignInStart, SignInStartResult } from "@sharadox/account-web-libra
  * cheaper than what it protects:
  * 1. a single-use proof of work;
  * 2. a valid contact with a channel;
- * 3. rate limits per contact, per address group (an IPv6 /64 is one visitor) and for everyone;
- * 4. the channel's daily spending cap (past it, sending pauses: it never spends);
- * 5. a new code, sent by `deliver` after answering; each send is recorded in the audit log
- *    (`code.sent`, or `code.delivery-failed` with the error, never the code; a failure is thrown).
- * The answer never depends on whether an account exists, so nobody can probe for accounts.
+ * 3. `sendCode`: rate limits, the channel's spending cap, then a new code sent by `deliver` after answering.
+ * A browser already signed in to the account with that verified contact gets `signed-in` instead, and nothing is sent.
+ * Otherwise the answer never depends on whether an account exists, so nobody can probe for accounts.
  *
  * @example
  * const result = await startSignIn(server, { contact, solution, address: clientAddress(request), language });
@@ -28,9 +23,8 @@ import type { SignInStart, SignInStartResult } from "@sharadox/account-web-libra
  */
 export async function startSignIn(
   server: AccountServer,
-  { contact, solution, address, language, now = Date.now() }: SignInStart,
+  { contact, solution, address, language, token, now = Date.now() }: SignInStart,
 ): Promise<SignInStartResult> {
-  const limits = signInLimits(server);
   const proof = await redeemSolution(server.database, solution, {
     secret: deriveSecret(server.secret, "proof-of-work"),
     now,
@@ -44,58 +38,11 @@ export async function startSignIn(
   }
   const channel = server.channels.find(({ kind }) => kind === normalized.kind);
   if (!channel) return { status: "refused", reason: "contact" };
-  const rate = await limitRate(
-    server.database,
-    [
-      { key: `contact:${normalized.kind}:${normalized.value}`, rule: limits.perContact },
-      { key: `address:${addressGroup(address)}`, rule: limits.perAddress },
-      { key: "global:sign-in", rule: limits.global },
-    ],
-    { secret: deriveSecret(server.secret, "rate-limit"), now },
-  );
-  if (!rate.allowed) return { status: "refused", reason: "rate-limit", retryAfterSeconds: rate.retryAfterSeconds };
-  const cap = await spendFromCap(
-    server.database,
-    { name: `${normalized.kind}-send`, limit: limits.dailySendsPerChannel, period: "day" },
-    { now },
-  );
-  if (!cap.allowed) return { status: "refused", reason: "unavailable" };
-  const request = await requestCode(server.database, {
-    purpose: "sign-in",
-    contact: normalized,
-    pepper: deriveSecret(server.secret, "one-time-code"),
-    now,
-  });
-  return {
-    status: "sent",
-    requestId: request.requestId,
-    deliver: async () => {
-      try {
-        await channel.send({
-          contact: request.contact,
-          code: request.code,
-          purpose: "sign-in",
-          language,
-          expiresAt: request.expiresAt,
-        });
-      } catch (error) {
-        // Nobody is waiting for the answer any more: the audit log is where a failed send shows (never the code).
-        const { name, message } = error as Error;
-        await recordAuditEvent(server.database, {
-          action: "code.delivery-failed",
-          detail: {
-            kind: request.contact.kind,
-            purpose: "sign-in",
-            requestId: request.requestId,
-            error: `${name}: ${message}`.slice(0, 500),
-          },
-        });
-        throw error;
-      }
-      await recordAuditEvent(server.database, {
-        action: "code.sent",
-        detail: { kind: request.contact.kind, purpose: "sign-in", requestId: request.requestId },
-      });
-    },
-  };
+  if (token) {
+    const owner = await findAccountByContact(server.database, normalized);
+    const browser = owner && (await readBrowserSession(server.database, { token, now }));
+    if (owner && browser?.accounts.some(({ accountId }) => accountId === owner.accountId))
+      return { status: "signed-in", accountId: owner.accountId };
+  }
+  return sendCode(server, { purpose: "sign-in", contact: normalized, channel, address, language, now });
 }

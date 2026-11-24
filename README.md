@@ -9,9 +9,9 @@ Passwordless accounts for web applications, built on open standards, with no aut
 
 One deployment per company. Everything company-specific is configuration.
 
-**Status: 0.1.0, in progress.** Building blocks (usernames, one-time codes, TOTP, recovery codes, email contacts,
-effective permissions, ban lengths) and account storage in Postgres (accounts, usernames, contacts, audit log).
-Sign-in codes, sessions and the OpenID Connect server come next (see `CHANGELOG.md`).
+**Status: 0.1.0, in progress.** Sign-in by emailed code with optional two-factor (authenticator apps and recovery
+codes), and everything an account manages for itself: name, identifier, picture, contacts, devices, activity, data
+export and deletion. Roles, bans and the OpenID Connect server come next (see `CHANGELOG.md`).
 
 ## Install
 
@@ -43,8 +43,16 @@ Every key is derived from it with `deriveSecret`.
    - `signed-in`, with `{ accountId, token }`: set `token` as the cookie;
    - `sign-up`, with `{ ticket }`, for a contact with no account;
    - `refused`, with the code's reason or `rate-limit`.
-4. `finishSignUp(server, { ticket, username, token, now? })` creates the account and signs it in. A refused
-   username can be tried again with the same ticket, which lasts 15 minutes.
+4. `finishSignUp(server, { ticket, name, identifier, token, userAgent?, now? })` creates the account and signs it
+   in. A refused name or identifier can be tried again with the same ticket, which lasts 15 minutes.
+5. With two-factor on, `finishSignIn` answers `second-factor` with a ticket (10 minutes) instead of signing in:
+   `finishSecondFactor(server, { ticket, code, address, token, userAgent?, now? })` takes the authenticator app's
+   code (never the same step twice) or a recovery code (single use). Guesses are limited per account and per
+   address group.
+
+Pass `token` (the cookie) to `startSignIn` too: a contact of an account already signed in on that browser gets
+`{ status: "signed-in", accountId }` and no code. Codes are 6 digits, shown in emails as `123 456`. Identifiers are
+always stored and passed without the `@` that the interface shows in front of them.
 
 `DEFAULT_SIGN_IN_LIMITS` (`account-server`):
 
@@ -66,7 +74,11 @@ migrates: the tables are tracked in their own table (`account_migration`). Type 
 (`account-database/type`). The database enforces the rules itself, as the last line behind the code:
 
 - ids are UUIDv7;
-- usernames follow the rules and are unique without regard to case;
+- every row's id is a UUIDv7, and foreign keys cascade updates and deletes (an application with audit events
+  can't be deleted);
+- identifiers live in one table for everything that has one (accounts now, organizations later), follow the rules,
+  and are unique without regard to case; every account keeps exactly one;
+- names have 1 to 50 characters, trimmed, with no control characters;
 - a verified contact belongs to one account only;
 - every person keeps at least one verified sign-in contact, checked when a change commits;
 - agents have an owner (and go with them);
@@ -79,22 +91,27 @@ dependency).
 
 Each export has its own entry point (`@sharadox/account-web-library/<name>`).
 
-### `username`: `checkUsername(name)`, `usernameKey(name)`, `USERNAME_MAXIMUM_LENGTH`
+### `account-name`: `checkAccountName(name)`, `ACCOUNT_NAME_MAXIMUM_LENGTH`
+
+The name an account shows: any letters and symbols, 1 to 50 characters once trimmed and with runs of spaces made
+single, and no control characters. `checkAccountName("  Luís   Pires ")` → `{ valid: true, name: "Luís Pires" }`.
+
+### `identifier`: `checkIdentifier(name)`, `identifierKey(name)`, `IDENTIFIER_MAXIMUM_LENGTH`
 
 The rules:
 
 - 1 to 50 characters;
 - A–Z, a–z and 0–9, with `-`, `_` or `.` allowed only between letters or digits, never two in a row;
-- shown as written, but unique without regard to case: `abc` and `aBc` are the same username.
+- shown as written, but unique without regard to case: `abc` and `aBc` are the same identifier.
 
 ```ts
-checkUsername("Luis-Pires"); // { valid: true, username: "Luis-Pires", key: "luis-pires" }
-checkUsername("a--b"); // { valid: false, reason: "characters" }
+checkIdentifier("Luis-Pires"); // { valid: true, identifier: "Luis-Pires", key: "luis-pires" }
+checkIdentifier("a--b"); // { valid: false, reason: "characters" }
 ```
 
 Store `key` under a unique index.
 
-### `one-time-code`: `createOneTimeCode(length = 8)`, `hashOneTimeCode(code, { pepper, purpose })`, `matchesOneTimeCode(code, hash, { pepper, purpose })`
+### `one-time-code`: `createOneTimeCode(length = 6)`, `hashOneTimeCode(code, { pepper, purpose })`, `matchesOneTimeCode(code, hash, { pepper, purpose })`
 
 - Codes are uniform random digits.
 - Only an HMAC-SHA-256 is stored, under a pepper of at least 32 characters kept outside the database, and bound to
@@ -145,20 +162,20 @@ Codes like `7KQM-W3HD-9TXA` (about 59 bits each), from characters that can't be 
 - `normalizeEmail` trims and lowercases, and throws for text that isn't an email address.
 - `emailLedgerForm` also drops `+tags`, for the banned-contact ledger.
 
-### `person-account`: `createPersonAccount(database, { username, contact, now? })`
+### `person-account`: `createPersonAccount(database, { name, identifier, contact, now? })`
 
 Creates a person with the contact their one-time code just proved, stored verified, and records `account.created`.
-Returns `{ created: true, accountId, contactId }`, or `{ created: false, reason }` with `username-invalid`,
-`username-taken` or `contact-taken`.
+Returns `{ created: true, accountId, contactId }`, or `{ created: false, reason }` with `name-invalid`,
+`identifier-invalid`, `identifier-taken` or `contact-taken`.
 
-### `username-availability`: `usernameAvailability(database, username)` → `available` | `taken` | `invalid`
+### `identifier-availability`: `identifierAvailability(database, identifier)` → `available` | `taken` | `invalid`
 
 Rate limit it: it tells whether an account exists.
 
-### `username-change`: `changeUsername(database, { accountId, username })`
+### `identifier-change`: `changeIdentifier(database, { accountId, identifier })`
 
-Any time, and the old name is free at once; the audit log keeps `{ from, to }`. Reasons: `username-invalid`,
-`username-taken`, `no-account`.
+Any time, and the old name is free at once; the audit log keeps `{ from, to }`. Reasons: `identifier-invalid`,
+`identifier-taken`, `no-account`.
 
 ### `contact-lookup`: `findAccountByContact(database, contact)` → `{ accountId, contactId, signIn }` or undefined
 
@@ -174,7 +191,7 @@ Verified contacts only, normalized first.
 
 Each is recorded in the audit log. Ask for a fresh code first (step-up) and tell the other contacts.
 
-### `code-request`: `requestCode(database, { purpose, contact, accountId?, pepper, length = 8, lifetimeSeconds = 600, now? })` → `{ requestId, code, contact, expiresAt }`
+### `code-request`: `requestCode(database, { purpose, contact, accountId?, pepper, length = 6, lifetimeSeconds = 600, now? })` → `{ requestId, code, contact, expiresAt }`
 
 Starts a one-time code for `sign-in`, `contact-verification` or `step-up`.
 
@@ -201,7 +218,7 @@ points to any number of account sessions, so the selector has no limit and the c
   → `{ token, browserSessionId, accountSessionId }`. Adds the account to the browser's accounts (or starts a
   browser session). The browser gets a **new token at every sign-in**: set it as the cookie.
 - `readBrowserSession(database, { token, idleSeconds = 7 days, now? })` → `{ browserSessionId, accounts }` or
-  undefined. `accounts` are `{ accountSessionId, accountId, username, signedInAt, secondFactorAt }`, in sign-in
+  undefined. `accounts` are `{ accountSessionId, accountId, identifier, name, pictureId, signedInAt, secondFactorAt }`, in sign-in
   order, without ended or idle sessions. It marks them as seen.
 - `signOut(database, { token, accountId? })` → `{ signedOut }`: one account, or all and the browser session.
 - `revokeAccountSessions(database, { accountId, actorAccountId? })` → count: signed out on every browser.
@@ -228,6 +245,64 @@ phone, WhatsApp, Messenger and Instagram channels will have the same shape.
 Pass the transaction of the change it describes. `detail` holds ids and kinds, never contact values or secrets.
 
 ### `database-error`: `databaseError(error)` → `{ code, constraint }` or undefined
+
+## Managing an account
+
+Everything a person can do with their own account. Ask for a fresh code first (step-up) before changing contacts,
+two-factor or recovery codes, and before deleting the account.
+
+### `step-up`: `startStepUp(server, { accountId, contactId, address, language })`, `finishStepUp(server, { accountId, requestId, code, token })`, `hasFreshStepUp(database, { accountId, token })`
+
+A code to one of the account's own verified contacts. Once it comes back, this browser's session of the account is
+confirmed for 10 minutes (`STEP_UP_SECONDS`): check `hasFreshStepUp` before every sensitive change.
+
+### `code-sending`: `sendCode(server, { purpose, contact, channel, accountId?, address, language })`
+
+What every flow above uses to send a code: rate limits per contact, per address group and for everyone, the
+channel's daily cap, then `deliver` to call after answering, recorded as `code.sent` or `code.delivery-failed`.
+
+### `account-name-change`: `changeAccountName(database, { accountId, name })`
+
+Reasons: `name-invalid`, `no-account`. The audit log records that it changed, not the names.
+
+### Pictures: `picture-preparation`, `account-picture-change`, `picture-key`, `picture-storage/type`, `memory-picture-storage`
+
+- `preparePicture(bytes)` takes JPEG, PNG, GIF, WebP, AVIF or SVG, up to 5 MB and 4096 pixels, and gives WebP of at
+  most 1024 pixels on the longer side. Metadata (a photo's location) is dropped and its rotation applied; GIFs stay
+  animated; SVGs are drawn into an image, so nothing in them can run. It refuses (`reason`) `size`, `type`,
+  `dimensions`, `suspicious` (far more bytes than the picture needs: something is hidden in it) and `unsafe` (an SVG
+  that loads anything from outside itself, or declares entities).
+- `setAccountPicture(database, storage, { accountId, bytes })` → `{ changed: true, pictureId }`: the new file is
+  stored first, then the old one is deleted. `removeAccountPicture(database, storage, { accountId })`.
+- Files live in object storage under `pictureKey(pictureId)` (`account-picture/<id>.webp`). The application gives a
+  `PictureStorage` (`put(key, bytes, contentType)`, `remove(key)`); tests use `createMemoryPictureStorage()`.
+
+### Contacts: `contact-addition-flow`
+
+`startContactAddition(server, { accountId, contact, address, language })` adds the contact unverified and sends it a
+code (asking again sends a new one); `finishContactAddition(server, { accountId, requestId, code })` verifies it.
+Removing one is `removeContact` (the last sign-in contact can't go).
+
+### Two-factor: `totp-setup`, `recovery-code-regeneration`, `second-factor-finish`, `secret-encryption`
+
+- `startTotpSetup(server, { accountId, issuer })` → `{ status: "started", uri, secret }`: show `uri` as a QR code and
+  `secret` for typing in. The secret is stored encrypted (AES-256-GCM, key derived from `ACCOUNT_SECRET`).
+- `confirmTotpSetup(server, { accountId, code })` turns it on with the app's first right code and returns 10 recovery
+  codes to show once (only their HMACs are stored).
+- `removeTotp(database, { accountId })`, `totpStatus(database, { accountId })` → `{ on, recoveryCodesLeft }`,
+  `regenerateRecoveryCodes(server, { accountId })` (the old ones stop working).
+
+### Devices, activity, export and deletion
+
+- `listAccountSessions(database, { accountId, token })` → devices (`userAgent`, `signedInAt`, `lastSeenAt`,
+  `secondFactor`, `current`), most recently seen first; `signIn` stores each browser's User-Agent (`userAgent`).
+- `endAccountSession(database, { accountId, accountSessionId })` signs out one device.
+- `listAccountActivity(database, { accountId, before?, limit = 50 })` → `{ events, next }`, newest first.
+- `exportAccount(database, { accountId })` → everything stored about the account as JSON-ready data, never secrets.
+- `deleteAccount(database, storage, { accountId })` deletes the picture file, then the account and everything that
+  belongs to it; its identifier is free at once and the audit log keeps `account.deleted` under the bare id.
+
+Tests: `createTestPerson(database, identifier)` (`test-person`).
 
 ## License
 

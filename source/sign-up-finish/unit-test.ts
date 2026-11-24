@@ -25,14 +25,18 @@ const ticket = (value: string, now = 0) =>
 
 test("creates the account with the proved contact and signs it in", async () => {
   const result = await finishSignUp(server, {
+    name: "Ana Silva",
     ticket: ticket("ana@example.com"),
-    username: "Ana",
+    identifier: "Ana",
     token: undefined,
+    userAgent: "Laptop",
     now: 1_000,
   });
+  const browser = await memory.database.selectFrom("browser_session").select("user_agent").executeTakeFirst();
+  expect(browser?.user_agent).toBe("Laptop");
   if (result.status !== "signed-in") throw new Error(result.status);
   const session = await readBrowserSession(memory.database, { token: result.token, now: 2_000 });
-  expect(session!.accounts).toMatchObject([{ accountId: result.accountId, username: "Ana" }]);
+  expect(session!.accounts).toMatchObject([{ accountId: result.accountId, identifier: "Ana", name: "Ana Silva" }]);
   const contact = await memory.database
     .selectFrom("contact")
     .select(["value", "verified_at"])
@@ -41,35 +45,67 @@ test("creates the account with the proved contact and signs it in", async () => 
 });
 
 test("refuses forged or expired tickets", async () => {
-  expect(await finishSignUp(server, { ticket: "forged.ticket", username: "Ana", token: undefined, now: 0 })).toEqual({
+  expect(
+    await finishSignUp(server, { name: "Ana", ticket: "forged.ticket", identifier: "Ana", token: undefined, now: 0 }),
+  ).toEqual({
     status: "refused",
     reason: "ticket",
   });
   expect(
-    await finishSignUp(server, { ticket: ticket("a@example.com", 0), username: "Ana", token: undefined, now: 900_000 }),
+    await finishSignUp(server, {
+      name: "Ana",
+      ticket: ticket("a@example.com", 0),
+      identifier: "Ana",
+      token: undefined,
+      now: 900_000,
+    }),
   ).toEqual({
     status: "refused",
     reason: "ticket",
   });
 });
 
-test("passes on why the account couldn't be made, so the person can choose another username", async () => {
+test("passes on why the account couldn't be made, so the person can choose another identifier", async () => {
   expect(
-    await finishSignUp(server, { ticket: ticket("a@example.com"), username: "a--b", token: undefined, now: 0 }),
+    await finishSignUp(server, {
+      name: "Ana",
+      ticket: ticket("a@example.com"),
+      identifier: "a--b",
+      token: undefined,
+      now: 0,
+    }),
   ).toEqual({
     status: "refused",
-    reason: "username-invalid",
+    reason: "identifier-invalid",
   });
-  await finishSignUp(server, { ticket: ticket("a@example.com"), username: "abc", token: undefined, now: 0 });
+  await finishSignUp(server, {
+    name: "Ana",
+    ticket: ticket("a@example.com"),
+    identifier: "abc",
+    token: undefined,
+    now: 0,
+  });
   expect(
-    await finishSignUp(server, { ticket: ticket("b@example.com"), username: "ABC", token: undefined, now: 0 }),
+    await finishSignUp(server, {
+      name: "Ana",
+      ticket: ticket("b@example.com"),
+      identifier: "ABC",
+      token: undefined,
+      now: 0,
+    }),
   ).toEqual({
     status: "refused",
-    reason: "username-taken",
+    reason: "identifier-taken",
   });
   // A ticket used twice can't make a second account with the same contact.
   expect(
-    await finishSignUp(server, { ticket: ticket("a@example.com"), username: "other", token: undefined, now: 0 }),
+    await finishSignUp(server, {
+      name: "Ana",
+      ticket: ticket("a@example.com"),
+      identifier: "other",
+      token: undefined,
+      now: 0,
+    }),
   ).toEqual({
     status: "refused",
     reason: "contact-taken",
@@ -78,9 +114,23 @@ test("passes on why the account couldn't be made, so the person can choose anoth
 
 test("uses the current time by default", async () => {
   const result = await finishSignUp(server, {
+    name: "Ana Silva",
     ticket: ticket("a@example.com", Date.now()),
-    username: "Ana",
+    identifier: "Ana",
     token: undefined,
   });
   expect(result.status).toBe("signed-in");
+});
+
+test("refuses a name outside the rules, keeping the ticket usable", async () => {
+  const proof = ticket("a@example.com");
+  expect(await finishSignUp(server, { name: " ", ticket: proof, identifier: "abc", token: undefined, now: 0 })).toEqual(
+    {
+      status: "refused",
+      reason: "name-invalid",
+    },
+  );
+  expect(
+    (await finishSignUp(server, { name: "Abc", ticket: proof, identifier: "abc", token: undefined, now: 0 })).status,
+  ).toBe("signed-in");
 });

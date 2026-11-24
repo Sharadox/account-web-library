@@ -2,7 +2,11 @@
 export interface SignedInAccount {
   accountSessionId: string;
   accountId: string;
-  username: string;
+  /** Without the `@`. */
+  identifier: string;
+  name: string;
+  /** The picture's id (its file's name in storage); null without one. */
+  pictureId: string | null;
   signedInAt: Date;
   secondFactorAt: Date | null;
 }

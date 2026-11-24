@@ -15,6 +15,16 @@ export async function recordAuditEvent(
   { accountId = null, actorAccountId = null, application = null, action, detail = {}, now = Date.now() }: AuditEvent,
 ): Promise<string> {
   const id = uuidVersion7({ now });
+  let applicationId: string | null = null;
+  if (application !== null) {
+    const found = await database
+      .selectFrom("application")
+      .select("id")
+      .where("key", "=", application)
+      .executeTakeFirst();
+    if (!found) throw new Error(`no application "${application}"`);
+    applicationId = found.id;
+  }
   await database
     .insertInto("audit_event")
     .values({
@@ -22,7 +32,7 @@ export async function recordAuditEvent(
       at: new Date(now),
       account_id: accountId,
       actor_account_id: actorAccountId,
-      application,
+      application_id: applicationId,
       action,
       detail,
     })
