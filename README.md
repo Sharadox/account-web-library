@@ -34,6 +34,7 @@ Every key is derived from it with `deriveSecret`.
    - the channel's daily spending cap.
 
    It answers `{ status: "sent", requestId, deliver }`, and you call `deliver` after answering (Next.js `after()`).
+   A failed send is recorded in the audit log as `code.delivery-failed`, with the error but never the code.
    Otherwise it answers `refused` with `proof`, `contact`, `unavailable` (the cap is reached: sending pauses), or
    `rate-limit` with `retryAfterSeconds`. The answer never depends on whether an account exists.
 

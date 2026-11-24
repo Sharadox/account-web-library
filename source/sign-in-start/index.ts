@@ -4,6 +4,7 @@ import { redeemSolution } from "@sharadox/protection-web-library/solution-redemp
 import { spendFromCap } from "@sharadox/protection-web-library/spending-cap";
 import { signInLimits } from "@sharadox/account-web-library/account-server";
 import type { AccountServer } from "@sharadox/account-web-library/account-server/type";
+import { recordAuditEvent } from "@sharadox/account-web-library/audit-event";
 import { requestCode } from "@sharadox/account-web-library/code-request";
 import { normalizeContact } from "@sharadox/account-web-library/contact-kind";
 import type { Contact } from "@sharadox/account-web-library/contact-kind/type";
@@ -17,7 +18,8 @@ import type { SignInStart, SignInStartResult } from "@sharadox/account-web-libra
  * 2. a valid contact with a channel;
  * 3. rate limits per contact, per address group (an IPv6 /64 is one visitor) and for everyone;
  * 4. the channel's daily spending cap (past it, sending pauses: it never spends);
- * 5. a new code, sent by `deliver` after answering.
+ * 5. a new code, sent by `deliver` after answering; a failed send is recorded in the audit log
+ *    (`code.delivery-failed`, with the error, never the code) and thrown.
  * The answer never depends on whether an account exists, so nobody can probe for accounts.
  *
  * @example
@@ -67,13 +69,29 @@ export async function startSignIn(
   return {
     status: "sent",
     requestId: request.requestId,
-    deliver: () =>
-      channel.send({
-        contact: request.contact,
-        code: request.code,
-        purpose: "sign-in",
-        language,
-        expiresAt: request.expiresAt,
-      }),
+    deliver: async () => {
+      try {
+        await channel.send({
+          contact: request.contact,
+          code: request.code,
+          purpose: "sign-in",
+          language,
+          expiresAt: request.expiresAt,
+        });
+      } catch (error) {
+        // Nobody is waiting for the answer any more: the audit log is where a failed send shows (never the code).
+        const { name, message } = error as Error;
+        await recordAuditEvent(server.database, {
+          action: "code.delivery-failed",
+          detail: {
+            kind: request.contact.kind,
+            purpose: "sign-in",
+            requestId: request.requestId,
+            error: `${name}: ${message}`.slice(0, 500),
+          },
+        });
+        throw error;
+      }
+    },
   };
 }
