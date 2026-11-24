@@ -145,3 +145,34 @@ test("uses the current time by default", async () => {
   });
   expect(result.status).toBe("sent");
 });
+
+test("a delivery that fails is recorded (the error, never the code) and passed on", async () => {
+  server.channels = [
+    {
+      kind: "email",
+      send: async () => {
+        throw Object.assign(new Error("Access denied to the sending role"), { name: "AccessDenied" });
+      },
+    },
+  ];
+  const result = await start("ana@example.com");
+  if (result.status !== "sent") throw new Error(result.status);
+  await expect(result.deliver()).rejects.toThrow("Access denied to the sending role");
+  const events = await memory.database
+    .selectFrom("audit_event")
+    .select(["action", "detail"])
+    .where("action", "=", "code.delivery-failed")
+    .execute();
+  expect(events).toEqual([
+    {
+      action: "code.delivery-failed",
+      detail: {
+        kind: "email",
+        purpose: "sign-in",
+        requestId: result.requestId,
+        error: "AccessDenied: Access denied to the sending role",
+      },
+    },
+  ]);
+  expect(JSON.stringify(events)).not.toContain("ana@example.com");
+});
