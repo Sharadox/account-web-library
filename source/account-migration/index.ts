@@ -113,6 +113,30 @@ export const accountMigrations: Migration[] = [
       create index code_request_expires_at on code_request (expires_at);
     `,
   },
+  {
+    name: "0003-session",
+    sql: `
+      create table browser_session (
+        id uuid primary key check (uuid_extract_version(id) = 7),
+        token_hash text not null unique,
+        created_at timestamptz not null,
+        last_seen_at timestamptz not null,
+        expires_at timestamptz not null
+      );
+      create index browser_session_expires_at on browser_session (expires_at);
+      create table account_session (
+        id uuid primary key check (uuid_extract_version(id) = 7),
+        browser_session_id uuid not null references browser_session (id) on delete cascade,
+        account_id uuid not null references account (id) on delete cascade,
+        created_at timestamptz not null,
+        last_seen_at timestamptz not null,
+        expires_at timestamptz not null,
+        second_factor_at timestamptz,
+        unique (browser_session_id, account_id)
+      );
+      create index account_session_account on account_session (account_id);
+    `,
+  },
 ];
 
 /**
