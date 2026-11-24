@@ -54,6 +54,7 @@
   },
   "dependencies": {
     "@sharadox/database-web-library": "0.1.0-development.6",
+    "@sharadox/email-web-library": "^0.7.1",
     "@sharadox/web-library": "^0.11.1",
     "kysely": "^0.28.20"
   },

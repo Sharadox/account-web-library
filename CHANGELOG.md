@@ -22,4 +22,6 @@ First building blocks:
   verification and step-up;
 - sessions for the account selector (`signIn`, `readBrowserSession`, `signOut`, `revokeAccountSessions`,
   `pruneSessions`, `createSessionToken`, `hashSessionToken`): one browser cookie, any number of accounts, a new token
-  at every sign-in.
+  at every sign-in;
+- contact channels (`ContactChannel`) and the email channel (`createEmailChannel`), in English and European
+  Portuguese.
