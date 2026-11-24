@@ -9,15 +9,31 @@ Passwordless accounts for web applications, built on open standards, with no aut
 
 One deployment per company. Everything company-specific is configuration.
 
-**Status: 0.1.0, building blocks.** Usernames, one-time codes, TOTP, recovery codes, email contacts, effective
-permissions and ban lengths. Accounts, contacts, sessions, storage and the OpenID Connect server come next (see
-`CHANGELOG.md`).
+**Status: 0.1.0, in progress.** Building blocks (usernames, one-time codes, TOTP, recovery codes, email contacts,
+effective permissions, ban lengths) and account storage in Postgres (accounts, usernames, contacts, audit log).
+Sign-in codes, sessions and the OpenID Connect server come next (see `CHANGELOG.md`).
 
 ## Install
 
 ```sh
 pnpm add @sharadox/account-web-library
 ```
+
+## Storage
+
+Postgres through Kysely (`@sharadox/database-web-library`). Run `migrateAccount(database)` when the application
+migrates: the tables are tracked in their own table (`account_migration`). Type Kysely with `AccountDatabase`
+(`account-database/type`). The database enforces the rules itself, as the last line behind the code:
+
+- ids are UUIDv7;
+- usernames follow the rules and are unique without regard to case;
+- a verified contact belongs to one account only;
+- every person keeps at least one verified sign-in contact, checked when a change commits;
+- agents have an owner (and go with them);
+- the audit log is never changed.
+
+Tests: `createTestAccountDatabase()` (`test-database`) gives a migrated Postgres in memory (PGlite, a development
+dependency).
 
 ## API
 
@@ -88,6 +104,45 @@ Codes like `7KQM-W3HD-9TXA` (about 59 bits each), from characters that can't be 
 
 - `normalizeEmail` trims and lowercases, and throws for text that isn't an email address.
 - `emailLedgerForm` also drops `+tags`, for the banned-contact ledger.
+
+### `person-account`: `createPersonAccount(database, { username, contact, now? })`
+
+Creates a person with the contact their one-time code just proved, stored verified, and records `account.created`.
+Returns `{ created: true, accountId, contactId }`, or `{ created: false, reason }` with `username-invalid`,
+`username-taken` or `contact-taken`.
+
+### `username-availability`: `usernameAvailability(database, username)` → `available` | `taken` | `invalid`
+
+Rate limit it: it tells whether an account exists.
+
+### `username-change`: `changeUsername(database, { accountId, username })`
+
+Any time, and the old name is free at once; the audit log keeps `{ from, to }`. Reasons: `username-invalid`,
+`username-taken`, `no-account`.
+
+### `contact-lookup`: `findAccountByContact(database, contact)` → `{ accountId, contactId, signIn }` or undefined
+
+Verified contacts only, normalized first.
+
+### `contact-addition`, `contact-verification`, `contact-removal`
+
+- `addContact(database, { accountId, contact, now? })` adds it unverified. Reasons: `already-added`,
+  `contact-taken`, `no-account`.
+- `verifyContact(database, { accountId, contactId, now? })` once its code came back. Reasons: `no-contact`,
+  `contact-taken` (another account verified it first).
+- `removeContact(database, { accountId, contactId })`. Reasons: `no-contact`, `last-sign-in-contact`.
+
+Each is recorded in the audit log. Ask for a fresh code first (step-up) and tell the other contacts.
+
+### `contact-kind`: `normalizeContact({ kind, value })`, `CONTACT_KINDS`
+
+`email` in this version; unknown kinds and invalid values throw.
+
+### `audit-event`: `recordAuditEvent(database, { action, accountId?, actorAccountId?, application?, detail?, now? })` → id
+
+Pass the transaction of the change it describes. `detail` holds ids and kinds, never contact values or secrets.
+
+### `database-error`: `databaseError(error)` → `{ code, constraint }` or undefined
 
 ## License
 

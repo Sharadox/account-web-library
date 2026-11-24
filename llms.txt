@@ -1,6 +1,6 @@
 # @sharadox/account-web-library
 
-> Passwordless accounts for web applications (one-time codes to contacts, TOTP two-factor, roles and bans per application, OpenID Connect for people and agents), built on standards without an auth framework. 0.1.0: building blocks only.
+> Passwordless accounts for web applications (one-time codes to contacts, TOTP two-factor, roles and bans per application, OpenID Connect for people and agents), built on standards without an auth framework. 0.1.0: building blocks and account storage in Postgres (Kysely).
 
 - /username: checkUsername(name) → { valid: true, username, key (lowercase) } | { valid: false, reason: "length" | "characters" }; rules /^[A-Za-z0-9]+(?:[-_.][A-Za-z0-9]+)*$/, 1–50 (USERNAME_MAXIMUM_LENGTH); usernameKey(name) → lowercase (unique index; abc = aBc)
 - /one-time-code: createOneTimeCode(length = 8) → digits (crypto.randomInt); hashOneTimeCode(code, { pepper (≥32 chars), purpose }) → base64url HMAC-SHA-256 of `${purpose}\n${code}`; matchesOneTimeCode(code, hash, options) → boolean, spaces ignored, constant-time
@@ -10,4 +10,15 @@
 - /ban-length: banLength([{ schedule: (seconds | "permanent")[], previousOffenses }]) → max penalty (permanent wins); schedule[min(previousOffenses, last)]
 - /recovery-code: createRecoveryCodes(count = 10) → "XXXX-XXXX-XXXX" (alphabet 23456789ABCDEFGHJKMNPQRSTVWXYZ); normalizeRecoveryCode(code) → uppercase, no spaces or hyphens; hash with hashOneTimeCode(…, { purpose: "recovery:<account id>" })
 - /email-contact: normalizeEmail(address) → trimmed lowercase (throws if not x@y); emailLedgerForm(address) → also without +tag
+- Storage: migrateAccount(database) (own table account_migration) creates application (seeded "account"), account (id uuid v7, kind person|agent, username, owner_id for agents, created_at, last_active_at; unique lower(username)), contact (account_id, kind, value normalized, verified_at, sign_in; unique (kind, value) where verified; deferred trigger: a person keeps ≥1 verified sign-in contact, error 23514), audit_event (append-only; updates raise). Types: AccountDatabase at /account-database/type. Tests: /test-database createTestAccountDatabase()
+- /person-account: createPersonAccount(database, { username, contact: { kind, value }, now? }) → { created: true, accountId, contactId } | { created: false, reason: "username-invalid" | "username-taken" | "contact-taken" }; contact stored verified; audit account.created
+- /username-availability: usernameAvailability(database, name) → "available" | "taken" | "invalid" (rate limit callers)
+- /username-change: changeUsername(database, { accountId, username }) → { changed: true } | { changed: false, reason: "username-invalid" | "username-taken" | "no-account" }; audit detail { from, to }
+- /contact-lookup: findAccountByContact(database, contact) → { accountId, contactId, signIn } | undefined (verified only)
+- /contact-addition: addContact(database, { accountId, contact, now? }) → { added: true, contactId } | { added: false, reason: "already-added" | "contact-taken" | "no-account" } (unverified)
+- /contact-verification: verifyContact(database, { accountId, contactId, now? }) → { verified: true } | { verified: false, reason: "no-contact" | "contact-taken" }
+- /contact-removal: removeContact(database, { accountId, contactId }) → { removed: true } | { removed: false, reason: "no-contact" | "last-sign-in-contact" }
+- /contact-kind: normalizeContact({ kind, value }) (email only; throws otherwise), CONTACT_KINDS
+- /audit-event: recordAuditEvent(database, { action, accountId?, actorAccountId?, application?, detail?, now? }) → id
+- /database-error: databaseError(error) → { code, constraint } | undefined
 - License: Sharadox Open Source License 0.1.0
