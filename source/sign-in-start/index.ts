@@ -18,8 +18,8 @@ import type { SignInStart, SignInStartResult } from "@sharadox/account-web-libra
  * 2. a valid contact with a channel;
  * 3. rate limits per contact, per address group (an IPv6 /64 is one visitor) and for everyone;
  * 4. the channel's daily spending cap (past it, sending pauses: it never spends);
- * 5. a new code, sent by `deliver` after answering; a failed send is recorded in the audit log
- *    (`code.delivery-failed`, with the error, never the code) and thrown.
+ * 5. a new code, sent by `deliver` after answering; each send is recorded in the audit log
+ *    (`code.sent`, or `code.delivery-failed` with the error, never the code; a failure is thrown).
  * The answer never depends on whether an account exists, so nobody can probe for accounts.
  *
  * @example
@@ -92,6 +92,10 @@ export async function startSignIn(
         });
         throw error;
       }
+      await recordAuditEvent(server.database, {
+        action: "code.sent",
+        detail: { kind: request.contact.kind, purpose: "sign-in", requestId: request.requestId },
+      });
     },
   };
 }

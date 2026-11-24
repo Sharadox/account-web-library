@@ -43,6 +43,14 @@ test("sends a code to the contact after answering, the same way whether or not a
   expect(result.requestId).toMatch(/^[0-9a-f-]{36}$/);
   expect(delivered).toEqual([]);
   await result.deliver();
+  const sent = await memory.database
+    .selectFrom("audit_event")
+    .select(["action", "detail"])
+    .where("action", "=", "code.sent")
+    .execute();
+  expect(sent).toEqual([
+    { action: "code.sent", detail: { kind: "email", purpose: "sign-in", requestId: result.requestId } },
+  ]);
   expect(delivered).toEqual([
     {
       contact: { kind: "email", value: "ana@example.com" },
