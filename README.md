@@ -168,6 +168,17 @@ points to any number of account sessions, so the selector has no limit and the c
 - `pruneSessions(database, { idleSeconds?, now? })` → `{ accountSessions, browserSessions }`, for a daily job.
 - `createSessionToken()`, `hashSessionToken(token)` (`session-token`).
 
+### `email-channel`: `createEmailChannel({ sender, from, design, logos?, now? })` → `ContactChannel`
+
+Sends codes by email through email-web-library's sender, in the shared email layout.
+
+- English, or European Portuguese for any `pt` reader.
+- The code is in the body only, never in the subject (lock screens show subjects).
+- No link to click: nothing for a phishing email to imitate.
+
+A `ContactChannel` (`contact-channel/type`) is `{ kind, send({ contact, code, purpose, language, expiresAt }) }`:
+phone, WhatsApp, Messenger and Instagram channels will have the same shape.
+
 ### `contact-kind`: `normalizeContact({ kind, value })`, `CONTACT_KINDS`
 
 `email` in this version; unknown kinds and invalid values throw.
