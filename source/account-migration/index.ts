@@ -93,6 +93,26 @@ export const accountMigrations: Migration[] = [
         for each row execute function audit_event_unchangeable();
     `,
   },
+  {
+    name: "0002-code-request",
+    sql: `
+      create table code_request (
+        id uuid primary key check (uuid_extract_version(id) = 7),
+        purpose text not null check (purpose in ('sign-in', 'contact-verification', 'step-up')),
+        account_id uuid,
+        kind text not null,
+        value text not null,
+        code_hash text not null,
+        created_at timestamptz not null,
+        expires_at timestamptz not null,
+        attempts integer not null default 0 check (attempts >= 0),
+        used_at timestamptz,
+        voided_at timestamptz
+      );
+      create index code_request_open on code_request (kind, value, purpose) where used_at is null and voided_at is null;
+      create index code_request_expires_at on code_request (expires_at);
+    `,
+  },
 ];
 
 /**

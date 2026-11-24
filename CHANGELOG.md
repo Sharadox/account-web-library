@@ -17,4 +17,6 @@ First building blocks:
 - account storage in Postgres (`migrateAccount`, `AccountDatabase`, `createTestAccountDatabase`): applications,
   accounts, contacts and an append-only audit log, with the rules enforced by the database;
 - `createPersonAccount`, `usernameAvailability`, `changeUsername`, `findAccountByContact`, `addContact`,
-  `verifyContact`, `removeContact`, `normalizeContact`, `recordAuditEvent` and `databaseError`.
+  `verifyContact`, `removeContact`, `normalizeContact`, `recordAuditEvent` and `databaseError`;
+- one-time code requests in Postgres (`requestCode`, `verifyCode`, `pruneCodeRequests`) for sign-in, contact
+  verification and step-up.

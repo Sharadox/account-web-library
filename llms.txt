@@ -18,6 +18,9 @@
 - /contact-addition: addContact(database, { accountId, contact, now? }) → { added: true, contactId } | { added: false, reason: "already-added" | "contact-taken" | "no-account" } (unverified)
 - /contact-verification: verifyContact(database, { accountId, contactId, now? }) → { verified: true } | { verified: false, reason: "no-contact" | "contact-taken" }
 - /contact-removal: removeContact(database, { accountId, contactId }) → { removed: true } | { removed: false, reason: "no-contact" | "last-sign-in-contact" }
+- /code-request: requestCode(database, { purpose: "sign-in" | "contact-verification" | "step-up", contact, accountId?, pepper, length = 8, lifetimeSeconds = 600, now? }) → { requestId, code, contact (normalized), expiresAt }; stores HMAC of `${purpose}:${requestId}`; voids open requests for same contact+purpose; table code_request
+- /code-verification: verifyCode(database, { requestId, code, purpose, pepper, maximumAttempts = 5, now? }) → { valid: true, contact, accountId | null } | { valid: false, reason: "unknown" | "used" | "replaced" | "expired" | "attempts" | "wrong" }; row locked FOR UPDATE
+- /code-request-prune: pruneCodeRequests(database, { before }) → number deleted (expires_at < before)
 - /contact-kind: normalizeContact({ kind, value }) (email only; throws otherwise), CONTACT_KINDS
 - /audit-event: recordAuditEvent(database, { action, accountId?, actorAccountId?, application?, detail?, now? }) → id
 - /database-error: databaseError(error) → { code, constraint } | undefined
