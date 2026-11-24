@@ -3,7 +3,7 @@
  * driver (Neon's or PGlite's); undefined for any other error.
  *
  * @example
- * if (databaseError(error)?.constraint === "account_username_key") return { reason: "username-taken" };
+ * if (databaseError(error)?.constraint === "account_identifier_key") return { reason: "identifier-taken" };
  */
 export function databaseError(error: unknown): { code: string; constraint: string | undefined } | undefined {
   if (typeof error !== "object" || error === null || typeof (error as { code?: unknown }).code !== "string")

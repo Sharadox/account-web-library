@@ -6,7 +6,10 @@ type DefaultTime = ColumnType<Date, Date | undefined, Date>;
 
 /** An application the accounts sign in to (`account` itself, `platform`, `shop`…). */
 export interface ApplicationTable {
-  id: string;
+  /** UUIDv7. */
+  id: Generated<string>;
+  /** Its permanent short name, the prefix of its permissions (`account`, `platform`). */
+  key: string;
   name: string;
   created_at: DefaultTime;
 }
@@ -15,8 +18,8 @@ export interface ApplicationTable {
 export interface AccountTable {
   id: string;
   kind: "person" | "agent";
-  /** Shown as written; unique without regard to case. */
-  username: string;
+  /** The person's or agent's name, 1 to 50 characters. */
+  name: string;
   /** The person who owns an agent; null for people. */
   owner_id: string | null;
   created_at: DefaultTime;
@@ -45,7 +48,8 @@ export interface AuditEventTable {
   account_id: string | null;
   /** Who did it, when not the account itself (an administrator, an agent). */
   actor_account_id: string | null;
-  application: string | null;
+  /** The application it happened in; null for the account system as a whole. */
+  application_id: string | null;
   action: string;
   detail: ColumnType<Record<string, unknown>, Record<string, unknown> | undefined, never>;
 }
@@ -67,6 +71,51 @@ export interface CodeRequestTable {
   used_at: Date | null;
   /** When a newer request for the same contact and purpose replaced it. */
   voided_at: Date | null;
+}
+
+/**
+ * A unique name to reference something by (`@luis-pires`): one namespace for accounts now and organizations later,
+ * unique without regard to case. Stored without the `@`.
+ */
+export interface IdentifierTable {
+  id: string;
+  /** Shown as written. */
+  value: string;
+  /** The account it names (exactly one owner per identifier). */
+  account_id: string | null;
+  created_at: DefaultTime;
+}
+
+/** An account's picture: the file itself is in object storage, under its id. */
+export interface AccountPictureTable {
+  id: string;
+  account_id: string;
+  content_type: "image/jpeg" | "image/png" | "image/gif" | "image/webp" | "image/avif" | "image/svg+xml";
+  byte_size: number;
+  width: number;
+  height: number;
+  created_at: DefaultTime;
+}
+
+/** An authenticator app (TOTP) for two-factor, its secret encrypted with a key outside the database. */
+export interface TotpCredentialTable {
+  id: string;
+  account_id: string;
+  secret_ciphertext: string;
+  /** The last 30-second step accepted, so a code can't be replayed. */
+  last_used_step: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  created_at: DefaultTime;
+  /** When the first correct code turned it on; null while it is being set up. */
+  confirmed_at: Date | null;
+}
+
+/** A single-use recovery code, stored only as an HMAC. */
+export interface RecoveryCodeTable {
+  id: string;
+  account_id: string;
+  code_hash: string;
+  created_at: DefaultTime;
+  used_at: Date | null;
 }
 
 /** One browser (the account site's cookie holds its token; only the token's hash is stored). */
@@ -99,6 +148,10 @@ export interface AccountDatabase {
   code_request: CodeRequestTable;
   browser_session: BrowserSessionTable;
   account_session: AccountSessionTable;
+  identifier: IdentifierTable;
+  account_picture: AccountPictureTable;
+  totp_credential: TotpCredentialTable;
+  recovery_code: RecoveryCodeTable;
 }
 
 /** The account tables and the protection tables (rate limits, spending caps, used challenges) the server needs. */

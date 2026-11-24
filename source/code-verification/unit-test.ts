@@ -89,7 +89,15 @@ test("a malformed request id is simply unknown", async () => {
 });
 
 test("gives back the account that asked, and uses the current time by default", async () => {
-  const accountId = "0198f5a2-7a4c-7000-8000-000000000001";
+  const created = await (
+    await import("@sharadox/account-web-library/person-account")
+  ).createPersonAccount(memory.database, {
+    name: "A Person",
+    identifier: "asker",
+    contact: { kind: "email", value: "asker@example.com" },
+  });
+  if (!created.created) throw new Error("not created");
+  const { accountId } = created;
   const { requestId, code } = await requestCode(memory.database, { purpose: "step-up", accountId, contact, pepper });
   expect(await verifyCode(memory.database, { requestId, code, purpose: "step-up", pepper })).toEqual({
     valid: true,

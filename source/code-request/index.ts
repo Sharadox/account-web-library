@@ -19,7 +19,7 @@ export const CODE_PURPOSES: readonly CodePurpose[] = ["sign-in", "contact-verifi
  */
 export async function requestCode(
   database: Kysely<AccountDatabase>,
-  { purpose, contact, accountId, pepper, length = 8, lifetimeSeconds = 600, now = Date.now() }: CodeRequestOptions,
+  { purpose, contact, accountId, pepper, length = 6, lifetimeSeconds = 600, now = Date.now() }: CodeRequestOptions,
 ): Promise<CodeRequest> {
   if (!CODE_PURPOSES.includes(purpose)) throw new Error(`unknown code purpose "${purpose}"`);
   const { kind, value } = normalizeContact(contact);

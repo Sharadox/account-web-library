@@ -16,7 +16,7 @@ type Refusal = Extract<CodeVerificationResult, { valid: false }>["reason"];
 
 export type SignInFinishResult =
   | { status: "signed-in"; accountId: string; token: string }
-  /** No account has this contact yet: ask for a username, then `finishSignUp` with the ticket. */
+  /** No account has this contact yet: ask for an identifier, then `finishSignUp` with the ticket. */
   | { status: "sign-up"; ticket: string }
   | { status: "refused"; reason: Refusal }
   | { status: "refused"; reason: "rate-limit"; retryAfterSeconds: number };

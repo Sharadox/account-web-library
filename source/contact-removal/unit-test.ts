@@ -13,7 +13,8 @@ let firstContactId: string;
 beforeEach(async () => {
   memory = await createTestAccountDatabase();
   const result = await createPersonAccount(memory.database, {
-    username: "luis",
+    name: "A Person",
+    identifier: "luis",
     contact: { kind: "email", value: "a@example.com" },
   });
   if (!result.created) throw new Error("not created");

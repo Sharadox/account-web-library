@@ -5,7 +5,7 @@ const sign = (secret: string, body: string) => createHmac("sha256", secret).upda
 
 /**
  * A short-lived, signed ticket carrying data between two steps (a proved contact from the code step to the
- * username step) without storing anything: the data can be read, but not changed or used for another purpose.
+ * identifier step) without storing anything: the data can be read, but not changed or used for another purpose.
  *
  * @example
  * const ticket = createTicket({ contact }, { secret, purpose: "sign-up", lifetimeSeconds: 900 });

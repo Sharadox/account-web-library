@@ -9,13 +9,13 @@ import { deriveSecret } from "@sharadox/account-web-library/secret-derivation";
 import { createTicket } from "@sharadox/account-web-library/signed-ticket";
 import type { SignInFinish, SignInFinishResult } from "@sharadox/account-web-library/sign-in-finish/type";
 
-/** How long a sign-up ticket lasts: time to choose a username. */
+/** How long a sign-up ticket lasts: time to choose an identifier. */
 const SIGN_UP_SECONDS = 900;
 
 /**
  * The second step: the typed code. Guesses are limited per address group (and per request by `verifyCode`). With the
  * right code, an account with that contact is signed in on the browser (the new token goes in its cookie); a contact
- * with no account gets a sign-up ticket for choosing a username.
+ * with no account gets a sign-up ticket for choosing an identifier.
  *
  * @example
  * const result = await finishSignIn(server, { requestId, code, address, token: cookie });

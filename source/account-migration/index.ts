@@ -137,6 +137,113 @@ export const accountMigrations: Migration[] = [
       create index account_session_account on account_session (account_id);
     `,
   },
+  {
+    name: "0004-identifier-name-picture-second-factor",
+    sql: `
+      alter table application rename constraint application_id_check to application_key_check;
+      alter table application rename column id to key;
+      alter table application drop constraint application_pkey;
+      alter table application add constraint application_key_key unique (key);
+      alter table application
+        add column id uuid primary key default uuidv7() check (uuid_extract_version(id) = 7);
+
+      alter table audit_event add column application_id uuid
+        references application (id) on update cascade on delete restrict;
+      alter table audit_event disable trigger audit_event_unchangeable;
+      update audit_event set application_id = application.id from application
+        where audit_event.application = application.key;
+      alter table audit_event enable trigger audit_event_unchangeable;
+      alter table audit_event drop column application;
+
+      create table identifier (
+        id uuid primary key check (uuid_extract_version(id) = 7),
+        value text not null
+          check (length(value) between 1 and 50 and value ~ '^[A-Za-z0-9]+([-_.][A-Za-z0-9]+)*$'),
+        account_id uuid unique references account (id) on update cascade on delete cascade,
+        created_at timestamptz not null default now(),
+        constraint identifier_owner_check check (num_nonnulls(account_id) = 1)
+      );
+      create unique index identifier_value_key on identifier (lower(value));
+      insert into identifier (id, value, account_id) select uuidv7(), username, id from account;
+
+      alter table account add column name text
+        check (length(name) between 1 and 50 and name = btrim(name) and name !~ '[[:cntrl:]]');
+      update account set name = username;
+      alter table account alter column name set not null;
+      alter table account drop column username;
+
+      create function account_require_identifier(target uuid) returns void
+      language plpgsql set search_path = public as $$
+      begin
+        if exists (select 1 from account where id = target)
+          and not exists (select 1 from identifier where account_id = target) then
+          raise exception 'an account needs an identifier' using errcode = '23514';
+        end if;
+      end $$;
+      create function account_identifier_after_insert() returns trigger
+      language plpgsql set search_path = public as $$
+      begin
+        perform account_require_identifier(new.id);
+        return null;
+      end $$;
+      create function identifier_after_change() returns trigger
+      language plpgsql set search_path = public as $$
+      begin
+        if old.account_id is not null then
+          perform account_require_identifier(old.account_id);
+        end if;
+        return null;
+      end $$;
+      create constraint trigger account_identifier after insert on account
+        deferrable initially deferred for each row execute function account_identifier_after_insert();
+      create constraint trigger identifier_owner after update or delete on identifier
+        deferrable initially deferred for each row execute function identifier_after_change();
+
+      alter table account drop constraint account_owner_id_fkey, add constraint account_owner_id_fkey
+        foreign key (owner_id) references account (id) on update cascade on delete cascade;
+      alter table contact drop constraint contact_account_id_fkey, add constraint contact_account_id_fkey
+        foreign key (account_id) references account (id) on update cascade on delete cascade;
+      alter table account_session drop constraint account_session_browser_session_id_fkey,
+        add constraint account_session_browser_session_id_fkey foreign key (browser_session_id)
+          references browser_session (id) on update cascade on delete cascade;
+      alter table account_session drop constraint account_session_account_id_fkey,
+        add constraint account_session_account_id_fkey
+          foreign key (account_id) references account (id) on update cascade on delete cascade;
+      delete from code_request where account_id is not null
+        and not exists (select 1 from account where account.id = code_request.account_id);
+      alter table code_request add constraint code_request_account_id_fkey
+        foreign key (account_id) references account (id) on update cascade on delete cascade;
+
+      create table account_picture (
+        id uuid primary key check (uuid_extract_version(id) = 7),
+        account_id uuid not null unique references account (id) on update cascade on delete cascade,
+        content_type text not null check (content_type in
+          ('image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/svg+xml')),
+        byte_size integer not null check (byte_size between 1 and 5242880),
+        width integer not null check (width between 1 and 4096),
+        height integer not null check (height between 1 and 4096),
+        created_at timestamptz not null default now()
+      );
+
+      create table totp_credential (
+        id uuid primary key check (uuid_extract_version(id) = 7),
+        account_id uuid not null unique references account (id) on update cascade on delete cascade,
+        secret_ciphertext text not null,
+        last_used_step bigint,
+        created_at timestamptz not null default now(),
+        confirmed_at timestamptz
+      );
+
+      create table recovery_code (
+        id uuid primary key check (uuid_extract_version(id) = 7),
+        account_id uuid not null references account (id) on update cascade on delete cascade,
+        code_hash text not null,
+        created_at timestamptz not null default now(),
+        used_at timestamptz,
+        unique (account_id, code_hash)
+      );
+    `,
+  },
 ];
 
 /**

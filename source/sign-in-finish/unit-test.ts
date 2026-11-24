@@ -43,7 +43,8 @@ const codeFor = async (value: string, now = 0) => {
 
 test("signs an existing account in with the right code, joining the browser's other accounts", async () => {
   const created = await createPersonAccount(memory.database, {
-    username: "ana",
+    name: "A Person",
+    identifier: "ana",
     contact: { kind: "email", value: "ana@example.com" },
   });
   if (!created.created) throw new Error("not created");
@@ -52,7 +53,7 @@ test("signs an existing account in with the right code, joining the browser's ot
   if (result.status !== "signed-in") throw new Error(result.status);
   expect(result.accountId).toBe(created.accountId);
   const session = await readBrowserSession(memory.database, { token: result.token, now: 2_000 });
-  expect(session!.accounts.map(({ username }) => username)).toEqual(["ana"]);
+  expect(session!.accounts.map(({ identifier }) => identifier)).toEqual(["ana"]);
 });
 
 test("for a contact with no account, gives a sign-up ticket instead", async () => {
@@ -83,7 +84,8 @@ test("refuses wrong codes with the reason, and limits guesses per address group"
 
 test("a contact that can't be used for signing in is refused like an unknown code", async () => {
   const created = await createPersonAccount(memory.database, {
-    username: "ana",
+    name: "A Person",
+    identifier: "ana",
     contact: { kind: "email", value: "ana@example.com" },
   });
   if (!created.created) throw new Error("not created");

@@ -3,9 +3,9 @@ import { createOneTimeCode, hashOneTimeCode, matchesOneTimeCode } from "@sharado
 
 const pepper = "a pepper from the environment, long enough";
 
-test("codes are 8 digits by default, leading zeros kept", () => {
-  for (let i = 0; i < 200; i++) expect(createOneTimeCode()).toMatch(/^\d{8}$/);
-  expect(createOneTimeCode(6)).toMatch(/^\d{6}$/);
+test("codes are 6 digits by default, leading zeros kept", () => {
+  for (let i = 0; i < 200; i++) expect(createOneTimeCode()).toMatch(/^\d{6}$/);
+  expect(createOneTimeCode(8)).toMatch(/^\d{8}$/);
 });
 
 test("codes spread over every digit", () => {

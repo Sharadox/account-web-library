@@ -7,10 +7,11 @@ import { hashSessionToken } from "@sharadox/account-web-library/session-token";
 import { createTestAccountDatabase } from "@sharadox/account-web-library/test-database";
 
 let memory: MemoryDatabase<AccountDatabase>;
-const person = async (username: string) => {
+const person = async (identifier: string) => {
   const result = await createPersonAccount(memory.database, {
-    username,
-    contact: { kind: "email", value: `${username}@example.com` },
+    name: "A Person",
+    identifier,
+    contact: { kind: "email", value: `${identifier}@example.com` },
   });
   if (!result.created) throw new Error("not created");
   return result.accountId;

@@ -12,7 +12,8 @@ const email = (value: string) => ({ kind: "email", value });
 
 test("creates a person with a verified sign-in contact and records it", async () => {
   const result = await createPersonAccount(memory.database, {
-    username: "Luis-Pires",
+    name: "Luis Pires",
+    identifier: "Luis-Pires",
     contact: email("Luis@Example.com"),
     now: 5_000,
   });
@@ -21,11 +22,14 @@ test("creates a person with a verified sign-in contact and records it", async ()
     {
       id: result.accountId,
       kind: "person",
-      username: "Luis-Pires",
+      name: "Luis Pires",
       owner_id: null,
       created_at: new Date(5_000),
       last_active_at: new Date(5_000),
     },
+  ]);
+  expect(await memory.database.selectFrom("identifier").select(["value", "account_id"]).execute()).toEqual([
+    { value: "Luis-Pires", account_id: result.accountId },
   ]);
   expect(await memory.database.selectFrom("contact").selectAll().execute()).toEqual([
     {
@@ -43,32 +47,68 @@ test("creates a person with a verified sign-in contact and records it", async ()
   ]);
 });
 
-test("refuses a username outside the rules or already used in any case", async () => {
-  expect(await createPersonAccount(memory.database, { username: "a--b", contact: email("a@example.com") })).toEqual({
+test("refuses an identifier outside the rules or already used in any case", async () => {
+  expect(
+    await createPersonAccount(memory.database, {
+      name: "A Person",
+      identifier: "a--b",
+      contact: email("a@example.com"),
+    }),
+  ).toEqual({
     created: false,
-    reason: "username-invalid",
+    reason: "identifier-invalid",
   });
-  await createPersonAccount(memory.database, { username: "abc", contact: email("a@example.com") });
-  expect(await createPersonAccount(memory.database, { username: "aBc", contact: email("b@example.com") })).toEqual({
+  await createPersonAccount(memory.database, { name: "A Person", identifier: "abc", contact: email("a@example.com") });
+  expect(
+    await createPersonAccount(memory.database, {
+      name: "A Person",
+      identifier: "aBc",
+      contact: email("b@example.com"),
+    }),
+  ).toEqual({
     created: false,
-    reason: "username-taken",
+    reason: "identifier-taken",
   });
 });
 
+test("refuses a name outside 1 to 50 characters, trimmed, with no control characters", async () => {
+  for (const name of ["", "  ", "a".repeat(51), "Luis\u0000"]) {
+    expect(
+      await createPersonAccount(memory.database, { name, identifier: "luis", contact: email("l@example.com") }),
+    ).toEqual({ created: false, reason: "name-invalid" });
+  }
+  const trimmed = await createPersonAccount(memory.database, {
+    name: "  Luís  Pires ",
+    identifier: "luis",
+    contact: email("l@example.com"),
+  });
+  expect(trimmed.created).toBe(true);
+  expect(await memory.database.selectFrom("account").select("name").execute()).toEqual([{ name: "Luís Pires" }]);
+});
+
 test("refuses a contact another account has verified, and leaves nothing behind", async () => {
-  await createPersonAccount(memory.database, { username: "first", contact: email("shared@example.com") });
+  await createPersonAccount(memory.database, {
+    name: "A Person",
+    identifier: "first",
+    contact: email("shared@example.com"),
+  });
   expect(
-    await createPersonAccount(memory.database, { username: "second", contact: email("SHARED@example.com") }),
+    await createPersonAccount(memory.database, {
+      name: "A Person",
+      identifier: "second",
+      contact: email("SHARED@example.com"),
+    }),
   ).toEqual({
     created: false,
     reason: "contact-taken",
   });
-  expect(await memory.database.selectFrom("account").select("username").execute()).toEqual([{ username: "first" }]);
+  expect(await memory.database.selectFrom("identifier").select("value").execute()).toEqual([{ value: "first" }]);
+  expect(await memory.database.selectFrom("account").select("id").execute()).toHaveLength(1);
 });
 
 test("passes on database errors it doesn't expect", async () => {
   await memory.database.schema.dropTable("audit_event").execute();
   await expect(
-    createPersonAccount(memory.database, { username: "x", contact: email("x@example.com") }),
+    createPersonAccount(memory.database, { name: "A Person", identifier: "x", contact: email("x@example.com") }),
   ).rejects.toThrow();
 });

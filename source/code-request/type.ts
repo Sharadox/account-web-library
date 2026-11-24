@@ -10,7 +10,7 @@ export interface CodeRequestOptions {
   accountId?: string;
   /** At least 32 characters, kept outside the database. */
   pepper: string;
-  /** Digits (8 by default). */
+  /** Digits (6 by default). */
   length?: number;
   /** 600 (10 minutes) by default. */
   lifetimeSeconds?: number;

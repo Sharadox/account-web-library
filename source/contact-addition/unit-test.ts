@@ -10,7 +10,8 @@ let accountId: string;
 beforeEach(async () => {
   memory = await createTestAccountDatabase();
   const result = await createPersonAccount(memory.database, {
-    username: "luis",
+    name: "A Person",
+    identifier: "luis",
     contact: { kind: "email", value: "a@example.com" },
   });
   if (!result.created) throw new Error("not created");
@@ -47,7 +48,8 @@ test("refuses a contact the account already has, or another account has verified
     reason: "already-added",
   });
   await createPersonAccount(memory.database, {
-    username: "other",
+    name: "A Person",
+    identifier: "other",
     contact: { kind: "email", value: "other@example.com" },
   });
   expect(

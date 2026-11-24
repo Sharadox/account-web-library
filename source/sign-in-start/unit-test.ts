@@ -54,7 +54,7 @@ test("sends a code to the contact after answering, the same way whether or not a
   expect(delivered).toEqual([
     {
       contact: { kind: "email", value: "ana@example.com" },
-      code: expect.stringMatching(/^\d{8}$/),
+      code: expect.stringMatching(/^\d{6}$/),
       purpose: "sign-in",
       language: "pt-PT",
       expiresAt: new Date(600_000),
@@ -183,4 +183,33 @@ test("a delivery that fails is recorded (the error, never the code) and passed o
     },
   ]);
   expect(JSON.stringify(events)).not.toContain("ana@example.com");
+});
+
+test("sends nothing when the browser is already signed in to the contact's account", async () => {
+  const { createPersonAccount } = await import("@sharadox/account-web-library/person-account");
+  const { signIn } = await import("@sharadox/account-web-library/account-sign-in");
+  const created = await createPersonAccount(memory.database, {
+    name: "Ana",
+    identifier: "ana",
+    contact: { kind: "email", value: "ana@example.com" },
+  });
+  if (!created.created) throw new Error("not created");
+  const { token } = await signIn(memory.database, { accountId: created.accountId, now: 0 });
+  const signedIn = (value: string, browser: string | undefined) =>
+    solved().then((solution) =>
+      startSignIn(server, {
+        contact: { kind: "email", value },
+        solution,
+        address: "203.0.113.7",
+        language: "en",
+        token: browser,
+        now: 0,
+      }),
+    );
+  expect(await signedIn("ANA@example.com", token)).toEqual({ status: "signed-in", accountId: created.accountId });
+  expect(await memory.database.selectFrom("code_request").select("id").execute()).toEqual([]);
+  // Another browser, or another contact, still gets a code.
+  expect((await signedIn("ana@example.com", undefined)).status).toBe("sent");
+  expect((await signedIn("other@example.com", token)).status).toBe("sent");
+  expect((await signedIn("ana@example.com", "an-unknown-token")).status).toBe("sent");
 });

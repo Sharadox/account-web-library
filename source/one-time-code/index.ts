@@ -2,13 +2,13 @@ import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import type { OneTimeCodeHashOptions } from "@sharadox/account-web-library/one-time-code/type";
 
 /**
- * A new one-time code: `length` digits (8 by default, one in a hundred million), each drawn uniformly by the
+ * A new one-time code: `length` digits (6 by default, one in a million: rate limits and 5 attempts per code keep guessing hopeless), each drawn uniformly by the
  * operating system's secure random source. Send it to the contact; store only `hashOneTimeCode`.
  *
  * @example
- * const code = createOneTimeCode(); // "04718263"
+ * const code = createOneTimeCode(); // "047182"
  */
-export function createOneTimeCode(length = 8): string {
+export function createOneTimeCode(length = 6): string {
   return Array.from({ length }, () => randomInt(10)).join("");
 }
 

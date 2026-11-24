@@ -9,8 +9,8 @@ Passwordless accounts for web applications, built on open standards, with no aut
 
 One deployment per company. Everything company-specific is configuration.
 
-**Status: 0.1.0, in progress.** Building blocks (usernames, one-time codes, TOTP, recovery codes, email contacts,
-effective permissions, ban lengths) and account storage in Postgres (accounts, usernames, contacts, audit log).
+**Status: 0.1.0, in progress.** Building blocks (identifiers, one-time codes, TOTP, recovery codes, email contacts,
+effective permissions, ban lengths) and account storage in Postgres (accounts, identifiers, contacts, audit log).
 Sign-in codes, sessions and the OpenID Connect server come next (see `CHANGELOG.md`).
 
 ## Install
@@ -43,8 +43,8 @@ Every key is derived from it with `deriveSecret`.
    - `signed-in`, with `{ accountId, token }`: set `token` as the cookie;
    - `sign-up`, with `{ ticket }`, for a contact with no account;
    - `refused`, with the code's reason or `rate-limit`.
-4. `finishSignUp(server, { ticket, username, token, now? })` creates the account and signs it in. A refused
-   username can be tried again with the same ticket, which lasts 15 minutes.
+4. `finishSignUp(server, { ticket, identifier, token, now? })` creates the account and signs it in. A refused
+   identifier can be tried again with the same ticket, which lasts 15 minutes.
 
 `DEFAULT_SIGN_IN_LIMITS` (`account-server`):
 
@@ -66,7 +66,7 @@ migrates: the tables are tracked in their own table (`account_migration`). Type 
 (`account-database/type`). The database enforces the rules itself, as the last line behind the code:
 
 - ids are UUIDv7;
-- usernames follow the rules and are unique without regard to case;
+- identifiers follow the rules and are unique without regard to case;
 - a verified contact belongs to one account only;
 - every person keeps at least one verified sign-in contact, checked when a change commits;
 - agents have an owner (and go with them);
@@ -79,17 +79,17 @@ dependency).
 
 Each export has its own entry point (`@sharadox/account-web-library/<name>`).
 
-### `username`: `checkUsername(name)`, `usernameKey(name)`, `USERNAME_MAXIMUM_LENGTH`
+### `identifier`: `checkIdentifier(name)`, `identifierKey(name)`, `IDENTIFIER_MAXIMUM_LENGTH`
 
 The rules:
 
 - 1 to 50 characters;
 - A–Z, a–z and 0–9, with `-`, `_` or `.` allowed only between letters or digits, never two in a row;
-- shown as written, but unique without regard to case: `abc` and `aBc` are the same username.
+- shown as written, but unique without regard to case: `abc` and `aBc` are the same identifier.
 
 ```ts
-checkUsername("Luis-Pires"); // { valid: true, username: "Luis-Pires", key: "luis-pires" }
-checkUsername("a--b"); // { valid: false, reason: "characters" }
+checkIdentifier("Luis-Pires"); // { valid: true, identifier: "Luis-Pires", key: "luis-pires" }
+checkIdentifier("a--b"); // { valid: false, reason: "characters" }
 ```
 
 Store `key` under a unique index.
@@ -145,20 +145,20 @@ Codes like `7KQM-W3HD-9TXA` (about 59 bits each), from characters that can't be 
 - `normalizeEmail` trims and lowercases, and throws for text that isn't an email address.
 - `emailLedgerForm` also drops `+tags`, for the banned-contact ledger.
 
-### `person-account`: `createPersonAccount(database, { username, contact, now? })`
+### `person-account`: `createPersonAccount(database, { identifier, contact, now? })`
 
 Creates a person with the contact their one-time code just proved, stored verified, and records `account.created`.
-Returns `{ created: true, accountId, contactId }`, or `{ created: false, reason }` with `username-invalid`,
-`username-taken` or `contact-taken`.
+Returns `{ created: true, accountId, contactId }`, or `{ created: false, reason }` with `identifier-invalid`,
+`identifier-taken` or `contact-taken`.
 
-### `username-availability`: `usernameAvailability(database, username)` → `available` | `taken` | `invalid`
+### `identifier-availability`: `identifierAvailability(database, identifier)` → `available` | `taken` | `invalid`
 
 Rate limit it: it tells whether an account exists.
 
-### `username-change`: `changeUsername(database, { accountId, username })`
+### `identifier-change`: `changeIdentifier(database, { accountId, identifier })`
 
-Any time, and the old name is free at once; the audit log keeps `{ from, to }`. Reasons: `username-invalid`,
-`username-taken`, `no-account`.
+Any time, and the old name is free at once; the audit log keeps `{ from, to }`. Reasons: `identifier-invalid`,
+`identifier-taken`, `no-account`.
 
 ### `contact-lookup`: `findAccountByContact(database, contact)` → `{ accountId, contactId, signIn }` or undefined
 
@@ -201,7 +201,7 @@ points to any number of account sessions, so the selector has no limit and the c
   → `{ token, browserSessionId, accountSessionId }`. Adds the account to the browser's accounts (or starts a
   browser session). The browser gets a **new token at every sign-in**: set it as the cookie.
 - `readBrowserSession(database, { token, idleSeconds = 7 days, now? })` → `{ browserSessionId, accounts }` or
-  undefined. `accounts` are `{ accountSessionId, accountId, username, signedInAt, secondFactorAt }`, in sign-in
+  undefined. `accounts` are `{ accountSessionId, accountId, identifier, signedInAt, secondFactorAt }`, in sign-in
   order, without ended or idle sessions. It marks them as seen.
 - `signOut(database, { token, accountId? })` → `{ signedOut }`: one account, or all and the browser session.
 - `revokeAccountSessions(database, { accountId, actorAccountId? })` → count: signed out on every browser.

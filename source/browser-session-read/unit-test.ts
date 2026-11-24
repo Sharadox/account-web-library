@@ -7,10 +7,11 @@ import { createPersonAccount } from "@sharadox/account-web-library/person-accoun
 import { createTestAccountDatabase } from "@sharadox/account-web-library/test-database";
 
 let memory: MemoryDatabase<AccountDatabase>;
-const person = async (username: string) => {
+const person = async (identifier: string) => {
   const result = await createPersonAccount(memory.database, {
-    username,
-    contact: { kind: "email", value: `${username}@example.com` },
+    name: "A Person",
+    identifier,
+    contact: { kind: "email", value: `${identifier}@example.com` },
   });
   if (!result.created) throw new Error("not created");
   return result.accountId;
@@ -31,14 +32,18 @@ test("lists the accounts signed in on the browser, in the order they signed in, 
       {
         accountSessionId: first.accountSessionId,
         accountId: one,
-        username: "one",
+        identifier: "one",
+        name: "A Person",
+        pictureId: null,
         signedInAt: new Date(1_000),
         secondFactorAt: null,
       },
       {
         accountSessionId: second.accountSessionId,
         accountId: two,
-        username: "Two",
+        identifier: "Two",
+        name: "A Person",
+        pictureId: null,
         signedInAt: new Date(2_000),
         secondFactorAt: new Date(2_000),
       },

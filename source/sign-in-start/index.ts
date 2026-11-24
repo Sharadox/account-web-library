@@ -5,7 +5,9 @@ import { spendFromCap } from "@sharadox/protection-web-library/spending-cap";
 import { signInLimits } from "@sharadox/account-web-library/account-server";
 import type { AccountServer } from "@sharadox/account-web-library/account-server/type";
 import { recordAuditEvent } from "@sharadox/account-web-library/audit-event";
+import { readBrowserSession } from "@sharadox/account-web-library/browser-session-read";
 import { requestCode } from "@sharadox/account-web-library/code-request";
+import { findAccountByContact } from "@sharadox/account-web-library/contact-lookup";
 import { normalizeContact } from "@sharadox/account-web-library/contact-kind";
 import type { Contact } from "@sharadox/account-web-library/contact-kind/type";
 import { deriveSecret } from "@sharadox/account-web-library/secret-derivation";
@@ -20,7 +22,8 @@ import type { SignInStart, SignInStartResult } from "@sharadox/account-web-libra
  * 4. the channel's daily spending cap (past it, sending pauses: it never spends);
  * 5. a new code, sent by `deliver` after answering; each send is recorded in the audit log
  *    (`code.sent`, or `code.delivery-failed` with the error, never the code; a failure is thrown).
- * The answer never depends on whether an account exists, so nobody can probe for accounts.
+ * A browser already signed in to the account with that verified contact gets `signed-in` instead, and nothing is sent.
+ * Otherwise the answer never depends on whether an account exists, so nobody can probe for accounts.
  *
  * @example
  * const result = await startSignIn(server, { contact, solution, address: clientAddress(request), language });
@@ -28,7 +31,7 @@ import type { SignInStart, SignInStartResult } from "@sharadox/account-web-libra
  */
 export async function startSignIn(
   server: AccountServer,
-  { contact, solution, address, language, now = Date.now() }: SignInStart,
+  { contact, solution, address, language, token, now = Date.now() }: SignInStart,
 ): Promise<SignInStartResult> {
   const limits = signInLimits(server);
   const proof = await redeemSolution(server.database, solution, {
@@ -44,6 +47,12 @@ export async function startSignIn(
   }
   const channel = server.channels.find(({ kind }) => kind === normalized.kind);
   if (!channel) return { status: "refused", reason: "contact" };
+  if (token) {
+    const owner = await findAccountByContact(server.database, normalized);
+    const browser = owner && (await readBrowserSession(server.database, { token, now }));
+    if (owner && browser?.accounts.some(({ accountId }) => accountId === owner.accountId))
+      return { status: "signed-in", accountId: owner.accountId };
+  }
   const rate = await limitRate(
     server.database,
     [
