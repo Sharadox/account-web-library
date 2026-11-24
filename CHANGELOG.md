@@ -23,5 +23,9 @@ First building blocks:
 - sessions for the account selector (`signIn`, `readBrowserSession`, `signOut`, `revokeAccountSessions`,
   `pruneSessions`, `createSessionToken`, `hashSessionToken`): one browser cookie, any number of accounts, a new token
   at every sign-in;
+- the sign-in flow (`issueChallenge`, `startSignIn`, `finishSignIn`, `finishSignUp`) with proof of work, layered
+  rate limits and daily sending caps, on one `AccountServer` and its `DEFAULT_SIGN_IN_LIMITS`; `deriveSecret` (HKDF
+  keys from one `ACCOUNT_SECRET`), signed tickets (`createTicket`, `readTicket`), `AccountServerDatabase` and
+  `createTestServerDatabase`;
 - contact channels (`ContactChannel`) and the email channel (`createEmailChannel`), in English and European
   Portuguese.

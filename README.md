@@ -19,6 +19,44 @@ Sign-in codes, sessions and the OpenID Connect server come next (see `CHANGELOG.
 pnpm add @sharadox/account-web-library
 ```
 
+## The sign-in flow
+
+Signing up and signing in are the same three steps, on one `AccountServer`:
+`{ database, channels, secret, limits? }`. The database holds the account tables and protection-web-library's
+(`migrateProtection` and `migrateAccount`). `secret` is `ACCOUNT_SECRET`: at least 32 random characters, server only.
+Every key is derived from it with `deriveSecret`.
+
+1. `issueChallenge(server)` gives the page a proof-of-work challenge, which the browser solves in the background.
+2. `startSignIn(server, { contact, solution, address, language, now? })` checks, in this order:
+   - the proof of work (single use);
+   - the contact and its channel;
+   - rate limits per contact, per address group and for everyone;
+   - the channel's daily spending cap.
+
+   It answers `{ status: "sent", requestId, deliver }`, and you call `deliver` after answering (Next.js `after()`).
+   Otherwise it answers `refused` with `proof`, `contact`, `unavailable` (the cap is reached: sending pauses), or
+   `rate-limit` with `retryAfterSeconds`. The answer never depends on whether an account exists.
+
+3. `finishSignIn(server, { requestId, code, address, token, now? })` limits guesses per address group. It answers:
+   - `signed-in`, with `{ accountId, token }`: set `token` as the cookie;
+   - `sign-up`, with `{ ticket }`, for a contact with no account;
+   - `refused`, with the code's reason or `rate-limit`.
+4. `finishSignUp(server, { ticket, username, token, now? })` creates the account and signs it in. A refused
+   username can be tried again with the same ticket, which lasts 15 minutes.
+
+`DEFAULT_SIGN_IN_LIMITS` (`account-server`):
+
+| Limit                     | Default                           |
+| ------------------------- | --------------------------------- |
+| `perContact`              | 3 codes, then 1 every 5 minutes   |
+| `perAddress`              | 10, then 1 a minute               |
+| `global`                  | 200, then 1 a second              |
+| `verificationsPerAddress` | 20 typed codes, then 1 every 30 s |
+| `dailySendsPerChannel`    | 2,000                             |
+| `difficulty`              | 14 bits                           |
+
+`createTicket` and `readTicket` (`signed-ticket`) carry signed, short-lived data between steps.
+
 ## Storage
 
 Postgres through Kysely (`@sharadox/database-web-library`). Run `migrateAccount(database)` when the application

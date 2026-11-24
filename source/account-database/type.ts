@@ -1,3 +1,4 @@
+import type { ProtectionDatabase } from "@sharadox/protection-web-library/protection-database/type";
 import type { ColumnType, Generated } from "kysely";
 
 /** A timestamp the database fills in when not given. */
@@ -99,3 +100,6 @@ export interface AccountDatabase {
   browser_session: BrowserSessionTable;
   account_session: AccountSessionTable;
 }
+
+/** The account tables and the protection tables (rate limits, spending caps, used challenges) the server needs. */
+export type AccountServerDatabase = AccountDatabase & ProtectionDatabase;
