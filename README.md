@@ -134,6 +134,23 @@ Verified contacts only, normalized first.
 
 Each is recorded in the audit log. Ask for a fresh code first (step-up) and tell the other contacts.
 
+### `code-request`: `requestCode(database, { purpose, contact, accountId?, pepper, length = 8, lifetimeSeconds = 600, now? })` → `{ requestId, code, contact, expiresAt }`
+
+Starts a one-time code for `sign-in`, `contact-verification` or `step-up`.
+
+- Only an HMAC bound to the purpose and request is stored.
+- A new request replaces the open one for the same contact and purpose.
+- Send the code after answering the request, so timing reveals nothing. Rate limit and cap the sends first
+  (`limitRate`, `spendFromCap` from protection-web-library).
+
+### `code-verification`: `verifyCode(database, { requestId, code, purpose, pepper, maximumAttempts = 5, now? })`
+
+Returns `{ valid: true, contact, accountId }` (the account that asked, null for sign-in), or `{ valid: false, reason }`
+with `unknown`, `used`, `replaced`, `expired`, `attempts` or `wrong`. The row is locked, so concurrent guesses can't
+pass the limit; after the last attempt even the right code is refused.
+
+### `code-request-prune`: `pruneCodeRequests(database, { before })` → deleted count
+
 ### `contact-kind`: `normalizeContact({ kind, value })`, `CONTACT_KINDS`
 
 `email` in this version; unknown kinds and invalid values throw.

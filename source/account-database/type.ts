@@ -49,10 +49,30 @@ export interface AuditEventTable {
   detail: ColumnType<Record<string, unknown>, Record<string, unknown> | undefined, never>;
 }
 
+/** A one-time code sent to a contact, stored only as an HMAC bound to its purpose and request. */
+export interface CodeRequestTable {
+  id: string;
+  /** `sign-in`, `contact-verification` or `step-up`. */
+  purpose: string;
+  /** The account asking (step-up, contact verification); null when signing in. */
+  account_id: string | null;
+  kind: string;
+  value: string;
+  code_hash: string;
+  created_at: Date;
+  expires_at: Date;
+  attempts: Generated<number>;
+  /** When the right code came back. */
+  used_at: Date | null;
+  /** When a newer request for the same contact and purpose replaced it. */
+  voided_at: Date | null;
+}
+
 /** The tables `migrateAccount` creates, for typing a Kysely instance. */
 export interface AccountDatabase {
   application: ApplicationTable;
   account: AccountTable;
   contact: ContactTable;
   audit_event: AuditEventTable;
+  code_request: CodeRequestTable;
 }

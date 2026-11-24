@@ -45,6 +45,7 @@ test("applies once, tracked in its own table, and knows the account application"
     "account_migration",
     "application",
     "audit_event",
+    "code_request",
     "contact",
   ]);
 });
