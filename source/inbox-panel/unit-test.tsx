@@ -30,9 +30,33 @@ test("lists them, marks one or all read, deletes one, and shows more", async () 
   expect(actions.remove).toHaveBeenCalledWith("2");
   expect(screen.getAllByRole("listitem")).toHaveLength(1);
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Show more" })));
-  expect(actions.loadMore).toHaveBeenCalledWith("3");
+  // Older than the last one loaded (even if it was just deleted).
+  expect(actions.loadMore).toHaveBeenCalledWith("2");
   expect(screen.getAllByRole("listitem")).toHaveLength(2);
   expect(screen.queryByRole("button", { name: "Show more" })).toBeNull();
+});
+
+test("marking read and deleting show at once, and go back if refused", async () => {
+  let finish: (answer: { status: "done" } | { status: "refused"; reason: string }) => void = () => {};
+  const pending = () =>
+    new Promise<{ status: "done" } | { status: "refused"; reason: string }>((resolve) => (finish = resolve));
+  const actions = { loadMore: vi.fn(), markRead: vi.fn(pending), remove: vi.fn(pending) };
+  renderAccountScreen(<InboxPanel locale="en" notifications={first} unread={1} more={false} {...actions} />);
+  fireEvent.click(screen.getByRole("button", { name: "Mark as read" }));
+  expect(screen.queryByRole("button", { name: "Mark as read" })).toBeNull();
+  await act(async () => finish({ status: "refused", reason: "generic" }));
+  expect(screen.getByRole("button", { name: "Mark as read" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Mark all as read" }));
+  expect(screen.queryByRole("button", { name: "Mark as read" })).toBeNull();
+  await act(async () => finish({ status: "refused", reason: "generic" }));
+  expect(screen.getByRole("button", { name: "Mark all as read" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Mark all as read" }));
+  await act(async () => finish({ status: "done" }));
+  expect(screen.queryByRole("button", { name: "Mark all as read" })).toBeNull();
+  fireEvent.click(screen.getAllByRole("button", { name: "Delete" })[0]!);
+  expect(screen.getAllByRole("listitem")).toHaveLength(1);
+  await act(async () => finish({ status: "refused", reason: "generic" }));
+  expect(screen.getAllByRole("listitem")).toHaveLength(2);
 });
 
 test("an empty inbox says so", () => {

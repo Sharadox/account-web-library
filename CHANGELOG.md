@@ -6,6 +6,8 @@ What changed in each version of `@sharadox/account-web-library`, newest first.
 
 First building blocks:
 
+- the overview takes the whole width (the side menu's column only when there is a side menu); a chosen or removed picture, a notification marked read or deleted show at once and go back if refused; a device being signed out shows its loader;
+
 - screens that never wait: each area is one page whose side menu jumps to its sections (`AccountShell` sits in a
   layout and stays between areas, `AccountSection`), switches flip at once and saved values show at once with a
   loader (`PendingMark`), going back if refused, loaders shaped like what comes (`Skeleton` shapes), the code pop-up

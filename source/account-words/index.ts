@@ -269,6 +269,7 @@ export const ACCOUNT_WORDS = {
     signedInAt: { en: "Signed in", pt: "Entrou" },
     lastSeen: { en: "Last seen", pt: "Visto" },
     endSession: { en: "Sign out there", pt: "Terminar sessão" },
+    signingOut: { en: "Signing out…", pt: "A terminar…" },
     activityText: {
       en: "What happened on your account over the last year.",
       pt: "O que aconteceu na sua conta no último ano.",

@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Icon } from "@sharadox/icon-web-library/icon";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
 import { AccountButton } from "@sharadox/account-web-library/account-button";
@@ -19,12 +20,17 @@ import type { DevicePanelProperties } from "@sharadox/account-web-library/device
  */
 export function DevicePanel({ locale, devices, end }: DevicePanelProperties) {
   const { run } = useAccountAction();
+  const [ending, setEnding] = useState<string | null>(null);
   const words = ACCOUNT_WORDS;
   return (
     <AccountCard>
       <ul className={styles.list}>
         {devices.map((device) => (
-          <li key={device.accountSessionId} className={styles.device}>
+          <li
+            key={device.accountSessionId}
+            className={styles.device}
+            aria-busy={ending === device.accountSessionId || undefined}
+          >
             <Icon name="device" />
             <span className={styles.about}>
               <strong>
@@ -41,9 +47,13 @@ export function DevicePanel({ locale, devices, end }: DevicePanelProperties) {
               <AccountButton
                 look="quiet"
                 icon="sign-out"
-                onClick={() =>
-                  void run(() => end(device.accountSessionId), { success: say(words.common.done, locale) })
-                }
+                pending={ending === device.accountSessionId}
+                pendingLabel={say(words.security.signingOut, locale)}
+                onClick={async () => {
+                  setEnding(device.accountSessionId);
+                  await run(() => end(device.accountSessionId), { success: say(words.common.done, locale) });
+                  setEnding(null);
+                }}
               >
                 {say(words.security.endSession, locale)}
               </AccountButton>

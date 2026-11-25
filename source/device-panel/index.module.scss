@@ -44,3 +44,7 @@
     line-height: 1.5;
   }
 }
+.device[aria-busy] {
+  opacity: 0.55;
+  transition: opacity 0.3s;
+}
