@@ -421,7 +421,7 @@ European Portuguese (`ACCOUNT_WORDS`, `say`, `explainRefusal`).
   textSoft, line, accent, accentText, danger, success, radius, smallRadius, font, fontDisplay, barHeight, shadow, and
   for fields fieldBackground, fieldBorder, fieldHeight, fieldFocus, labelSize, labelSpacing, labelCase), so a company's
   account forms can look like its own.
-- **Frame:** `ToastProvider` (notifications under the bar), `AccountActions({ locale, stepUp })` and
+- **Frame:** `ToastProvider` (from the interface library: notifications under the bar), `AccountActions({ locale, stepUp })` and
   `useAccountAction()` → `{ run, submit, pending }` (loader, notification, the code pop-up when a change needs a fresh
   code, then the action again). Actions answer `AccountAnswer`: `done`, `step-up` or `refused` with a reason.
 - **Layout:** each area is one page (`/<locale>/<area>`, the overview `/<locale>`) with its sections one under
@@ -440,10 +440,9 @@ description?, hideTitle? })` and marks the one being read.
   `AuthenticatorMethods`, `RecoveryCodes`, `DevicePanel`, `ActivityPanel`, `InboxPanel`, `PreferencePanel`,
   `DownloadPanel`, `BanPanel`, `DeletionPanel`, and for administrators `AccountAdministration`, `RoleAdministration`,
   `BanAdministration`, `AppealAdministration`, `RuleAdministration`.
-- **Pieces:** `AccountButton`, `AccountCard`, `TextField` (prefix and suffix as their own sections), `Tip`,
-  `CopyButton`, `Skeleton` (`shape`: lines, card, list, profile, cards), `Dialog` (always centered), `CodeBoxes`,
-  `CodeDialog` (`lifetimeSeconds`: a countdown, then Send a new code or Cancel; `CODE_LIFETIME_SECONDS`),
-  `EditablePanel` (`preview`: the new value shown at once), `RequiredSwitch` (flips at once, a loader on its knob,
-  back if `onChange` answers false), `PendingMark` ("Saving…" beside a value), `authenticatorLabel`.
+- **Pieces:** the generic ones come from `@sharadox/interface-web-library` (`Button`, `Card`, `TextField`, `Tip`,
+  `CopyButton`, `Skeleton`, `Dialog`, `CodeBoxes`, `Switch`, `PendingMark`, `ToastProvider`/`useToast`), dressed by
+  `AccountTheme` too. The account's own: `CodeDialog` (`lifetimeSeconds`: a countdown, then Send a new code or Cancel;
+  `CODE_LIFETIME_SECONDS`), `EditablePanel` (`preview`: the new value shown at once), `authenticatorLabel`.
 - **Emails:** every code, whatever it is for, comes in one email: "Account · Authentication Code" ("Conta · Código de
   Autenticação").

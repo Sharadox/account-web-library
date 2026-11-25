@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
-import { AccountButton } from "@sharadox/account-web-library/account-button";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Button } from "@sharadox/interface-web-library/button";
+import { Card } from "@sharadox/interface-web-library/card";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
-import { Dialog } from "@sharadox/account-web-library/dialog";
+import { Dialog } from "@sharadox/interface-web-library/dialog";
 import styles from "./index.module.scss";
 import type { RoleAdministrationProperties, RoleRow } from "@sharadox/account-web-library/role-administration/type";
 
@@ -23,7 +23,7 @@ export function RoleAdministration({ locale, roles, remove }: RoleAdministration
   return (
     <>
       {applications.map((application) => (
-        <AccountCard key={application} title={application}>
+        <Card key={application} title={application}>
           <ul className={styles.list}>
             {roles
               .filter((role) => role.application === application)
@@ -36,14 +36,14 @@ export function RoleAdministration({ locale, roles, remove }: RoleAdministration
                     </span>
                   </span>
                   {!role.protected && (
-                    <AccountButton look="plain" icon="trash" onClick={() => setAsking(role)}>
+                    <Button look="plain" icon="trash" onClick={() => setAsking(role)}>
                       {say(words.deleteRole, locale)}
-                    </AccountButton>
+                    </Button>
                   )}
                 </li>
               ))}
           </ul>
-        </AccountCard>
+        </Card>
       ))}
       <Dialog
         open={asking !== null}
@@ -55,7 +55,7 @@ export function RoleAdministration({ locale, roles, remove }: RoleAdministration
           {say(words.deleteRoleConfirm, locale)} <strong>{asking?.holders}</strong> {say(words.holders, locale)}.
         </p>
         <div className={styles.buttons}>
-          <AccountButton
+          <Button
             look="danger"
             pending={pending}
             onClick={async () => {
@@ -65,10 +65,10 @@ export function RoleAdministration({ locale, roles, remove }: RoleAdministration
             }}
           >
             {say(ACCOUNT_WORDS.common.delete, locale)}
-          </AccountButton>
-          <AccountButton look="quiet" onClick={() => setAsking(null)}>
+          </Button>
+          <Button look="quiet" onClick={() => setAsking(null)}>
             {say(ACCOUNT_WORDS.common.cancel, locale)}
-          </AccountButton>
+          </Button>
         </div>
       </Dialog>
     </>

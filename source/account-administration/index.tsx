@@ -2,12 +2,12 @@
 import { useState, type FormEvent } from "react";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
 import { AccountAvatar } from "@sharadox/account-web-library/account-avatar";
-import { AccountButton } from "@sharadox/account-web-library/account-button";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Button } from "@sharadox/interface-web-library/button";
+import { Card } from "@sharadox/interface-web-library/card";
 import { formatAccountTime } from "@sharadox/account-web-library/account-time";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import { EditablePanel } from "@sharadox/account-web-library/editable-field";
-import { TextField } from "@sharadox/account-web-library/input-group";
+import { TextField } from "@sharadox/interface-web-library/text-field";
 import styles from "./index.module.scss";
 import type {
   AccountAdministrationProperties,
@@ -64,7 +64,7 @@ export function AccountAdministration({
   const when = (iso: string) => formatAccountTime(iso, locale);
   return (
     <>
-      <AccountCard>
+      <Card>
         <form className={styles.search} onSubmit={search} role="search">
           <TextField
             label={say(words.find, locale)}
@@ -76,13 +76,13 @@ export function AccountAdministration({
             error={error}
             required
           />
-          <AccountButton type="submit" pending={searching.pending}>
+          <Button type="submit" pending={searching.pending}>
             {say(words.search, locale)}
-          </AccountButton>
+          </Button>
         </form>
-      </AccountCard>
+      </Card>
       {found && (
-        <AccountCard>
+        <Card>
           <div className={styles.who}>
             <AccountAvatar name={found.account.name} pictureUrl={found.account.pictureUrl} size={48} />
             <span>
@@ -105,12 +105,12 @@ export function AccountAdministration({
                       ` · ${say(granted.active ? words.until : words.ended, locale)} ${when(granted.endsAt)}`}
                   </span>
                   {granted.active && (
-                    <AccountButton
+                    <Button
                       look="plain"
                       onClick={() => void action.run(() => revoke(granted.grantId), { success: done, onDone: again })}
                     >
                       {say(words.revoke, locale)}
-                    </AccountButton>
+                    </Button>
                   )}
                 </li>
               ))}
@@ -225,7 +225,7 @@ export function AccountAdministration({
           ) : (
             <p className={styles.muted}>{say(words.noRules, locale)}</p>
           )}
-        </AccountCard>
+        </Card>
       )}
     </>
   );

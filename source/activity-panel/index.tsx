@@ -1,4 +1,4 @@
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Card } from "@sharadox/interface-web-library/card";
 import { formatAccountTime } from "@sharadox/account-web-library/account-time";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import type { Words } from "@sharadox/account-web-library/account-words/type";
@@ -20,7 +20,7 @@ export function activityText(action: string, locale: ActivityPanelProperties["lo
  */
 export function ActivityPanel({ locale, activity }: ActivityPanelProperties) {
   return (
-    <AccountCard>
+    <Card>
       {activity.length === 0 ? (
         <p className={styles.empty}>{say(ACCOUNT_WORDS.activity.empty, locale)}</p>
       ) : (
@@ -33,6 +33,6 @@ export function ActivityPanel({ locale, activity }: ActivityPanelProperties) {
           ))}
         </ol>
       )}
-    </AccountCard>
+    </Card>
   );
 }

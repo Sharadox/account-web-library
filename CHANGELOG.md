@@ -6,6 +6,10 @@ What changed in each version of `@sharadox/account-web-library`, newest first.
 
 First building blocks:
 
+- the generic pieces (button, card, code boxes, copy button, dialog, pending mark, skeleton, switch, text field, tip,
+  notifications) now come from `@sharadox/interface-web-library`; `AccountTheme` dresses them too (`AccountThemeValues`
+  is its `InterfaceThemeValues`);
+
 - the overview takes the whole width (the side menu's column only when there is a side menu); a chosen or removed picture, a notification marked read or deleted show at once and go back if refused; a device being signed out shows its loader;
 
 - screens that never wait: each area is one page whose side menu jumps to its sections (`AccountShell` sits in a

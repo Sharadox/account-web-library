@@ -5,10 +5,12 @@ import { AccountTheme, accountThemeStyle } from "@sharadox/account-web-library/a
 
 afterEach(cleanup);
 
-test("turns a theme into custom properties on one wrapper", () => {
+test("turns a theme into custom properties on one wrapper, for the account screens and the interface pieces", () => {
   expect(accountThemeStyle({ surfaceRaised: "#111", barHeight: "72px" })).toEqual({
     "--account-surface-raised": "#111",
     "--account-bar-height": "72px",
+    "--interface-surface-raised": "#111",
+    "--interface-bar-height": "72px",
   });
   const { container } = render(
     <AccountTheme theme={{ accent: "gold" }} className="frame">
@@ -18,5 +20,6 @@ test("turns a theme into custom properties on one wrapper", () => {
   const wrapper = container.firstElementChild as HTMLElement;
   expect(wrapper.className).toBe("frame");
   expect(wrapper.style.getPropertyValue("--account-accent")).toBe("gold");
+  expect(wrapper.style.getPropertyValue("--interface-accent")).toBe("gold");
   expect(wrapper.textContent).toBe("Inside");
 });

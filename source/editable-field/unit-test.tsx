@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, expect, test, vi } from "vitest";
 import { EditablePanel } from "@sharadox/account-web-library/editable-field";
 import type { EditablePanelProperties } from "@sharadox/account-web-library/editable-field/type";
-import { ToastProvider } from "@sharadox/account-web-library/toast";
+import { ToastProvider } from "@sharadox/interface-web-library/toast";
 
 afterEach(cleanup);
 

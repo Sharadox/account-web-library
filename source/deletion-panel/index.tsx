@@ -1,11 +1,11 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
-import { AccountButton } from "@sharadox/account-web-library/account-button";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Button } from "@sharadox/interface-web-library/button";
+import { Card } from "@sharadox/interface-web-library/card";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
-import { Dialog } from "@sharadox/account-web-library/dialog";
-import { TextField } from "@sharadox/account-web-library/input-group";
+import { Dialog } from "@sharadox/interface-web-library/dialog";
+import { TextField } from "@sharadox/interface-web-library/text-field";
 import styles from "./index.module.scss";
 import type { DeletionPanelProperties } from "@sharadox/account-web-library/deletion-panel/type";
 
@@ -31,10 +31,10 @@ export function DeletionPanel({ locale, identifier, remove }: DeletionPanelPrope
   };
 
   return (
-    <AccountCard tone="danger" description={say(words.deletionText, locale)}>
-      <AccountButton look="danger" icon="trash" onClick={() => setAsking(true)} className={styles.button}>
+    <Card tone="danger" description={say(words.deletionText, locale)}>
+      <Button look="danger" icon="trash" onClick={() => setAsking(true)} className={styles.button}>
         {say(words.deleteAccount, locale)}
-      </AccountButton>
+      </Button>
       <Dialog
         open={asking}
         onClose={() => {
@@ -56,16 +56,16 @@ export function DeletionPanel({ locale, identifier, remove }: DeletionPanelPrope
             error={error}
             autoFocus
           />
-          <AccountButton
+          <Button
             type="submit"
             look="danger"
             pending={pending}
             pendingLabel={say(ACCOUNT_WORDS.common.working, locale)}
           >
             {say(words.deleteAccount, locale)}
-          </AccountButton>
+          </Button>
         </form>
       </Dialog>
-    </AccountCard>
+    </Card>
   );
 }

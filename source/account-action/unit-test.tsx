@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, beforeAll, expect, test, vi } from "vitest";
 import { AccountActions, useAccountAction } from "@sharadox/account-web-library/account-action";
 import type { AccountAnswer, StepUp } from "@sharadox/account-web-library/account-action/type";
-import { ToastProvider } from "@sharadox/account-web-library/toast";
+import { ToastProvider } from "@sharadox/interface-web-library/toast";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Card } from "@sharadox/interface-web-library/card";
 import { formatAccountTime } from "@sharadox/account-web-library/account-time";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import { EditablePanel } from "@sharadox/account-web-library/editable-field";
@@ -21,14 +21,14 @@ export function BanPanel({ locale, bans, rulesHref, appeal }: BanPanelProperties
   const words = ACCOUNT_WORDS.privacy;
   if (bans.length === 0)
     return (
-      <AccountCard>
+      <Card>
         <p className={styles.none}>{say(words.noBans, locale)}</p>
-      </AccountCard>
+      </Card>
     );
   return (
     <>
       {bans.map((ban) => (
-        <AccountCard key={ban.banId} tone={ban.active ? "danger" : undefined}>
+        <Card key={ban.banId} tone={ban.active ? "danger" : undefined}>
           <p className={styles.state}>
             <strong>{say(ban.active ? words.active : words.ended, locale)}</strong>
             {" · "}
@@ -76,7 +76,7 @@ export function BanPanel({ locale, bans, rulesHref, appeal }: BanPanelProperties
               }}
             />
           )}
-        </AccountCard>
+        </Card>
       ))}
     </>
   );

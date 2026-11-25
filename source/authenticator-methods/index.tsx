@@ -2,17 +2,17 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
-import { AccountButton } from "@sharadox/account-web-library/account-button";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Button } from "@sharadox/interface-web-library/button";
+import { Card } from "@sharadox/interface-web-library/card";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import { authenticatorDate, authenticatorLabel } from "@sharadox/account-web-library/authenticator-label";
 import { CodeDialog } from "@sharadox/account-web-library/code-dialog";
-import { CopyButton } from "@sharadox/account-web-library/copy-button";
-import { Dialog } from "@sharadox/account-web-library/dialog";
+import { CopyButton } from "@sharadox/interface-web-library/copy-button";
+import { Dialog } from "@sharadox/interface-web-library/dialog";
 import { EditablePanel } from "@sharadox/account-web-library/editable-field";
-import { TextField } from "@sharadox/account-web-library/input-group";
+import { TextField } from "@sharadox/interface-web-library/text-field";
 import { RecoveryCodeList } from "@sharadox/account-web-library/recovery-codes";
-import { RequiredSwitch } from "@sharadox/account-web-library/required-switch";
+import { Switch } from "@sharadox/interface-web-library/switch";
 import styles from "./index.module.scss";
 import type { AuthenticatorMethodsProperties } from "@sharadox/account-web-library/authenticator-methods/type";
 
@@ -69,7 +69,7 @@ export function AuthenticatorMethods({
   };
 
   return (
-    <AccountCard title={say(words.security.authenticators, locale)}>
+    <Card title={say(words.security.authenticators, locale)}>
       {authenticators.length > 0 && (
         <ul className={styles.list}>
           {authenticators.map((authenticator) => (
@@ -85,7 +85,7 @@ export function AuthenticatorMethods({
                 preview={(form) => authenticatorLabel({ ...authenticator, name: typedName(form) || null }, locale)}
                 editLabel={say(words.security.rename, locale)}
                 extra={
-                  <AccountButton
+                  <Button
                     look="plain"
                     icon="trash"
                     pending={removing === authenticator.id}
@@ -97,7 +97,7 @@ export function AuthenticatorMethods({
                     }}
                   >
                     {say(words.common.remove, locale)}
-                  </AccountButton>
+                  </Button>
                 }
                 fields={
                   <TextField
@@ -114,7 +114,7 @@ export function AuthenticatorMethods({
                   return action.submit(() => rename(authenticator.id, typed));
                 }}
               />
-              <RequiredSwitch
+              <Switch
                 label={say(words.security.requiredToggle, locale)}
                 checked={authenticator.required}
                 onChange={async (required) =>
@@ -149,9 +149,9 @@ export function AuthenticatorMethods({
               />
             </div>
           ) : (
-            <AccountButton look="plain" icon="key" onClick={() => setShowKey(true)}>
+            <Button look="plain" icon="key" onClick={() => setShowKey(true)}>
               {say(words.security.typeKey, locale)}
-            </AccountButton>
+            </Button>
           )}
           <TextField
             label={say(words.security.authenticatorNameOptional, locale)}
@@ -163,14 +163,14 @@ export function AuthenticatorMethods({
             className={styles.name}
           />
           <div className={styles.buttons}>
-            <AccountButton onClick={() => setTyping(true)}>{say(words.code.confirm, locale)}</AccountButton>
-            <AccountButton look="quiet" onClick={() => setSetup(null)}>
+            <Button onClick={() => setTyping(true)}>{say(words.code.confirm, locale)}</Button>
+            <Button look="quiet" onClick={() => setSetup(null)}>
               {say(words.common.cancel, locale)}
-            </AccountButton>
+            </Button>
           </div>
         </div>
       ) : (
-        <AccountButton
+        <Button
           look="quiet"
           icon="plus"
           onClick={begin}
@@ -179,7 +179,7 @@ export function AuthenticatorMethods({
           className={styles.add}
         >
           {say(words.security.addAuthenticator, locale)}
-        </AccountButton>
+        </Button>
       )}
       <CodeDialog
         locale={locale}
@@ -211,28 +211,28 @@ export function AuthenticatorMethods({
         {codes ? (
           <>
             <RecoveryCodeList locale={locale} codes={codes} />
-            <AccountButton onClick={closeOffer}>{say(words.common.done, locale)}</AccountButton>
+            <Button onClick={closeOffer}>{say(words.common.done, locale)}</Button>
           </>
         ) : (
           <>
             <p className={styles.offer}>{say(words.security.recoveryOffer, locale)}</p>
             <p className={styles.offer}>{say(words.security.recoveryText, locale)}</p>
             <div className={styles.buttons}>
-              <AccountButton
+              <Button
                 pending={making.pending}
                 onClick={() =>
                   void making.run(makeRecoveryCodes, { onDone: (answer) => setCodes(answer.recoveryCodes) })
                 }
               >
                 {say(words.security.makeCodes, locale)}
-              </AccountButton>
-              <AccountButton look="quiet" onClick={closeOffer}>
+              </Button>
+              <Button look="quiet" onClick={closeOffer}>
                 {say(words.security.notNow, locale)}
-              </AccountButton>
+              </Button>
             </div>
           </>
         )}
       </Dialog>
-    </AccountCard>
+    </Card>
   );
 }

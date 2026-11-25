@@ -1,15 +1,15 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
-import { AccountButton } from "@sharadox/account-web-library/account-button";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Button } from "@sharadox/interface-web-library/button";
+import { Card } from "@sharadox/interface-web-library/card";
 import { ACCOUNT_WORDS, explainRefusal, say } from "@sharadox/account-web-library/account-words";
 import { CodeDialog } from "@sharadox/account-web-library/code-dialog";
 import { CODE_LIFETIME_SECONDS } from "@sharadox/account-web-library/code-lifetime";
 import { normalizeEmail } from "@sharadox/account-web-library/email-contact";
-import { TextField } from "@sharadox/account-web-library/input-group";
-import { RequiredSwitch } from "@sharadox/account-web-library/required-switch";
-import { useToast } from "@sharadox/account-web-library/toast";
+import { TextField } from "@sharadox/interface-web-library/text-field";
+import { Switch } from "@sharadox/interface-web-library/switch";
+import { useToast } from "@sharadox/interface-web-library/toast";
 import styles from "./index.module.scss";
 import type { EmailMethodsProperties } from "@sharadox/account-web-library/email-methods/type";
 
@@ -53,13 +53,13 @@ export function EmailMethods({ locale, emails, add, verify, remove, setRequired 
   };
 
   return (
-    <AccountCard title={say(words.security.emails, locale)}>
+    <Card title={say(words.security.emails, locale)}>
       <ul className={styles.list}>
         {emails.map((email) => (
           <li key={email.id} className={styles.item} aria-busy={removing === email.id || undefined}>
             <span className={styles.value}>{email.value}</span>
             {email.verified && (
-              <RequiredSwitch
+              <Switch
                 label={say(words.security.requiredToggle, locale)}
                 checked={email.required}
                 onChange={async (required) =>
@@ -69,7 +69,7 @@ export function EmailMethods({ locale, emails, add, verify, remove, setRequired 
                 }
               />
             )}
-            <AccountButton
+            <Button
               look="plain"
               icon="trash"
               pending={removing === email.id}
@@ -81,7 +81,7 @@ export function EmailMethods({ locale, emails, add, verify, remove, setRequired 
               }}
             >
               {say(words.common.remove, locale)}
-            </AccountButton>
+            </Button>
           </li>
         ))}
       </ul>
@@ -102,10 +102,10 @@ export function EmailMethods({ locale, emails, add, verify, remove, setRequired 
             <span>{say(words.security.requiredToggle, locale)}</span>
           </label>
           <div className={styles.buttons}>
-            <AccountButton type="submit" pending={saving.pending} pendingLabel={say(words.signIn.sending, locale)}>
+            <Button type="submit" pending={saving.pending} pendingLabel={say(words.signIn.sending, locale)}>
               {say(words.common.save, locale)}
-            </AccountButton>
-            <AccountButton
+            </Button>
+            <Button
               look="quiet"
               onClick={() => {
                 setAdding(false);
@@ -113,13 +113,13 @@ export function EmailMethods({ locale, emails, add, verify, remove, setRequired 
               }}
             >
               {say(words.common.cancel, locale)}
-            </AccountButton>
+            </Button>
           </div>
         </form>
       ) : (
-        <AccountButton look="quiet" icon="plus" onClick={() => setAdding(true)} className={styles.add}>
+        <Button look="quiet" icon="plus" onClick={() => setAdding(true)} className={styles.add}>
           {say(words.security.addEmail, locale)}
-        </AccountButton>
+        </Button>
       )}
       <CodeDialog
         lifetimeSeconds={CODE_LIFETIME_SECONDS}
@@ -145,6 +145,6 @@ export function EmailMethods({ locale, emails, add, verify, remove, setRequired 
           else notify(explainRefusal(answer as { reason: string }, locale), "error");
         }}
       />
-    </AccountCard>
+    </Card>
   );
 }

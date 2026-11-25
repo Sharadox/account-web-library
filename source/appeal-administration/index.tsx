@@ -1,8 +1,8 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
-import { AccountButton } from "@sharadox/account-web-library/account-button";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Button } from "@sharadox/interface-web-library/button";
+import { Card } from "@sharadox/interface-web-library/card";
 import { formatAccountTime } from "@sharadox/account-web-library/account-time";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import styles from "./index.module.scss";
@@ -36,14 +36,14 @@ export function AppealAdministration({ locale, appeals, decide }: AppealAdminist
 
   if (appeals.length === 0)
     return (
-      <AccountCard>
+      <Card>
         <p className={styles.muted}>{say(words.noAppeals, locale)}</p>
-      </AccountCard>
+      </Card>
     );
   return (
     <>
       {appeals.map((appeal) => (
-        <AccountCard key={appeal.appealId}>
+        <Card key={appeal.appealId}>
           <p className={styles.who}>
             <strong>@{appeal.identifier}</strong> · {formatAccountTime(appeal.createdAt, locale)}
           </p>
@@ -65,18 +65,18 @@ export function AppealAdministration({ locale, appeals, decide }: AppealAdminist
             )}
             <div className={styles.buttons}>
               {DECISIONS.map((decision) => (
-                <AccountButton
+                <Button
                   key={decision}
                   type="submit"
                   value={decision}
                   look={decision === "lifted" ? "primary" : "quiet"}
                 >
                   {say(words[decision], locale)}
-                </AccountButton>
+                </Button>
               ))}
             </div>
           </form>
-        </AccountCard>
+        </Card>
       ))}
     </>
   );

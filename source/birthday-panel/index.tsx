@@ -1,11 +1,11 @@
 "use client";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
-import { AccountButton } from "@sharadox/account-web-library/account-button";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Button } from "@sharadox/interface-web-library/button";
+import { Card } from "@sharadox/interface-web-library/card";
 import { checkBirthday } from "@sharadox/account-web-library/account-birthday";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import { EditablePanel } from "@sharadox/account-web-library/editable-field";
-import { TextField } from "@sharadox/account-web-library/input-group";
+import { TextField } from "@sharadox/interface-web-library/text-field";
 import styles from "./index.module.scss";
 import type { BirthdayPanelProperties } from "@sharadox/account-web-library/birthday-panel/type";
 
@@ -29,7 +29,7 @@ export function BirthdayPanel({ locale, birthday, save }: BirthdayPanelPropertie
     `${day} ${monthName(month, locale)}${year ? ` ${year}` : ""}`;
   const shown = birthday ? written(birthday.day, birthday.month, birthday.year) : say(words.noBirthday, locale);
   return (
-    <AccountCard description={say(words.birthdayText, locale)}>
+    <Card description={say(words.birthdayText, locale)}>
       <EditablePanel
         locale={locale}
         label={say(ACCOUNT_WORDS.section.birthday, locale)}
@@ -40,14 +40,14 @@ export function BirthdayPanel({ locale, birthday, save }: BirthdayPanelPropertie
         editLabel={birthday ? undefined : say(ACCOUNT_WORDS.common.add, locale)}
         extra={
           birthday && (
-            <AccountButton
+            <Button
               look="quiet"
               icon="trash"
               pending={pending}
               onClick={() => void run(() => save(null), { success: say(ACCOUNT_WORDS.common.done, locale) })}
             >
               {say(words.clearBirthday, locale)}
-            </AccountButton>
+            </Button>
           )
         }
         fields={
@@ -95,6 +95,6 @@ export function BirthdayPanel({ locale, birthday, save }: BirthdayPanelPropertie
           return submit(() => save(chosen));
         }}
       />
-    </AccountCard>
+    </Card>
   );
 }

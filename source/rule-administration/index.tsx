@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Card } from "@sharadox/interface-web-library/card";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import styles from "./index.module.scss";
 import type { RuleAdministrationProperties } from "@sharadox/account-web-library/rule-administration/type";
@@ -14,7 +14,7 @@ import type { RuleAdministrationProperties } from "@sharadox/account-web-library
 export function RuleAdministration({ locale, rules, rulesHref }: RuleAdministrationProperties) {
   const words = ACCOUNT_WORDS.administration;
   return (
-    <AccountCard description={say(words.rulesText, locale)}>
+    <Card description={say(words.rulesText, locale)}>
       {rules.length === 0 ? (
         <p className={styles.muted}>{say(words.noRules, locale)}</p>
       ) : (
@@ -32,6 +32,6 @@ export function RuleAdministration({ locale, rules, rulesHref }: RuleAdministrat
       <Link href={rulesHref} className={styles.link}>
         {say(words.publicRules, locale)}
       </Link>
-    </AccountCard>
+    </Card>
   );
 }

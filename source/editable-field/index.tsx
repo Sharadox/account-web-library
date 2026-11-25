@@ -1,9 +1,9 @@
 "use client";
 import { useState, type FormEvent, type ReactNode } from "react";
-import { AccountButton } from "@sharadox/account-web-library/account-button";
+import { Button } from "@sharadox/interface-web-library/button";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
-import { PendingMark } from "@sharadox/account-web-library/pending-mark";
-import { useToast } from "@sharadox/account-web-library/toast";
+import { PendingMark } from "@sharadox/interface-web-library/pending-mark";
+import { useToast } from "@sharadox/interface-web-library/toast";
 import styles from "./index.module.scss";
 import type { EditablePanelProperties } from "@sharadox/account-web-library/editable-field/type";
 
@@ -67,9 +67,9 @@ export function EditablePanel({
         {!editing && !pending && (
           <div className={styles.actions}>
             {extra}
-            <AccountButton look="quiet" icon="pencil" onClick={() => setEditing(true)}>
+            <Button look="quiet" icon="pencil" onClick={() => setEditing(true)}>
               {editLabel ?? say(common.edit, locale)}
-            </AccountButton>
+            </Button>
           </div>
         )}
       </div>
@@ -90,12 +90,12 @@ export function EditablePanel({
             </p>
           )}
           <div className={styles.buttons}>
-            <AccountButton type="submit" pending={pending} pendingLabel={say(common.saving, locale)}>
+            <Button type="submit" pending={pending} pendingLabel={say(common.saving, locale)}>
               {say(common.save, locale)}
-            </AccountButton>
-            <AccountButton look="quiet" onClick={cancel} disabled={pending}>
+            </Button>
+            <Button look="quiet" onClick={cancel} disabled={pending}>
               {say(common.cancel, locale)}
-            </AccountButton>
+            </Button>
           </div>
         </form>
       )}

@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { Icon } from "@sharadox/icon-web-library/icon";
 import { classNames } from "@sharadox/web-library/class-name";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
-import { AccountButton } from "@sharadox/account-web-library/account-button";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Button } from "@sharadox/interface-web-library/button";
+import { Card } from "@sharadox/interface-web-library/card";
 import { formatAccountTime } from "@sharadox/account-web-library/account-time";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import { noticeText } from "@sharadox/account-web-library/notification-bell";
@@ -50,11 +50,11 @@ export function InboxPanel({ locale, notifications, unread, more, loadMore, mark
   }, [notifications, more]);
 
   return (
-    <AccountCard>
+    <Card>
       {unread > 0 && !allRead && (
-        <AccountButton look="quiet" icon="check" onClick={() => void markAll()} className={styles.all}>
+        <Button look="quiet" icon="check" onClick={() => void markAll()} className={styles.all}>
           {say(words.bell.markAll, locale)}
-        </AccountButton>
+        </Button>
       )}
       {visible.length === 0 ? (
         <p className={styles.empty}>{say(words.bell.empty, locale)}</p>
@@ -89,7 +89,7 @@ export function InboxPanel({ locale, notifications, unread, more, loadMore, mark
         </ul>
       )}
       {left && (
-        <AccountButton
+        <Button
           look="plain"
           pending={loading}
           className={styles.more}
@@ -102,8 +102,8 @@ export function InboxPanel({ locale, notifications, unread, more, loadMore, mark
           }}
         >
           {say(words.common.more, locale)}
-        </AccountButton>
+        </Button>
       )}
-    </AccountCard>
+    </Card>
   );
 }

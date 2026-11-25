@@ -1,11 +1,11 @@
 "use client";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Card } from "@sharadox/interface-web-library/card";
 import { checkAccountName, ACCOUNT_NAME_MAXIMUM_LENGTH } from "@sharadox/account-web-library/account-name";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import { EditablePanel } from "@sharadox/account-web-library/editable-field";
 import { checkIdentifier, IDENTIFIER_MAXIMUM_LENGTH } from "@sharadox/account-web-library/identifier";
-import { TextField } from "@sharadox/account-web-library/input-group";
+import { TextField } from "@sharadox/interface-web-library/text-field";
 import type { IdentityPanelProperties } from "@sharadox/account-web-library/identity-panel/type";
 
 /**
@@ -20,7 +20,7 @@ export function IdentityPanel({ locale, name, identifier, changeName, changeIden
   const words = ACCOUNT_WORDS;
   const tip = say(words.common.tip, locale);
   return (
-    <AccountCard>
+    <Card>
       <EditablePanel
         locale={locale}
         label={say(words.profile.name, locale)}
@@ -70,6 +70,6 @@ export function IdentityPanel({ locale, name, identifier, changeName, changeIden
           return submit(() => changeIdentifier(value));
         }}
       />
-    </AccountCard>
+    </Card>
   );
 }

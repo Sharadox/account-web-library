@@ -17,6 +17,9 @@ importers:
       '@sharadox/icon-web-library':
         specifier: 0.7.0-development.36
         version: 0.7.0-development.36(react@19.3.1)
+      '@sharadox/interface-web-library':
+        specifier: 0.1.0-development.0
+        version: 0.1.0-development.0(react@19.3.1)
       '@sharadox/internationalization-web-library':
         specifier: 0.4.1-development.39
         version: 0.4.1-development.39(next@16.4.5(@babel/core@7.29.13)(@types/node@26.6.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(sass@1.108.2))(react@19.3.1)
@@ -978,6 +981,15 @@ packages:
 
   '@sharadox/icon-web-library@0.7.0-development.36':
     resolution: {integrity: sha512-sHNAYQ/jgHpT2zkGlPEKzJAk4OMZvY8tGM4j84wIyviQ7daewM3CVdeCaZ6j4dKS3qbqPSTP+GnbmSqvQ4gRFA==}
+    engines: {node: '>=26'}
+    peerDependencies:
+      react: '>=19'
+    peerDependenciesMeta:
+      react:
+        optional: true
+
+  '@sharadox/interface-web-library@0.1.0-development.0':
+    resolution: {integrity: sha512-hOBh8ZTAcA7ta6vqAIJ/TbkdBIr0tNYruoRXI8HQFuVMVipbHq+/YTMhM098Vfw3WrLLkO2eXhEZ/Y6FiCIVvQ==}
     engines: {node: '>=26'}
     peerDependencies:
       react: '>=19'
@@ -3047,6 +3059,13 @@ snapshots:
       - supports-color
 
   '@sharadox/icon-web-library@0.7.0-development.36(react@19.3.1)':
+    optionalDependencies:
+      react: 19.3.1
+
+  '@sharadox/interface-web-library@0.1.0-development.0(react@19.3.1)':
+    dependencies:
+      '@sharadox/icon-web-library': 0.7.0-development.36(react@19.3.1)
+      '@sharadox/web-library': 0.12.0-development.49
     optionalDependencies:
       react: 19.3.1
 

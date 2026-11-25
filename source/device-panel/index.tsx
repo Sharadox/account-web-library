@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { Icon } from "@sharadox/icon-web-library/icon";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
-import { AccountButton } from "@sharadox/account-web-library/account-button";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Button } from "@sharadox/interface-web-library/button";
+import { Card } from "@sharadox/interface-web-library/card";
 import { formatAccountTime } from "@sharadox/account-web-library/account-time";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import { describeBrowser } from "@sharadox/account-web-library/browser-description";
@@ -23,7 +23,7 @@ export function DevicePanel({ locale, devices, end }: DevicePanelProperties) {
   const [ending, setEnding] = useState<string | null>(null);
   const words = ACCOUNT_WORDS;
   return (
-    <AccountCard>
+    <Card>
       <ul className={styles.list}>
         {devices.map((device) => (
           <li
@@ -44,7 +44,7 @@ export function DevicePanel({ locale, devices, end }: DevicePanelProperties) {
               </span>
             </span>
             {!device.current && (
-              <AccountButton
+              <Button
                 look="quiet"
                 icon="sign-out"
                 pending={ending === device.accountSessionId}
@@ -56,11 +56,11 @@ export function DevicePanel({ locale, devices, end }: DevicePanelProperties) {
                 }}
               >
                 {say(words.security.endSession, locale)}
-              </AccountButton>
+              </Button>
             )}
           </li>
         ))}
       </ul>
-    </AccountCard>
+    </Card>
   );
 }
