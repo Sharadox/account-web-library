@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { AccountMenu } from "@sharadox/account-web-library/account-menu";
 import type { AccountMenuProperties } from "@sharadox/account-web-library/account-menu/type";
@@ -79,13 +79,37 @@ test("Escape, a click outside or the picture again closes it", () => {
   expect(screen.queryByText("@ana")).toBeNull();
 });
 
-test("signing out posts the account, or nothing for all", () => {
+test("signing out posts the account, or nothing for all", async () => {
   menu({ others: [bea] });
   open();
   const one = screen.getByRole("button", { name: "Sign out" }).closest("form")!;
   expect((one.querySelector("input") as HTMLInputElement).value).toBe("a");
   const all = screen.getByRole("button", { name: "Sign out of all accounts" }).closest("form")!;
   expect((all.querySelector("input") as HTMLInputElement).value).toBe("");
-  fireEvent.submit(all);
+  await act(async () => fireEvent.submit(all));
+  expect(screen.queryByText("@ana")).toBeNull();
+});
+
+test("switching keeps the menu open with a loader on the chosen account, then closes it on the same page", async () => {
+  let finish: () => void = () => {};
+  const switchAccount = vi.fn(() => new Promise<void>((resolve) => (finish = resolve)));
+  menu({ others: [bea], switchAccount });
+  open();
+  fireEvent.click(screen.getByRole("button", { name: "Switch account" }));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: /Bea/ })));
+  expect(switchAccount).toHaveBeenCalledOnce();
+  expect(screen.getByRole("button", { name: /Bea/ }).getAttribute("aria-busy")).toBe("true");
+  await act(async () => finish());
+  expect(screen.queryByRole("button", { name: /Bea/ })).toBeNull();
+});
+
+test("signing out shows a loader on its button", async () => {
+  let finish: () => void = () => {};
+  const signOut = vi.fn(() => new Promise<void>((resolve) => (finish = resolve)));
+  menu({ signOut });
+  open();
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Sign out" })));
+  expect(screen.getByRole("button", { name: "Sign out" }).getAttribute("aria-busy")).toBe("true");
+  await act(async () => finish());
   expect(screen.queryByText("@ana")).toBeNull();
 });

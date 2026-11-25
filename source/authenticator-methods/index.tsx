@@ -1,10 +1,11 @@
 "use client";
 import Image from "next/image";
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
 import { AccountButton } from "@sharadox/account-web-library/account-button";
 import { AccountCard } from "@sharadox/account-web-library/account-card";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
+import { authenticatorDate, authenticatorLabel } from "@sharadox/account-web-library/authenticator-label";
 import { CodeDialog } from "@sharadox/account-web-library/code-dialog";
 import { CopyButton } from "@sharadox/account-web-library/copy-button";
 import { Dialog } from "@sharadox/account-web-library/dialog";
@@ -15,17 +16,14 @@ import { RequiredSwitch } from "@sharadox/account-web-library/required-switch";
 import styles from "./index.module.scss";
 import type { AuthenticatorMethodsProperties } from "@sharadox/account-web-library/authenticator-methods/type";
 
-/** When an authenticator was added, in the reader's language. */
-const added = (iso: string, locale: string) =>
-  new Intl.DateTimeFormat(locale === "pt" ? "pt-PT" : "en-GB", {
-    dateStyle: "medium",
-    timeZone: "Europe/Lisbon",
-  }).format(new Date(iso));
+/** A name as typed: trimmed, and too long when over 50 characters (an empty one means no name). */
+const typedName = (form: FormData | string) => String(typeof form === "string" ? form : form.get("name")).trim();
 
 /**
- * The account's authenticator apps, any number, each named: required at every sign-in or not, renamed, removed.
- * Adding one: its name (Save, Discard), then a QR code to scan or a key to type (with a copy button), then the code it
- * shows, in a pop-up. Once it's on, recovery codes are offered (never made unasked) when the account has none.
+ * The account's authenticator apps, any number: each called by its name, or by the day it was added; required at
+ * every sign-in or not (the switch flips at once), renamed, removed. Adding one shows its QR code straight away (the
+ * key to type, with a copy button, only on request), then an optional name, then the code it shows, in a pop-up.
+ * Once it's on, recovery codes are offered (never made unasked) when the account has none.
  *
  * @example
  * <AuthenticatorMethods locale="en" company="Acme" authenticators={list} recoveryCodesLeft={0} {...actions} />
@@ -42,27 +40,28 @@ export function AuthenticatorMethods({
   setRequired,
   makeRecoveryCodes,
 }: AuthenticatorMethodsProperties) {
-  const [naming, setNaming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [setup, setSetup] = useState<{ id: string; qr: string; secret: string } | null>(null);
+  const [showKey, setShowKey] = useState(false);
+  const [name, setName] = useState("");
   const [typing, setTyping] = useState(false);
   const [offer, setOffer] = useState(false);
   const [codes, setCodes] = useState<string[] | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
   const action = useAccountAction();
+  const starting = useAccountAction();
   const saving = useAccountAction();
   const making = useAccountAction();
   const words = ACCOUNT_WORDS;
-  const tip = say(words.common.tip, locale);
 
-  const begin = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
-    const name = String(new FormData(event.currentTarget).get("name")).trim();
-    if (name.length < 1 || name.length > 50) return setError(say(words.error.nameInvalid, locale));
-    const refusal = await saving.submit(() => start(name), { refresh: false, onDone: (answer) => setSetup(answer) });
-    if (refusal) return setError(refusal);
-    setNaming(false);
-  };
+  const begin = () =>
+    void starting.run(start, {
+      refresh: false,
+      onDone: (answer) => {
+        setSetup(answer);
+        setShowKey(false);
+        setName("");
+      },
+    });
 
   const closeOffer = () => {
     setOffer(false);
@@ -74,91 +73,95 @@ export function AuthenticatorMethods({
       {authenticators.length > 0 && (
         <ul className={styles.list}>
           {authenticators.map((authenticator) => (
-            <li key={authenticator.id} className={styles.item}>
+            <li key={authenticator.id} className={styles.item} aria-busy={removing === authenticator.id || undefined}>
               <EditablePanel
                 locale={locale}
-                label={added(authenticator.createdAt, locale)}
-                view={<strong>{authenticator.name}</strong>}
+                label={
+                  authenticator.name === null
+                    ? say(words.security.noName, locale)
+                    : `${say(words.security.addedOn, locale)} ${authenticatorDate(authenticator.createdAt, locale)}`
+                }
+                view={authenticatorLabel(authenticator, locale)}
+                preview={(form) => authenticatorLabel({ ...authenticator, name: typedName(form) || null }, locale)}
                 editLabel={say(words.security.rename, locale)}
                 extra={
                   <AccountButton
                     look="plain"
                     icon="trash"
-                    onClick={() =>
-                      void action.run(() => remove(authenticator.id), { success: say(words.common.done, locale) })
-                    }
+                    pending={removing === authenticator.id}
+                    pendingLabel={say(words.common.removing, locale)}
+                    onClick={async () => {
+                      setRemoving(authenticator.id);
+                      await action.run(() => remove(authenticator.id), { success: say(words.common.done, locale) });
+                      setRemoving(null);
+                    }}
                   >
                     {say(words.common.remove, locale)}
                   </AccountButton>
                 }
                 fields={
                   <TextField
-                    label={say(words.security.authenticatorName, locale)}
+                    label={say(words.security.authenticatorNameOptional, locale)}
                     name="name"
-                    defaultValue={authenticator.name}
-                    maxLength={50}
-                    required
+                    defaultValue={authenticator.name ?? ""}
+                    maxLength={100}
                     autoFocus
                   />
                 }
                 onSave={async (form) => {
-                  const name = String(form.get("name")).trim();
-                  if (name.length < 1 || name.length > 50) return say(words.error.nameInvalid, locale);
-                  return action.submit(() => rename(authenticator.id, name));
+                  const typed = typedName(form);
+                  if (typed.length > 50) return say(words.error.nameInvalid, locale);
+                  return action.submit(() => rename(authenticator.id, typed));
                 }}
               />
               <RequiredSwitch
                 label={say(words.security.requiredToggle, locale)}
                 checked={authenticator.required}
-                onChange={(required) =>
-                  action.run(() => setRequired(authenticator.id, required), {
+                onChange={async (required) =>
+                  (await action.run(() => setRequired(authenticator.id, required), {
                     success: say(words.common.saved, locale),
-                  })
+                  })) !== null
                 }
               />
             </li>
           ))}
         </ul>
       )}
-      {naming ? (
-        <form className={styles.form} onSubmit={begin} noValidate>
-          <TextField
-            label={say(words.security.authenticatorName, locale)}
-            name="name"
-            maxLength={50}
-            tip={{ label: tip, text: say(words.security.authenticatorNameTip, locale) }}
-            error={error}
-            required
-            autoFocus
-          />
-          <div className={styles.buttons}>
-            <AccountButton type="submit" pending={saving.pending} pendingLabel={say(words.common.working, locale)}>
-              {say(words.common.save, locale)}
-            </AccountButton>
-            <AccountButton
-              look="quiet"
-              onClick={() => {
-                setNaming(false);
-                setError(null);
-              }}
-            >
-              {say(words.common.discard, locale)}
-            </AccountButton>
-          </div>
-        </form>
-      ) : setup ? (
+      {setup ? (
         <div className={styles.setup}>
           <p>{say(words.security.scan, locale)}</p>
-          <Image src={setup.qr} alt="" width={180} height={180} className={styles.qr} unoptimized />
-          <div className={styles.key}>
-            <span>{say(words.security.key, locale)}</span>
-            <code>{setup.secret.replace(/(.{4})(?=.)/g, "$1 ")}</code>
-            <CopyButton
-              value={setup.secret}
-              label={say(words.common.copy, locale)}
-              copiedLabel={say(words.common.copied, locale)}
-            />
-          </div>
+          <Image
+            src={setup.qr}
+            alt={say(words.security.qr, locale)}
+            width={180}
+            height={180}
+            className={styles.qr}
+            unoptimized
+          />
+          {showKey ? (
+            <div className={styles.key}>
+              <span>{say(words.security.key, locale)}</span>
+              <code>{setup.secret.replace(/(.{4})(?=.)/g, "$1 ")}</code>
+              <CopyButton
+                value={setup.secret}
+                label={say(words.common.copy, locale)}
+                copiedLabel={say(words.common.copied, locale)}
+              />
+            </div>
+          ) : (
+            <AccountButton look="plain" icon="key" onClick={() => setShowKey(true)}>
+              {say(words.security.typeKey, locale)}
+            </AccountButton>
+          )}
+          <TextField
+            label={say(words.security.authenticatorNameOptional, locale)}
+            name="name"
+            value={name}
+            onChange={(event) => setName(event.currentTarget.value)}
+            maxLength={100}
+            hint={say(words.security.nameLater, locale)}
+            className={styles.name}
+          />
           <div className={styles.buttons}>
             <AccountButton onClick={() => setTyping(true)}>{say(words.code.confirm, locale)}</AccountButton>
             <AccountButton look="quiet" onClick={() => setSetup(null)}>
@@ -167,7 +170,14 @@ export function AuthenticatorMethods({
           </div>
         </div>
       ) : (
-        <AccountButton look="quiet" icon="plus" onClick={() => setNaming(true)} className={styles.add}>
+        <AccountButton
+          look="quiet"
+          icon="plus"
+          onClick={begin}
+          pending={starting.pending}
+          pendingLabel={say(words.security.preparing, locale)}
+          className={styles.add}
+        >
           {say(words.security.addAuthenticator, locale)}
         </AccountButton>
       )}
@@ -182,7 +192,7 @@ export function AuthenticatorMethods({
           </p>
         }
         onSubmit={async (code) => {
-          const refusal = await saving.submit(() => confirm(setup!.id, code), {
+          const refusal = await saving.submit(() => confirm(setup!.id, code, typedName(name)), {
             success: say(words.common.saved, locale),
           });
           if (refusal) return refusal;

@@ -1,7 +1,12 @@
 @use "style/account" as *;
 
 .dialog {
+  /* Always in the middle of the screen, whatever a site resets margins and positions to. */
+  position: fixed;
+  inset: 0;
   width: min(440px, calc(100vw - 32px));
+  height: fit-content;
+  margin: auto;
   max-height: calc(100dvh - 32px);
   padding: 0;
   border: 1px solid $line;

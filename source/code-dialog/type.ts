@@ -14,4 +14,6 @@ export interface CodeDialogProperties {
   onSubmit: (code: string) => Promise<string | null>;
   /** A "Send a new code" button, for emailed codes. */
   onResend?: () => Promise<void>;
+  /** How long the code lasts from the moment it's asked for (an emailed code: 600): shown as a countdown. */
+  lifetimeSeconds?: number;
 }

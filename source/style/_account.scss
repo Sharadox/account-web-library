@@ -17,6 +17,14 @@ $font: var(--account-font, inherit);
 $display: var(--account-font-display, inherit);
 $bar: var(--account-bar-height, 64px);
 $shadow: var(--account-shadow, 0 12px 40px -12px rgb(0 0 0 / 25%));
+// Fields and their labels, so a company can make them look like its own forms.
+$field-background: var(--account-field-background, #{$raised});
+$field-border: var(--account-field-border, #{$line});
+$field-height: var(--account-field-height, 42px);
+$field-focus: var(--account-field-focus, 0 0 0 1px #{$accent});
+$label-size: var(--account-label-size, 13px);
+$label-spacing: var(--account-label-spacing, normal);
+$label-case: var(--account-label-case, none);
 $ease: cubic-bezier(0.22, 1, 0.36, 1);
 
 /** Thin scrollbars in the line color, the same in every browser that styles them. */

@@ -27,7 +27,7 @@ export async function authenticationMethods(
       .execute(),
     database
       .selectFrom("totp_credential")
-      .select(["id", "name", "required"])
+      .select(["id", "name", "required", "created_at"])
       .where("account_id", "=", accountId)
       .where("confirmed_at", "is not", null)
       .orderBy("id")
@@ -35,7 +35,13 @@ export async function authenticationMethods(
   ]);
   return [
     ...contacts.map(({ id, value, required }) => ({ kind: "email" as const, id, value, required })),
-    ...authenticators.map(({ id, name, required }) => ({ kind: "authenticator" as const, id, name, required })),
+    ...authenticators.map(({ id, name, required, created_at }) => ({
+      kind: "authenticator" as const,
+      id,
+      name,
+      required,
+      createdAt: created_at,
+    })),
   ];
 }
 

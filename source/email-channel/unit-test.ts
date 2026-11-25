@@ -49,15 +49,15 @@ test("sends the code to the address, in the company's layout and as plain text, 
 test("speaks European Portuguese for any Portuguese reader", async () => {
   sent.length = 0;
   await channel.send(delivery({ language: "pt-BR", purpose: "step-up" }));
-  expect(sent[0]!.subject).toBe("Conta · Código de Confirmação");
+  expect(sent[0]!.subject).toBe("Conta · Código de Autenticação");
   expect(sent[0]!.text).toContain("durante 10 minutos");
   expect(sent[0]!.html).toContain('lang="pt-PT"');
 });
 
-test("has its own words for verifying a contact, and falls back to English", async () => {
+test("falls back to English", async () => {
   sent.length = 0;
   await channel.send(delivery({ language: "de", purpose: "contact-verification", expiresAt: new Date(60_000) }));
-  expect(sent[0]!.subject).toBe("Account · Email Confirmation");
+  expect(sent[0]!.subject).toBe("Account · Authentication Code");
   expect(sent[0]!.text).toContain("1 minute.");
 });
 
@@ -83,24 +83,23 @@ test("uses the clock by default and carries the logos when given", async () => {
   expect(sent[0]!.text).toContain("10 minutes");
 });
 
-test("has a subject and heading for every purpose in both languages", async () => {
+test("every code, whatever it is for, comes in the same email, in both languages", async () => {
   const subjects: string[] = [];
+  const headings = new Set<string>();
   for (const language of ["en", "pt-PT"]) {
     for (const purpose of ["sign-in", "contact-verification", "step-up"] as const) {
       sent.length = 0;
       await channel.send(delivery({ language, purpose, expiresAt: new Date(60_000) }));
       subjects.push(sent[0]!.subject);
+      headings.add(`${language}: ${sent[0]!.text!.split("\n")[0]}`);
       expect(sent[0]!.text).toMatch(language === "en" ? /1 minute\./ : /1 minuto\./);
     }
   }
   expect(subjects).toEqual([
-    "Account · Authentication Code",
-    "Account · Email Confirmation",
-    "Account · Confirmation Code",
-    "Conta · Código de Autenticação",
-    "Conta · Confirmação de Email",
-    "Conta · Código de Confirmação",
+    ...Array(3).fill("Account · Authentication Code"),
+    ...Array(3).fill("Conta · Código de Autenticação"),
   ]);
+  expect([...headings]).toEqual(["en: Your Authentication Code", "pt-PT: O Seu Código de Autenticação"]);
 });
 
 test("sends notices in the same layout: inactivity warnings, a new email added, a recovery code used", async () => {
@@ -181,13 +180,15 @@ test("tells of a sign-in on a new browser, with when", async () => {
     language: "en",
     notice: { kind: "new-sign-in", at: new Date(Date.UTC(2026, 6, 1, 12, 5)) },
   });
-  expect(sent[0]!.subject).toBe("Account · New Sign-in");
+  expect(sent[0]!.subject).toBe("Account · New Sign-In");
+  expect(sent[0]!.text!.split("\n")[0]).toBe("A New Sign-In");
   expect(sent[0]!.text).toContain("1 July 2026 at 13:05");
   await channel.notify!({
     contact: { kind: "email", value: "ana@example.com" },
     language: "pt",
     notice: { kind: "new-sign-in", at: new Date(Date.UTC(2026, 0, 15, 9, 30)) },
   });
-  expect(sent[1]!.subject).toBe("Conta · Nova Entrada");
+  expect(sent[1]!.subject).toBe("Conta · Novo Início de Sessão");
+  expect(sent[1]!.text!.split("\n")[0]).toBe("Um Novo Início de Sessão");
   expect(sent[1]!.text).toContain("15 de janeiro de 2026");
 });

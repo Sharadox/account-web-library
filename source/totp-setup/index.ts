@@ -15,15 +15,16 @@ import type {
   TotpStatus,
 } from "@sharadox/account-web-library/totp-setup/type";
 
-/** An authenticator's name as kept: trimmed, 1 to 50 characters, or undefined when it can't be. */
-function authenticatorName(name: string): string | undefined {
-  const trimmed = name.trim();
-  return trimmed.length >= 1 && trimmed.length <= 50 ? trimmed : undefined;
+/** An authenticator's name as kept: trimmed, null when empty, or undefined when over 50 characters. */
+function authenticatorName(name: string | undefined): string | null | undefined {
+  const trimmed = (name ?? "").trim();
+  if (trimmed.length === 0) return null;
+  return trimmed.length <= 50 ? trimmed : undefined;
 }
 
 /**
- * Starts setting up an authenticator app, named by its owner ("Phone"): a new secret, stored encrypted and not yet
- * on, to show as a QR code (`uri`) or to type in (`secret`). An account can have any number of authenticators;
+ * Starts setting up an authenticator app, named by its owner ("Phone") or not (it can be named once confirmed): a new
+ * secret, stored encrypted and not yet on, to show as a QR code (`uri`) or to type in (`secret`). An account can have any number of authenticators;
  * starting again replaces only an unfinished setup. Ask for a fresh code first (step-up).
  *
  * @example
@@ -31,10 +32,10 @@ function authenticatorName(name: string): string | undefined {
  */
 export async function startTotpSetup(
   server: AccountServer,
-  { accountId, issuer, name, now = Date.now() }: { accountId: string; issuer: string; name: string; now?: number },
+  { accountId, issuer, name, now = Date.now() }: { accountId: string; issuer: string; name?: string; now?: number },
 ): Promise<TotpSetupStart> {
   const kept = authenticatorName(name);
-  if (!kept) return { status: "name" };
+  if (kept === undefined) return { status: "name" };
   const account = await server.database
     .selectFrom("identifier")
     .select("value")
@@ -71,7 +72,7 @@ export async function startTotpSetup(
 }
 
 /**
- * Turns an authenticator on once it shows a right code. Recovery codes are then offered, never made on their own
+ * Turns an authenticator on once it shows a right code, with the name its owner gave it then (if any). Recovery codes are then offered, never made on their own
  * (`regenerateRecoveryCodes`).
  *
  * @example
@@ -79,8 +80,16 @@ export async function startTotpSetup(
  */
 export async function confirmTotpSetup(
   server: AccountServer,
-  { accountId, id, code, now = Date.now() }: { accountId: string; id: string; code: string; now?: number },
+  {
+    accountId,
+    id,
+    code,
+    name,
+    now = Date.now(),
+  }: { accountId: string; id: string; code: string; name?: string; now?: number },
 ): Promise<TotpSetupConfirmation> {
+  const kept = authenticatorName(name);
+  if (kept === undefined) return { confirmed: false, reason: "name" };
   return accountTables(server)
     .transaction()
     .execute(async (transaction): Promise<TotpSetupConfirmation> => {
@@ -98,7 +107,11 @@ export async function confirmTotpSetup(
       if (!verification.valid) return { confirmed: false, reason: "wrong" };
       await transaction
         .updateTable("totp_credential")
-        .set({ confirmed_at: new Date(now), last_used_step: verification.step })
+        .set({
+          confirmed_at: new Date(now),
+          last_used_step: verification.step,
+          ...(name === undefined ? {} : { name: kept }),
+        })
         .where("id", "=", pending.id)
         .execute();
       await recordAuditEvent(transaction, {
@@ -112,7 +125,7 @@ export async function confirmTotpSetup(
 }
 
 /**
- * Renames one of the account's authenticators.
+ * Renames one of the account's authenticators (an empty name takes its name away).
  *
  * @example
  * await renameTotp(database, { accountId, id, name: "Old phone" }); // { renamed: true }
@@ -122,7 +135,7 @@ export async function renameTotp(
   { accountId, id, name }: { accountId: string; id: string; name: string },
 ): Promise<TotpRename> {
   const kept = authenticatorName(name);
-  if (!kept) return { renamed: false, reason: "name" };
+  if (kept === undefined) return { renamed: false, reason: "name" };
   const result = await database
     .updateTable("totp_credential")
     .set({ name: kept })

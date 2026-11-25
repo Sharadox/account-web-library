@@ -77,8 +77,7 @@ test("an account can have any number of authenticators; a new setup replaces onl
   });
 });
 
-test("names have 1 to 50 characters; refuses unknown accounts and confirming nothing", async () => {
-  expect(await startTotpSetup(server, { accountId, issuer: "Company", name: " " })).toEqual({ status: "name" });
+test("names have up to 50 characters; refuses unknown accounts and confirming nothing", async () => {
   expect(await startTotpSetup(server, { accountId, issuer: "Company", name: "x".repeat(51) })).toEqual({
     status: "name",
   });
@@ -94,7 +93,10 @@ test("renames an authenticator of the account only", async () => {
   const { id } = await authenticator("Phone");
   expect(await renameTotp(server.database, { accountId, id, name: " Old phone " })).toEqual({ renamed: true });
   expect((await totpStatus(server.database, { accountId })).authenticators[0]!.name).toBe("Old phone");
-  expect(await renameTotp(server.database, { accountId, id, name: "" })).toEqual({ renamed: false, reason: "name" });
+  expect(await renameTotp(server.database, { accountId, id, name: "x".repeat(51) })).toEqual({
+    renamed: false,
+    reason: "name",
+  });
   const { accountId: other } = await createTestPerson(memory.database, "bea");
   expect(await renameTotp(server.database, { accountId: other, id, name: "Mine" })).toEqual({
     renamed: false,
@@ -114,4 +116,32 @@ test("removes one authenticator; the recovery codes go with the last one", async
   expect(await totpStatus(server.database, { accountId })).toEqual({ authenticators: [], recoveryCodesLeft: 0 });
   const actions = await memory.database.selectFrom("audit_event").select("action").execute();
   expect(actions.map(({ action }) => action)).toContain("authenticator.removed");
+});
+
+test("a name is optional: given when it's confirmed, or never (then the date it was added tells it apart)", async () => {
+  const unnamed = await startTotpSetup(server, { accountId, issuer: "Company" });
+  if (unnamed.status !== "started") throw new Error(unnamed.status);
+  const secret = decodeBase32(unnamed.secret);
+  expect(
+    await confirmTotpSetup(server, {
+      accountId,
+      id: unnamed.id,
+      code: totpCode(secret, 0),
+      name: "x".repeat(51),
+      now: 0,
+    }),
+  ).toEqual({ confirmed: false, reason: "name" });
+  expect(
+    await confirmTotpSetup(server, { accountId, id: unnamed.id, code: totpCode(secret, 0), name: "  ", now: 0 }),
+  ).toEqual({
+    confirmed: true,
+  });
+  const named = await startTotpSetup(server, { accountId, issuer: "Company", name: "" });
+  if (named.status !== "started") throw new Error(named.status);
+  const other = decodeBase32(named.secret);
+  await confirmTotpSetup(server, { accountId, id: named.id, code: totpCode(other, 0), name: " Tablet ", now: 0 });
+  const { authenticators } = await totpStatus(server.database, { accountId });
+  expect(authenticators.map(({ name }) => name)).toEqual([null, "Tablet"]);
+  expect(await renameTotp(server.database, { accountId, id: named.id, name: " " })).toEqual({ renamed: true });
+  expect((await totpStatus(server.database, { accountId })).authenticators[1]!.name).toBeNull();
 });

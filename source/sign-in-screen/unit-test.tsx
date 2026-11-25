@@ -30,7 +30,8 @@ const more: SignInAnswer = {
   status: "more",
   ticket: "t2",
   methods: [
-    { kind: "authenticator", id: "phone", name: "Phone" },
+    { kind: "authenticator", id: "phone", name: "Phone", createdAt: "2026-01-02T10:00:00.000Z" },
+    { kind: "authenticator", id: "tablet", name: null, createdAt: "2026-03-04T10:00:00.000Z" },
     { kind: "email", id: "c2", hint: "w•••@example.com" },
   ],
   recoveryCode: true,
@@ -80,7 +81,7 @@ test("an email gets a code in the pop-up; the right code signs in and goes on", 
     email: "ana@example.com",
     solution: { challenge, nonce: "nonce" },
   });
-  expect(screen.getByRole("heading", { name: "Check your email" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Check Your Email" })).toBeTruthy();
   expect(screen.getByText("ana@example.com")).toBeTruthy();
   await paste("000000");
   expect(screen.getByRole("alert").textContent).toBe("That code isn't right.");
@@ -115,16 +116,16 @@ test("an identifier lists the ways in; each method, then the required ones, sign
     identifier: "ana",
     solution: { challenge, nonce: "nonce" },
   });
-  expect(screen.getByRole("heading", { name: "How do you want to sign in?" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "How Do You Want to Sign In?" })).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: /Authenticator app: Phone/ }));
-  expect(screen.getByRole("heading", { name: "Authenticator code" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Authenticator Code" })).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Send a new code" })).toBeNull();
   await paste("123456");
   expect(given.finishStep).toHaveBeenCalledWith({
     ticket: "t2",
     step: { kind: "authenticator", id: "phone", code: "123456" },
   });
-  expect(screen.getByRole("heading", { name: "One more step" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "One More Step" })).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: /Recovery code/ }));
   fireEvent.change(screen.getByRole("textbox", { name: "Recovery code" }), { target: { value: "AAAA-BBBB" } });
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Confirm" })));
@@ -154,7 +155,7 @@ test("an email with no account asks for a name and identifier; nothing before th
   setUp(given);
   await typeWho("new@example.com");
   await paste("123456");
-  expect(screen.getByRole("heading", { name: "Create your account" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Create Your Account" })).toBeTruthy();
   const identifier = screen.getByLabelText("Identifier");
   expect(identifier.parentElement!.firstElementChild!.textContent).toBe("@");
   fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ana" } });
@@ -196,7 +197,8 @@ test("a step's ticket that expired starts again; failed sends are notified", asy
   await typeWho("ana");
   await act(async () => fireEvent.click(screen.getByRole("button", { name: /Code to/ })));
   expect(screen.getByRole("alert").textContent).toContain("Wait 2 minutes.");
-  fireEvent.click(screen.getByRole("button", { name: /Authenticator app/ }));
+  expect(screen.getByRole("button", { name: /Authenticator app: Added 4 Mar 2026/ })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: /Authenticator app: Phone/ }));
   await paste("123456");
   expect(screen.getByLabelText("Email or identifier")).toBeTruthy();
   fireEvent.click(screen.getAllByRole("button", { name: "Dismiss" })[0]!);
@@ -229,7 +231,7 @@ test("a proof-of-work refusal or an odd answer is explained", async () => {
   setUp(actions({ finishEmail: vi.fn(async () => ({ status: "sent" as const, requestId: "x" })) }));
   await typeWho("ana@example.com");
   await paste("123456");
-  expect(screen.getByRole("heading", { name: "Check your email" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Check Your Email" })).toBeTruthy();
 });
 
 test("sign-up from the methods screen and its way back", async () => {
@@ -238,4 +240,23 @@ test("sign-up from the methods screen and its way back", async () => {
   await paste("123456");
   fireEvent.click(screen.getByRole("button", { name: "Use another email or identifier" }));
   expect(screen.getByLabelText("Email or identifier")).toBeTruthy();
+});
+
+test("it can sit in the site's own card", () => {
+  const { container } = render(
+    <ToastProvider label="Notifications" dismissLabel="Dismiss">
+      <SignInScreen
+        locale="en"
+        company="Acme"
+        actions={actions()}
+        next="/en"
+        rulesHref="/en/rules"
+        framed={false}
+        className="mine"
+      />
+    </ToastProvider>,
+  );
+  const card = container.querySelector(".mine")!;
+  expect(card).toBeTruthy();
+  expect(card.className).not.toContain("framed");
 });

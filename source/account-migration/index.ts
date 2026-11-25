@@ -420,6 +420,13 @@ export const accountMigrations: Migration[] = [
         );
     `,
   },
+  {
+    name: "0009-optional-authenticator-name",
+    sql: `
+      -- An authenticator's name is optional: without one, the date it was added tells it apart.
+      alter table totp_credential alter column name drop not null;
+    `,
+  },
 ];
 
 /**

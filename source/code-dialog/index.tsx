@@ -1,5 +1,5 @@
 "use client";
-import { useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 import { AccountButton } from "@sharadox/account-web-library/account-button";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import { CodeBoxes } from "@sharadox/account-web-library/code-boxes";
@@ -8,30 +8,41 @@ import { TextField } from "@sharadox/account-web-library/input-group";
 import styles from "./index.module.scss";
 import type { CodeDialogProperties } from "@sharadox/account-web-library/code-dialog/type";
 
-/**
- * A pop-up asking for a one-time code: 6 boxes sent the moment they're full (or one field for a recovery code), a
- * loader while it's checked, the reason when it's refused (the boxes start again), and "Send a new code" for emailed
- * codes.
- *
- * @example
- * <CodeDialog locale="en" open title="Check your email" text={…} onSubmit={check} onClose={close} />
- */
-export function CodeDialog({
+/** Minutes and seconds, as a clock shows them: 1:05. */
+const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+
+/** The seconds left of a code that lasts `lifetime` seconds from `since`, ticking every second. */
+function useCountdown(lifetime: number | undefined, since: number): number | undefined {
+  const [now, setNow] = useState(since);
+  useEffect(() => {
+    if (lifetime === undefined) return;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1_000);
+    return () => clearInterval(timer);
+  }, [lifetime, since]);
+  if (lifetime === undefined) return undefined;
+  return Math.max(0, lifetime - Math.floor((Math.max(now, since) - since) / 1_000));
+}
+
+/** The pop-up's inside, made again each time it opens (so the count and the boxes start afresh). */
+function CodeBody({
   locale,
-  open,
   onClose,
-  title,
   text,
   kind = "digits",
   onSubmit,
   onResend,
-}: CodeDialogProperties) {
+  lifetimeSeconds,
+}: Omit<CodeDialogProperties, "open" | "title">) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [resent, setResent] = useState(false);
+  const [since, setSince] = useState(() => Date.now());
+  const left = useCountdown(lifetimeSeconds, since);
   const errorId = useId();
   const words = ACCOUNT_WORDS.code;
+  const expired = left === 0;
 
   const submit = async (code: string) => {
     setPending(true);
@@ -44,64 +55,101 @@ export function CodeDialog({
     }
   };
 
+  const resend = async () => {
+    setError(null);
+    await onResend!();
+    setResent(true);
+    setSince(Date.now());
+    setAttempt(attempt + 1);
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} title={title} closeLabel={say(ACCOUNT_WORDS.common.close, locale)}>
+    <>
       <div className={styles.text}>{text}</div>
-      {kind === "digits" ? (
-        <CodeBoxes
-          key={attempt}
-          label={say(words.label, locale)}
-          digitLabel={say(words.digit, locale)}
-          ofLabel={say(words.of, locale)}
-          onComplete={submit}
-          invalid={Boolean(error)}
-          disabled={pending}
-          describedBy={error ? errorId : undefined}
-          autoFocus
-        />
+      {expired ? (
+        <div className={styles.expired}>
+          <p role="alert">{say(words.expired, locale)}</p>
+          <div className={styles.buttons}>
+            {onResend && <AccountButton onClick={resend}>{say(words.resend, locale)}</AccountButton>}
+            <AccountButton look="quiet" onClick={onClose}>
+              {say(ACCOUNT_WORDS.common.cancel, locale)}
+            </AccountButton>
+          </div>
+        </div>
       ) : (
-        <form
-          className={styles.recovery}
-          onSubmit={(event: FormEvent<HTMLFormElement>) => {
-            event.preventDefault();
-            void submit(String(new FormData(event.currentTarget).get("code") ?? ""));
-          }}
-        >
-          <TextField
-            key={attempt}
-            label={say(words.recoveryTitle, locale)}
-            name="code"
-            autoComplete="off"
-            spellCheck={false}
-            autoFocus
-            required
-          />
-          <AccountButton type="submit" pending={pending} pendingLabel={say(words.checking, locale)}>
-            {say(words.confirm, locale)}
-          </AccountButton>
-        </form>
+        <>
+          {kind === "digits" ? (
+            <CodeBoxes
+              key={attempt}
+              label={say(words.label, locale)}
+              digitLabel={say(words.digit, locale)}
+              ofLabel={say(words.of, locale)}
+              onComplete={submit}
+              invalid={Boolean(error)}
+              disabled={pending}
+              describedBy={error ? errorId : undefined}
+              autoFocus
+            />
+          ) : (
+            <form
+              className={styles.recovery}
+              onSubmit={(event: FormEvent<HTMLFormElement>) => {
+                event.preventDefault();
+                void submit(String(new FormData(event.currentTarget).get("code") ?? ""));
+              }}
+            >
+              <TextField
+                key={attempt}
+                label={say(words.recoveryLabel, locale)}
+                name="code"
+                autoComplete="off"
+                spellCheck={false}
+                autoFocus
+                required
+              />
+              <AccountButton type="submit" pending={pending} pendingLabel={say(words.checking, locale)}>
+                {say(words.confirm, locale)}
+              </AccountButton>
+            </form>
+          )}
+          {left !== undefined && (
+            <p className={styles.countdown}>
+              {say(words.expiresIn, locale)} {clock(left)}
+            </p>
+          )}
+          <p className={styles.status} aria-live="polite">
+            {pending && kind === "digits" && say(words.checking, locale)}
+            {resent && !pending && !error && say(words.resent, locale)}
+          </p>
+          {error && (
+            <p id={errorId} className={styles.error} role="alert">
+              {error}
+            </p>
+          )}
+          {onResend && (
+            <AccountButton look="plain" onClick={resend}>
+              {say(words.resend, locale)}
+            </AccountButton>
+          )}
+        </>
       )}
-      <p className={styles.status} aria-live="polite">
-        {pending && kind === "digits" && say(words.checking, locale)}
-        {resent && !pending && !error && say(words.resent, locale)}
-      </p>
-      {error && (
-        <p id={errorId} className={styles.error} role="alert">
-          {error}
-        </p>
-      )}
-      {onResend && (
-        <AccountButton
-          look="plain"
-          onClick={async () => {
-            setError(null);
-            await onResend();
-            setResent(true);
-          }}
-        >
-          {say(words.resend, locale)}
-        </AccountButton>
-      )}
+    </>
+  );
+}
+
+/**
+ * A pop-up in the middle of the screen asking for a one-time code: 6 boxes sent the moment they're full (or one field
+ * for a recovery code), a loader while it's checked, the reason when it's refused (the boxes start again), and "Send a
+ * new code" for emailed codes. With `lifetimeSeconds`, a countdown shows how long the code lasts; once it runs out,
+ * only "Send a new code" and "Cancel" are left.
+ *
+ * @example
+ * <CodeDialog locale="en" open title="Check your email" text={…} lifetimeSeconds={600} onSubmit={check} onClose={close} />
+ */
+export function CodeDialog({ open, title, ...body }: CodeDialogProperties) {
+  return (
+    <Dialog open={open} onClose={body.onClose} title={title} closeLabel={say(ACCOUNT_WORDS.common.close, body.locale)}>
+      <CodeBody {...body} />
     </Dialog>
   );
 }

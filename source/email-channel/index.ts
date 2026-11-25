@@ -1,5 +1,4 @@
 import { emailLayout } from "@sharadox/email-web-library/email-layout";
-import type { CodePurpose } from "@sharadox/account-web-library/code-request/type";
 import type {
   CodeDelivery,
   ContactChannel,
@@ -10,9 +9,10 @@ import type { EmailChannelOptions } from "@sharadox/account-web-library/email-ch
 
 interface Words {
   language: string;
-  subject: Record<CodePurpose, string>;
-  eyebrow: Record<CodePurpose, string>;
-  heading: Record<CodePurpose, string>;
+  /** Every code comes in the same email, whatever it is for (signing in, confirming an address or a change). */
+  subject: string;
+  eyebrow: string;
+  heading: string;
   label: string;
   lifetime: (minutes: number) => string;
   ignore: string;
@@ -28,26 +28,18 @@ const moment = (language: string, at: Date) =>
 
 const ENGLISH: Words = {
   language: "en",
-  subject: {
-    "sign-in": "Account · Authentication Code",
-    "contact-verification": "Account · Email Confirmation",
-    "step-up": "Account · Confirmation Code",
-  },
-  eyebrow: { "sign-in": "Sign in", "contact-verification": "Confirm address", "step-up": "Confirmation" },
-  heading: {
-    "sign-in": "Your sign-in code",
-    "contact-verification": "Confirm this address",
-    "step-up": "Confirm it's you",
-  },
+  subject: "Account · Authentication Code",
+  eyebrow: "Authentication",
+  heading: "Your Authentication Code",
   label: "Code",
   lifetime: (minutes) => `It works once, for ${minutes} ${minutes === 1 ? "minute" : "minutes"}.`,
-  ignore: "If you didn't ask for it, you can ignore this email: without the code, nobody gets in.",
+  ignore: "If you didn't ask for it, you can ignore this email: without the code, nothing happens.",
   never: "We will never ask you for this code.",
   closing: "Best regards,",
   notice: {
     "inactivity-warning": {
       subject: "Account · Deletion Warning",
-      heading: "Your account will be deleted",
+      heading: "Your Account Will Be Deleted",
       body: (notice) => [
         `Nobody has signed in to it for a long time, so it will be deleted on ${date("en-GB", (notice as { deletionAt: Date }).deletionAt)}, with everything in it.`,
         "Sign in before then to keep it. If you don't need it any more, there is nothing to do.",
@@ -55,15 +47,15 @@ const ENGLISH: Words = {
     },
     "contact-added": {
       subject: "Account · Email Added",
-      heading: "An email was added",
+      heading: "An Email Was Added",
       body: (notice) => [
         `${(notice as { contact: string }).contact} can now sign in to your account.`,
         "If it wasn't you, sign in, remove it, and sign out of the devices you don't recognize.",
       ],
     },
     "new-sign-in": {
-      subject: "Account · New Sign-in",
-      heading: "A new sign-in",
+      subject: "Account · New Sign-In",
+      heading: "A New Sign-In",
       body: (notice) => [
         `Someone signed in to your account on a browser that hadn't been used before, on ${moment("en-GB", (notice as { at: Date }).at)} (Portugal's time).`,
         "If it was you, there is nothing to do. If not, sign in, sign out of the devices you don't recognize, and turn on two-step verification.",
@@ -71,7 +63,7 @@ const ENGLISH: Words = {
     },
     "recovery-code-used": {
       subject: "Account · Recovery Code Used",
-      heading: "A recovery code was used",
+      heading: "A Recovery Code Was Used",
       body: () => [
         "Someone signed in to your account with one of its recovery codes.",
         "If it wasn't you, sign in, make new recovery codes, and sign out of the devices you don't recognize.",
@@ -82,26 +74,18 @@ const ENGLISH: Words = {
 
 const PORTUGUESE: Words = {
   language: "pt-PT",
-  subject: {
-    "sign-in": "Conta · Código de Autenticação",
-    "contact-verification": "Conta · Confirmação de Email",
-    "step-up": "Conta · Código de Confirmação",
-  },
-  eyebrow: { "sign-in": "Entrar", "contact-verification": "Confirmar endereço", "step-up": "Confirmação" },
-  heading: {
-    "sign-in": "O seu código para entrar",
-    "contact-verification": "Confirme este endereço",
-    "step-up": "Confirme que é você",
-  },
+  subject: "Conta · Código de Autenticação",
+  eyebrow: "Autenticação",
+  heading: "O Seu Código de Autenticação",
   label: "Código",
   lifetime: (minutes) => `Funciona uma vez, durante ${minutes} ${minutes === 1 ? "minuto" : "minutos"}.`,
-  ignore: "Se não o pediu, pode ignorar este email: sem o código, ninguém entra.",
+  ignore: "Se não o pediu, pode ignorar este email: sem o código, nada acontece.",
   never: "Nunca lhe pediremos este código.",
   closing: "Com os melhores cumprimentos,",
   notice: {
     "inactivity-warning": {
       subject: "Conta · Aviso de Eliminação",
-      heading: "A sua conta vai ser eliminada",
+      heading: "A Sua Conta Vai Ser Eliminada",
       body: (notice) => [
         `Ninguém entra nela há muito tempo, por isso será eliminada a ${date("pt-PT", (notice as { deletionAt: Date }).deletionAt)}, com tudo o que contém.`,
         "Entre antes disso para a manter. Se já não precisa dela, não tem de fazer nada.",
@@ -109,15 +93,15 @@ const PORTUGUESE: Words = {
     },
     "contact-added": {
       subject: "Conta · Email Adicionado",
-      heading: "Foi adicionado um email",
+      heading: "Foi Adicionado um Email",
       body: (notice) => [
         `${(notice as { contact: string }).contact} pode agora entrar na sua conta.`,
         "Se não foi você, entre, remova-o e termine a sessão nos dispositivos que não reconhece.",
       ],
     },
     "new-sign-in": {
-      subject: "Conta · Nova Entrada",
-      heading: "Uma nova entrada",
+      subject: "Conta · Novo Início de Sessão",
+      heading: "Um Novo Início de Sessão",
       body: (notice) => [
         `Alguém entrou na sua conta num navegador que nunca tinha sido usado, a ${moment("pt-PT", (notice as { at: Date }).at)} (hora de Portugal).`,
         "Se foi você, não tem de fazer nada. Se não, entre, termine a sessão nos dispositivos que não reconhece e ligue a verificação em dois passos.",
@@ -125,7 +109,7 @@ const PORTUGUESE: Words = {
     },
     "recovery-code-used": {
       subject: "Conta · Código de Recuperação Usado",
-      heading: "Foi usado um código de recuperação",
+      heading: "Foi Usado um Código de Recuperação",
       body: () => [
         "Alguém entrou na sua conta com um dos códigos de recuperação.",
         "Se não foi você, entre, crie novos códigos de recuperação e termine a sessão nos dispositivos que não reconhece.",
@@ -136,7 +120,8 @@ const PORTUGUESE: Words = {
 
 /**
  * Sends one-time codes by email, in the shared Sharadox email layout (email-web-library), in English or European
- * Portuguese (any `pt` reader). Every subject starts with "Account · " ("Conta · "); the sender's name says whose.
+ * Portuguese (any `pt` reader). Every code comes in one and the same email, "Account · Authentication Code", whatever
+ * it is for; every subject starts with "Account · " ("Conta · ") and the sender's name says whose.
  * The code is in the body only, one box per digit, never the subject (lock screens show subjects), with no link to
  * click: nothing to imitate in a phishing email.
  *
@@ -154,7 +139,7 @@ export function createEmailChannel({
   const carried = { light: logos.some(({ id }) => id === "logo"), dark: logos.some(({ id }) => id === "logo-dark") };
   return {
     kind: "email",
-    async send({ contact, code, purpose, language, expiresAt }: CodeDelivery) {
+    async send({ contact, code, language, expiresAt }: CodeDelivery) {
       if (contact.kind !== "email") throw new Error(`the email channel can't send to a "${contact.kind}" contact`);
       const words = language.toLowerCase().startsWith("pt") ? PORTUGUESE : ENGLISH;
       const shown = code.replace(/(.{3})(?=.)/g, "$1 ");
@@ -163,9 +148,9 @@ export function createEmailChannel({
       const html = emailLayout(
         {
           language: words.language,
-          preview: words.heading[purpose],
-          eyebrow: words.eyebrow[purpose],
-          heading: words.heading[purpose],
+          preview: words.heading,
+          eyebrow: words.eyebrow,
+          heading: words.heading,
           code: { label: words.label, value: code },
           paragraphs,
           closing: words.closing,
@@ -174,7 +159,7 @@ export function createEmailChannel({
         carried,
       );
       const text = [
-        words.heading[purpose],
+        words.heading,
         "",
         `${words.label}: ${shown}`,
         "",
@@ -186,7 +171,7 @@ export function createEmailChannel({
       await sender.send({
         from,
         to: contact.value,
-        subject: words.subject[purpose],
+        subject: words.subject,
         html,
         text,
         ...(logos.length > 0 ? { inlineImages: logos } : {}),

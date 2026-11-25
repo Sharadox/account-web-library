@@ -1,3 +1,4 @@
+import { setMethodRequired } from "@sharadox/account-web-library/authentication-method";
 import { notifyAccount } from "@sharadox/account-web-library/account-notice";
 import type { AccountServer } from "@sharadox/account-web-library/account-server/type";
 import { sendCode } from "@sharadox/account-web-library/code-sending";
@@ -69,7 +70,8 @@ export async function startContactAddition(
 }
 
 /**
- * Verifies the added contact once its code comes back: it can then be used to sign in. Call `notify` after
+ * Verifies the added contact once its code comes back: it can then be used to sign in (and, with `required`, is asked
+ * for at every sign-in from then on). Call `notify` after
  * answering, to tell the account's other contacts.
  *
  * @example
@@ -81,8 +83,9 @@ export async function finishContactAddition(
     accountId,
     requestId,
     code,
+    required = false,
     now = Date.now(),
-  }: { accountId: string; requestId: string; code: string; now?: number },
+  }: { accountId: string; requestId: string; code: string; required?: boolean; now?: number },
 ): Promise<ContactAdditionFinish> {
   const verification = await verifyCode(server.database, {
     requestId,
@@ -103,6 +106,8 @@ export async function finishContactAddition(
   if (!contact) return { status: "refused", reason: "no-contact" };
   const verified = await verifyContact(server.database, { accountId, contactId: contact.id, now });
   if (!verified.verified) return { status: "refused", reason: verified.reason };
+  if (required)
+    await setMethodRequired(server.database, { accountId, kind: "email", id: contact.id, required: true, now });
   const notify = () =>
     notifyAccount(server, {
       accountId,

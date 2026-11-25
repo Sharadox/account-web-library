@@ -1,4 +1,5 @@
 "use client";
+import { useMemo } from "react";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
 import { AccountCard } from "@sharadox/account-web-library/account-card";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
@@ -11,7 +12,7 @@ const CHANNELS = ["in-app", "email"] as const;
 
 /**
  * Where each kind of notice reaches the account: in the app (the bell) and by email. Read-only until Edit, then a
- * checkbox per kind and channel with Save and Discard. A locked channel can't be unticked, and a security notice keeps
+ * checkbox per kind and channel with Save and Cancel. A locked channel can't be unticked, and a security notice keeps
  * at least one (the server says so if both are unticked).
  *
  * @example
@@ -21,7 +22,8 @@ export function PreferencePanel({ locale, preferences, save }: PreferencePanelPr
   const { submit } = useAccountAction();
   const words = ACCOUNT_WORDS.notice;
   const kindText = (kind: string) => say((words as unknown as Record<string, Words>)[kind]!, locale);
-  const table = (editing: boolean) => (
+  // `form`: the choices just saved, shown before the page has them.
+  const table = (editing: boolean, form?: FormData) => (
     <table className={styles.table}>
       <thead>
         <tr>
@@ -52,7 +54,12 @@ export function PreferencePanel({ locale, preferences, save }: PreferencePanelPr
                   ) : locked ? (
                     say(words.locked, locale)
                   ) : (
-                    say(enabled ? ACCOUNT_WORDS.common.yes : ACCOUNT_WORDS.common.no, locale)
+                    say(
+                      (form ? form.get(`${preference.kind}:${channel}`) === "on" : enabled)
+                        ? ACCOUNT_WORDS.common.yes
+                        : ACCOUNT_WORDS.common.no,
+                      locale,
+                    )
                   )}
                 </td>
               );
@@ -62,12 +69,15 @@ export function PreferencePanel({ locale, preferences, save }: PreferencePanelPr
       </tbody>
     </table>
   );
+  // The same view until the preferences change, so a saved choice shows until the new ones arrive.
+  const view = useMemo(() => table(false), [preferences, locale]);
   return (
     <AccountCard description={say(words.preferencesText, locale)}>
       <EditablePanel
         locale={locale}
         label={say(ACCOUNT_WORDS.section.preferences, locale)}
-        view={table(false)}
+        view={view}
+        preview={(form) => table(false, form)}
         fields={table(true)}
         onSave={(form) =>
           submit(() =>

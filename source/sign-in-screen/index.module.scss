@@ -1,15 +1,18 @@
 @use "style/account" as *;
 
-.screen {
+:where(.screen) {
   width: 100%;
   max-width: 28rem;
   margin: 0 auto;
+  color: $text;
+  font-family: $font;
+}
+/* Its own card, unless the site puts it in one. */
+:where(.framed) {
   padding: 24px;
   border: 1px solid $line;
   border-radius: $radius;
   background: $raised;
-  color: $text;
-  font-family: $font;
   @media (max-width: 480px) {
     padding: 20px 16px;
   }

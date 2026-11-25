@@ -41,7 +41,7 @@ export function DeletionPanel({ locale, identifier, remove }: DeletionPanelPrope
           setAsking(false);
           setError(null);
         }}
-        title={say(words.deleteAccount, locale)}
+        title={say(words.deleteAccountTitle, locale)}
         closeLabel={say(ACCOUNT_WORDS.common.close, locale)}
       >
         <form className={styles.form} onSubmit={confirm} noValidate>

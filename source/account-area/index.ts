@@ -4,7 +4,7 @@ import type { Words } from "@sharadox/account-web-library/account-words/type";
 
 const S = ACCOUNT_WORDS.section;
 
-/** Every area's sections, each a page: `/<locale>/<area>/<section>` (the overview is `/<locale>`). */
+/** Every area, one page (`/<locale>/<area>`; the overview is `/<locale>`), and its sections, one under another. */
 export const ACCOUNT_AREAS: readonly { key: AccountAreaKey; sections: readonly [string, Words][] }[] = [
   { key: "overview", sections: [["summary", S.summary]] },
   {
@@ -51,15 +51,27 @@ export const ACCOUNT_AREAS: readonly { key: AccountAreaKey; sections: readonly [
 ];
 
 /**
- * The address of an area's section: the overview at the locale's root, the rest `/<locale>/<area>/<section>`.
+ * The address of an area, or of one of its sections on the area's page: the overview at the locale's root, the rest
+ * `/<locale>/<area>`, a section `/<locale>/<area>#<section>`.
  *
  * @example
- * accountSectionPath("en", "security", "devices"); // "/en/security/devices"
+ * accountSectionPath("en", "security", "devices"); // "/en/security#devices"
  */
 export function accountSectionPath(locale: string, area: AccountAreaKey, section?: string): string {
   if (area === "overview") return `/${locale}`;
-  const first = ACCOUNT_AREAS.find(({ key }) => key === area)!.sections[0]![0];
-  return `/${locale}/${area}/${section ?? first}`;
+  return `/${locale}/${area}${section ? `#${section}` : ""}`;
+}
+
+/**
+ * Which area an address is in (`/<locale>` is the overview); undefined outside the areas (the rules, signing in).
+ *
+ * @example
+ * accountAreaOfPath("/en/security"); // "security"
+ */
+export function accountAreaOfPath(path: string): AccountAreaKey | undefined {
+  const [, , area] = path.split("/");
+  if (!area) return "overview";
+  return ACCOUNT_AREAS.find(({ key }) => key === area && key !== "overview")?.key;
 }
 
 /**
@@ -83,7 +95,7 @@ export function accountAreas({ locale, administrator }: AccountAreaOptions): Acc
 }
 
 /**
- * Whether an address names a section that exists (for the page's `notFound()`).
+ * Whether an area has that section (the old `/<area>/<section>` addresses lead to it on the area's page).
  *
  * @example
  * isAccountSection("security", "devices"); // true

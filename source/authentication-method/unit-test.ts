@@ -46,7 +46,7 @@ test("lists the ways to sign in: verified sign-in emails, then authenticators th
     .execute();
   expect(await authenticationMethods(memory.database, { accountId })).toEqual([
     { kind: "email", id: contactId, value: "ana@example.com", required: false },
-    { kind: "authenticator", id: phone, name: "Phone", required: false },
+    { kind: "authenticator", id: phone, name: "Phone", required: false, createdAt: expect.any(Date) },
   ]);
 });
 

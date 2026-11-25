@@ -21,7 +21,7 @@ const optional = (form: FormData, name: string, key = name) => {
 };
 
 /**
- * Finding an account (by identifier or email) and managing it: its roles (Give role: a form with Save and Discard;
+ * Finding an account (by identifier or email) and managing it: its roles (Give role: a form with Save and Cancel;
  * Take away), its bans, and banning it, citing the rules it broke. The server checks every permission again; nobody
  * can give a role with permissions they don't hold.
  *

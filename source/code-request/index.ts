@@ -1,3 +1,4 @@
+import { CODE_LIFETIME_SECONDS } from "@sharadox/account-web-library/code-lifetime";
 import type { Kysely } from "kysely";
 import { uuidVersion7 } from "@sharadox/web-library/identifier/uuid-version-7";
 import type { AccountDatabase } from "@sharadox/account-web-library/account-database/type";
@@ -19,7 +20,15 @@ export const CODE_PURPOSES: readonly CodePurpose[] = ["sign-in", "contact-verifi
  */
 export async function requestCode(
   database: Kysely<AccountDatabase>,
-  { purpose, contact, accountId, pepper, length = 6, lifetimeSeconds = 600, now = Date.now() }: CodeRequestOptions,
+  {
+    purpose,
+    contact,
+    accountId,
+    pepper,
+    length = 6,
+    lifetimeSeconds = CODE_LIFETIME_SECONDS,
+    now = Date.now(),
+  }: CodeRequestOptions,
 ): Promise<CodeRequest> {
   if (!CODE_PURPOSES.includes(purpose)) throw new Error(`unknown code purpose "${purpose}"`);
   const { kind, value } = normalizeContact(contact);

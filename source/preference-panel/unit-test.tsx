@@ -27,10 +27,10 @@ test("shows each kind's channels; Edit turns them into checkboxes, locked ones f
   expect(screen.getAllByText("No")).toHaveLength(1);
   fireEvent.click(screen.getByRole("button", { name: "Edit" }));
   const locked = screen.getByRole("checkbox", {
-    name: "Your account will be deleted for inactivity: Email",
+    name: "Your Account Will Be Deleted for Inactivity: Email",
   }) as HTMLInputElement;
   expect(locked.disabled).toBe(true);
-  fireEvent.click(screen.getByRole("checkbox", { name: "New sign-in on a browser not used before: Email" }));
+  fireEvent.click(screen.getByRole("checkbox", { name: "New Sign-In on a Browser Not Used Before: Email" }));
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
   expect(save).toHaveBeenCalledWith([
     { kind: "new-sign-in", channel: "in-app", enabled: true },

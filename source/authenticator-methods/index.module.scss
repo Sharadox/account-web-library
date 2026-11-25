@@ -8,6 +8,10 @@
 }
 .item {
   display: grid;
+  transition: opacity 0.3s;
+  &[aria-busy] {
+    opacity: 0.55;
+  }
   gap: 4px;
   padding-bottom: 12px;
   border-bottom: 1px solid $line;
@@ -62,4 +66,7 @@
   color: $soft;
   font-size: 14.5px;
   line-height: 1.6;
+}
+.name {
+  width: min(100%, 22rem);
 }

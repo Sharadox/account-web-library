@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useFormStatus } from "react-dom";
 import { Icon } from "@sharadox/icon-web-library/icon";
 import { AccountAvatar } from "@sharadox/account-web-library/account-avatar";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
@@ -20,13 +21,25 @@ function Who({ account, size }: { account: MenuAccount; size: number }) {
   );
 }
 
+/** A menu button that sends its form, with a loader while it's sent (the menu stays open until it's done). */
+function SendButton({ className, children }: { className: string | undefined; children: ReactNode }) {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" className={className} disabled={pending} aria-busy={pending || undefined}>
+      {children}
+      {pending && <span className={styles.spinner} aria-hidden="true" />}
+    </button>
+  );
+}
+
 /**
  * The signed-in account's picture in the site's bar, opening its menu: who is signed in with their roles as chips,
  * the account settings and the administration (for administrators), then:
  * - with one account on this browser, "Add another account" and "Sign out";
  * - with more, "Switch account", which turns the menu into the list of every account (a Back button returns), and
  *   "Sign out of all accounts" too.
- * Switching and signing out are forms posting to server actions. Escape, a click outside or a choice closes it.
+ * Switching and signing out are forms posting to server actions: the menu stays open with a loader on the choice
+ * until it's done, and the page stays where it was. Escape, a click outside or a choice closes it.
  *
  * @example
  * <AccountMenu locale={locale} {...signedIn} />
@@ -50,6 +63,11 @@ export function AccountMenu({
   const close = () => {
     setOpen(false);
     setSwitching(false);
+  };
+  /** Runs a menu form's server action, then closes the menu. */
+  const send = (action: (form: FormData) => Promise<void>) => async (form: FormData) => {
+    await action(form);
+    close();
   };
 
   useEffect(() => {
@@ -98,11 +116,11 @@ export function AccountMenu({
                 <Icon name="check" />
               </div>
               {others.map((account) => (
-                <form key={account.accountId} action={switchAccount} onSubmit={close}>
+                <form key={account.accountId} action={send(switchAccount)}>
                   <input type="hidden" name="account" value={account.accountId} />
-                  <button type="submit" className={styles.account}>
+                  <SendButton className={styles.account}>
                     <Who account={account} size={30} />
-                  </button>
+                  </SendButton>
                 </form>
               ))}
               <Link href={signInHref} className={styles.item} onClick={close}>
@@ -145,20 +163,20 @@ export function AccountMenu({
                     {say(words.add, locale)}
                   </Link>
                 )}
-                <form action={signOut} onSubmit={close}>
+                <form action={send(signOut)}>
                   <input type="hidden" name="account" value={current.accountId} />
-                  <button type="submit" className={styles.item}>
+                  <SendButton className={styles.item}>
                     <Icon name="sign-out" />
                     {say(words.signOut, locale)}
-                  </button>
+                  </SendButton>
                 </form>
                 {several && (
-                  <form action={signOut} onSubmit={close}>
+                  <form action={send(signOut)}>
                     <input type="hidden" name="account" value="" />
-                    <button type="submit" className={styles.item}>
+                    <SendButton className={styles.item}>
                       <Icon name="sign-out" />
                       {say(words.signOutAll, locale)}
-                    </button>
+                    </SendButton>
                   </form>
                 )}
               </div>

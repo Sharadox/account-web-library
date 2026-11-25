@@ -1,70 +1,109 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, expect, test } from "vitest";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { accountAreas } from "@sharadox/account-web-library/account-area";
+import { AccountSection } from "@sharadox/account-web-library/account-section";
 import { AccountShell } from "@sharadox/account-web-library/account-shell";
 
+let path = "/en/security";
+vi.mock("next/navigation", () => ({ usePathname: () => path }));
+
+/** The sections the observer was told to watch, and a way to say one came into view. */
+let watched: Element[] = [];
+let callbacks: ((entries: Partial<IntersectionObserverEntry>[]) => void)[] = [];
+const seen = (entries: Partial<IntersectionObserverEntry>[]) => callbacks.forEach((callback) => callback(entries));
+beforeEach(() => {
+  watched = [];
+  callbacks = [];
+  globalThis.IntersectionObserver = class {
+    constructor(callback: (entries: Partial<IntersectionObserverEntry>[]) => void) {
+      callbacks.push(callback);
+    }
+    observe(element: Element) {
+      watched.push(element);
+    }
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof IntersectionObserver;
+});
 afterEach(cleanup);
 
-test("the areas across the top, the open area's sections down the side, the section's heading", () => {
-  render(
-    <AccountShell
-      locale="en"
-      areas={accountAreas({ locale: "en", administrator: false })}
-      area="security"
-      section="devices"
-      description="Where you're signed in."
-    >
-      <p>Content</p>
-    </AccountShell>,
-  );
+const security = () => (
+  <AccountShell locale="en" areas={accountAreas({ locale: "en", administrator: false })}>
+    <AccountSection id="methods" title="Sign-In Methods" description="Every way you can sign in.">
+      <p>Methods</p>
+    </AccountSection>
+    <AccountSection id="devices" title="Devices">
+      <p>Devices list</p>
+    </AccountSection>
+    <AccountSection id="activity" title="Activity">
+      <p>Activity list</p>
+    </AccountSection>
+  </AccountShell>
+);
+
+test("the areas across the top, the area's heading, and its sections to jump to", () => {
+  path = "/en/security";
+  render(security());
   const areas = screen.getByRole("navigation", { name: "Account areas" });
   expect(within(areas).getAllByRole("link")).toHaveLength(5);
   expect(within(areas).getByRole("link", { name: "Security" }).getAttribute("aria-current")).toBe("page");
+  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Security");
   const sections = screen.getByRole("navigation", { name: "Sections" });
-  expect(within(sections).getByRole("link", { name: "Devices" }).getAttribute("aria-current")).toBe("page");
-  expect(within(sections).getByRole("link", { name: "Activity" }).getAttribute("aria-current")).toBeNull();
-  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Devices");
-  expect(screen.getByText("Where you're signed in.")).toBeTruthy();
-  expect(screen.getByRole("region", { name: "Devices" }).textContent).toContain("Content");
+  const devices = within(sections).getByRole("link", { name: "Devices" });
+  expect(devices.getAttribute("href")).toBe("/en/security#devices");
+  expect(within(sections).getByRole("link", { name: "Sign-In Methods" }).getAttribute("aria-current")).toBe("true");
+  expect(screen.getByRole("region", { name: "Devices" }).textContent).toContain("Devices list");
+  expect(screen.getByText("Every way you can sign in.")).toBeTruthy();
+  expect(watched.map(({ id }) => id).filter(Boolean)).toEqual(["methods", "devices", "activity"]);
 });
 
-test("one section needs no side menu; a title can replace the section's name", () => {
+test("a jump scrolls to its section and marks it; reading further down moves the mark", () => {
+  path = "/en/security";
+  render(security());
+  const scrolled = vi.fn();
+  const target = document.getElementById("activity")!;
+  target.scrollIntoView = scrolled;
+  const sections = screen.getByRole("navigation", { name: "Sections" });
+  fireEvent.click(within(sections).getByRole("link", { name: "Activity" }));
+  expect(scrolled).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+  expect(window.location.hash).toBe("#activity");
+  expect(within(sections).getByRole("link", { name: "Activity" }).getAttribute("aria-current")).toBe("true");
+  act(() => seen([{ isIntersecting: true, target: document.getElementById("devices")! }, { isIntersecting: false }]));
+  expect(within(sections).getByRole("link", { name: "Devices" }).getAttribute("aria-current")).toBe("true");
+  act(() => seen([{ isIntersecting: false, target: document.getElementById("methods")! }]));
+  expect(within(sections).getByRole("link", { name: "Devices" }).getAttribute("aria-current")).toBe("true");
+  // A click that opens a new tab is left to the browser.
+  fireEvent.click(within(sections).getByRole("link", { name: "Activity" }), { metaKey: true });
+  expect(scrolled).toHaveBeenCalledOnce();
+});
+
+test("an address with a section opens there", () => {
+  path = "/en/security";
+  window.location.hash = "#devices";
+  const scrolled = vi.fn();
+  Element.prototype.scrollIntoView = scrolled;
+  render(security());
+  expect(scrolled).toHaveBeenCalledWith({ block: "start" });
+  window.location.hash = "";
+});
+
+test("one section needs no side menu; outside the areas nothing is marked", () => {
+  path = "/pt";
   const areas = accountAreas({ locale: "pt", administrator: true });
   const { rerender } = render(
-    <AccountShell locale="pt" areas={areas} area="overview" section="summary">
+    <AccountShell locale="pt" areas={areas}>
       <p>Resumo</p>
     </AccountShell>,
   );
   expect(screen.queryByRole("navigation", { name: "Secções" })).toBeNull();
   expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Resumo");
+  path = "/pt/nowhere";
   rerender(
-    <AccountShell
-      locale="en"
-      areas={accountAreas({ locale: "en", administrator: false })}
-      area="overview"
-      section="summary"
-    >
-      <p>Overview</p>
-    </AccountShell>,
-  );
-  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Overview");
-  rerender(
-    <AccountShell locale="pt" areas={areas} area="administration" section="nowhere" title="Contas">
+    <AccountShell locale="pt" areas={areas}>
       <p />
     </AccountShell>,
   );
-  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Contas");
-  rerender(
-    <AccountShell locale="pt" areas={areas} area="administration" section="nowhere">
-      <p />
-    </AccountShell>,
-  );
-  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Administração");
-  rerender(
-    <AccountShell locale="pt" areas={[]} area="administration" section="nowhere">
-      <p />
-    </AccountShell>,
-  );
-  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("");
+  expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+  expect(screen.queryByRole("link", { current: "page" })).toBeNull();
 });

@@ -41,4 +41,7 @@ export interface SignInScreenProperties {
   next: string;
   /** The rules page, linked from the sign-up form. */
   rulesHref: string;
+  /** Its own card (the default); false when the site puts it in one of its own. */
+  framed?: boolean;
+  className?: string;
 }

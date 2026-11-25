@@ -109,8 +109,8 @@ export interface AccountPictureTable {
 export interface TotpCredentialTable {
   id: string;
   account_id: string;
-  /** What the owner calls it ("Phone"), 1 to 50 characters; an account can have any number. */
-  name: string;
+  /** What the owner calls it ("Phone"), 1 to 50 characters, or null (none given); an account can have any number. */
+  name: string | null;
   /** Whether every sign-in must pass a code from it (otherwise it is one way among others). */
   required: Generated<boolean>;
   secret_ciphertext: string;
