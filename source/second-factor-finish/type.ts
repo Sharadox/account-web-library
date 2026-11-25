@@ -14,6 +14,7 @@ export interface SecondFactorFinish {
 }
 
 export type SecondFactorFinishResult =
-  | { status: "signed-in"; accountId: string; token: string }
+  /** `notify`, after a recovery code: tells every contact (call it after answering). */
+  | { status: "signed-in"; accountId: string; token: string; notify?: () => Promise<void> }
   | { status: "refused"; reason: "ticket" | "wrong" }
   | { status: "refused"; reason: "rate-limit"; retryAfterSeconds: number };

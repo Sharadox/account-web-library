@@ -23,7 +23,7 @@ import { checkIdentifier } from "@sharadox/account-web-library/identifier";
  */
 export async function createPersonAccount(
   database: Kysely<AccountDatabase>,
-  { name, identifier, contact, now = Date.now() }: PersonAccountRequest,
+  { name, identifier, contact, language, now = Date.now() }: PersonAccountRequest,
 ): Promise<PersonAccountResult> {
   const named = checkAccountName(name);
   if (!named.valid) return { created: false, reason: "name-invalid" };
@@ -36,7 +36,15 @@ export async function createPersonAccount(
     await database.transaction().execute(async (transaction) => {
       await transaction
         .insertInto("account")
-        .values({ id: accountId, kind: "person", name: named.name, owner_id: null, created_at: at, last_active_at: at })
+        .values({
+          id: accountId,
+          kind: "person",
+          name: named.name,
+          owner_id: null,
+          created_at: at,
+          last_active_at: at,
+          language: language?.slice(0, 20) ?? null,
+        })
         .execute();
       await transaction
         .insertInto("identifier")

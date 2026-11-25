@@ -9,6 +9,8 @@ export interface SignUpFinish {
   identifier: string;
   /** The browser's current session cookie, if any. */
   token: string | undefined;
+  /** The person's language (`pt-PT`), for the notices the account will get. */
+  language?: string;
   /** The browser's User-Agent, for the list of devices. */
   userAgent?: string | null;
   /** Milliseconds since 1970 (now by default). */
@@ -17,4 +19,7 @@ export interface SignUpFinish {
 
 export type SignUpFinishResult =
   | { status: "signed-in"; accountId: string; token: string }
-  | { status: "refused"; reason: "ticket" | Extract<PersonAccountResult, { created: false }>["reason"] };
+  | {
+      status: "refused";
+      reason: "ticket" | "contact-banned" | Extract<PersonAccountResult, { created: false }>["reason"];
+    };

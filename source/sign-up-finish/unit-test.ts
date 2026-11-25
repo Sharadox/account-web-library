@@ -30,10 +30,12 @@ test("creates the account with the proved contact and signs it in", async () => 
     identifier: "Ana",
     token: undefined,
     userAgent: "Laptop",
+    language: "pt-PT",
     now: 1_000,
   });
   const browser = await memory.database.selectFrom("browser_session").select("user_agent").executeTakeFirst();
   expect(browser?.user_agent).toBe("Laptop");
+  expect(await memory.database.selectFrom("account").select("language").execute()).toEqual([{ language: "pt-PT" }]);
   if (result.status !== "signed-in") throw new Error(result.status);
   const session = await readBrowserSession(memory.database, { token: result.token, now: 2_000 });
   expect(session!.accounts).toMatchObject([{ accountId: result.accountId, identifier: "Ana", name: "Ana Silva" }]);
@@ -133,4 +135,28 @@ test("refuses a name outside the rules, keeping the ticket usable", async () => 
   expect(
     (await finishSignUp(server, { name: "Abc", ticket: proof, identifier: "abc", token: undefined, now: 0 })).status,
   ).toBe("signed-in");
+});
+
+test("a contact of a deleted account banned from the account system can't sign up again while the ban lasts", async () => {
+  const { deriveSecret: derive } = await import("@sharadox/account-web-library/secret-derivation");
+  const { bannedContactHash } = await import("@sharadox/account-web-library/banned-contact");
+  await memory.database
+    .insertInto("banned_contact")
+    .values({
+      id: "0198f5a2-7a4c-7000-8000-000000000001",
+      contact_hash: bannedContactHash({ kind: "email", value: "gone@example.com" }, derive(secret, "banned-contact")),
+      application_id: null,
+      ends_at: null,
+      rule_codes: ["fraud"],
+    })
+    .execute();
+  expect(
+    await finishSignUp(server, {
+      name: "Gone",
+      ticket: ticket("gone+again@example.com"),
+      identifier: "gone",
+      token: undefined,
+      now: 0,
+    }),
+  ).toEqual({ status: "refused", reason: "contact-banned" });
 });

@@ -26,6 +26,7 @@ test("creates a person with a verified sign-in contact and records it", async ()
       owner_id: null,
       created_at: new Date(5_000),
       last_active_at: new Date(5_000),
+      language: null,
     },
   ]);
   expect(await memory.database.selectFrom("identifier").select(["value", "account_id"]).execute()).toEqual([

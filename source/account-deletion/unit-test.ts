@@ -21,7 +21,12 @@ test("deletes the account, everything that belongs to it and its picture file, a
     .values({ id: pictureId, account_id: accountId, content_type: "image/webp", byte_size: 3, width: 1, height: 1 })
     .execute();
   await storage.put(`account-picture/${pictureId}.webp`, new Uint8Array([1, 2, 3]), "image/webp");
-  expect(await deleteAccount(memory.database, storage, { accountId })).toEqual({ deleted: true });
+  expect(
+    await deleteAccount(memory.database, storage, {
+      accountId,
+      ledgerPepper: "a-ledger-pepper-of-at-least-thirty-two-characters",
+    }),
+  ).toEqual({ deleted: true });
   expect(storage.files.size).toBe(0);
   for (const table of ["account", "identifier", "contact", "account_session", "account_picture"] as const)
     expect(await memory.database.selectFrom(table).select("id").execute()).toEqual([]);
@@ -34,6 +39,7 @@ test("says so for an account that doesn't exist", async () => {
   expect(
     await deleteAccount(memory.database, createMemoryPictureStorage(), {
       accountId: "0198f5a2-7a4c-7000-8000-000000000009",
+      ledgerPepper: "a-ledger-pepper-of-at-least-thirty-two-characters",
     }),
   ).toEqual({ deleted: false });
 });

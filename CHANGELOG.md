@@ -6,6 +6,17 @@ What changed in each version of `@sharadox/account-web-library`, newest first.
 
 First building blocks:
 
+- inactivity: `runInactivity` deletes a person unused for 2 years after warnings 6 months, 3 months, 1 month, 1 week
+  and 1 day before (`deletionDate`; migration `0007-language-inactivity` adds the account's `language`); notices by email
+  (`ContactChannel.notify`: inactivity warnings, a new email, a recovery code used) through `notifyAccount`;
+
+- rules, bans and appeals: `syncRules`, `listRules`, `banAccount`, `appealBan`, `decideAppeal`, `listBans`, and the
+  banned-contact ledger (`bannedContactHash`, `contactBanned`, `pruneBannedContacts`; `deleteAccount` takes
+  `ledgerPepper`) checked at sign-up and when adding a contact (migration `0006-rule-ban`);
+
+- roles and permissions per application: `syncApplication`, `grantRole`, `revokeGrant`, `listGrants`,
+  `accountPermissions` (migration `0005-role`);
+
 - account management: names (`checkAccountName`, `changeAccountName`), pictures (`preparePicture`,
   `setAccountPicture`, `removeAccountPicture`, `PictureStorage`), contacts added with a code
   (`startContactAddition`, `finishContactAddition`), step-up (`startStepUp`, `finishStepUp`, `hasFreshStepUp`),

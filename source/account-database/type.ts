@@ -24,6 +24,8 @@ export interface AccountTable {
   owner_id: string | null;
   created_at: DefaultTime;
   last_active_at: DefaultTime;
+  /** The language its notices are written in (`pt-PT`); English when null. */
+  language: ColumnType<string | null, string | null | undefined, string | null>;
 }
 
 /** A way to reach an account (email now; phone and messaging later). */
@@ -143,6 +145,119 @@ export interface AccountSessionTable {
   step_up_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
 }
 
+/** Something an account may do in one application (`platform.job.read`); declared by the application. */
+export interface PermissionTable {
+  id: string;
+  application_id: string;
+  /** Starts with the application's key. */
+  key: string;
+  description: Generated<string>;
+  created_at: DefaultTime;
+}
+
+/** A set of permissions in one application (or every one: `application_id` null). */
+export interface RoleTable {
+  id: string;
+  application_id: string | null;
+  key: string;
+  name: string;
+  /** While granted, the account has only this role's permissions there (how bans work). */
+  exclusive: Generated<boolean>;
+  /** Every account holds its application's default role, without a grant. */
+  is_default: Generated<boolean>;
+  created_at: DefaultTime;
+}
+
+export interface RolePermissionTable {
+  id: string;
+  role_id: string;
+  permission_id: string;
+}
+
+/** A role given to an account, maybe for one resource, from a moment until another (or for good). */
+export interface RoleGrantTable {
+  id: string;
+  account_id: string;
+  role_id: string;
+  /** `platform:project:42`; null for the whole application. */
+  resource: string | null;
+  starts_at: DefaultTime;
+  ends_at: Date | null;
+  source: "manual" | "membership" | "ban" | "system";
+  /** Who gave it; null for the system, or once that account is gone. */
+  granted_by: string | null;
+  reason: string | null;
+  created_at: DefaultTime;
+}
+
+/** Words in each language (`{ en, pt }`). */
+type Words = Record<string, string>;
+
+/** One version of a public rule, with its penalties for the 1st, 2nd… offense (seconds, or "permanent"). */
+export interface RuleTable {
+  id: string;
+  /** Null for every application. */
+  application_id: string | null;
+  code: string;
+  version: number;
+  title: ColumnType<Words, Words | string, Words | string>;
+  description: ColumnType<Words, Words | string, Words | string>;
+  schedule: ColumnType<(number | "permanent")[], (number | "permanent")[] | string, (number | "permanent")[] | string>;
+  created_at: DefaultTime;
+}
+
+/** A ban: the exclusive grant it made, its statement of reasons, and how its length was reached. */
+export interface BanTable {
+  id: string;
+  grant_id: string;
+  account_id: string;
+  statement: string;
+  evidence: string | null;
+  /** Seconds, or "permanent". */
+  penalty: string;
+  created_by: string | null;
+  created_at: DefaultTime;
+}
+
+/** A rule version a ban cites. */
+export interface BanRuleTable {
+  id: string;
+  ban_id: string;
+  rule_id: string;
+}
+
+/** The one appeal a ban may have, and its decision. */
+export interface AppealTable {
+  id: string;
+  ban_id: string;
+  text: string;
+  created_at: DefaultTime;
+  decision: "upheld" | "shortened" | "lifted" | null;
+  reasons: string | null;
+  decided_by: string | null;
+  decided_at: Date | null;
+}
+
+/** A banned account's contact, kept (as an HMAC only) after the account is deleted, until the ban ends. */
+export interface BannedContactTable {
+  id: string;
+  contact_hash: string;
+  application_id: string | null;
+  ends_at: Date | null;
+  rule_codes: string[];
+  created_at: DefaultTime;
+}
+
+/** An inactivity warning sent, for one period of inactivity (from `active_at`). */
+export interface InactivityWarningTable {
+  id: string;
+  account_id: string;
+  stage: "6-months" | "3-months" | "1-month" | "1-week" | "1-day";
+  /** The `last_active_at` it counted from: signing in starts a new period. */
+  active_at: Date;
+  sent_at: DefaultTime;
+}
+
 /** The tables `migrateAccount` creates, for typing a Kysely instance. */
 export interface AccountDatabase {
   application: ApplicationTable;
@@ -156,6 +271,16 @@ export interface AccountDatabase {
   account_picture: AccountPictureTable;
   totp_credential: TotpCredentialTable;
   recovery_code: RecoveryCodeTable;
+  permission: PermissionTable;
+  role: RoleTable;
+  role_permission: RolePermissionTable;
+  role_grant: RoleGrantTable;
+  rule: RuleTable;
+  ban: BanTable;
+  ban_rule: BanRuleTable;
+  appeal: AppealTable;
+  banned_contact: BannedContactTable;
+  inactivity_warning: InactivityWarningTable;
 }
 
 /** The account tables and the protection tables (rate limits, spending caps, used challenges) the server needs. */

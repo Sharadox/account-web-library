@@ -100,3 +100,74 @@ test("has a subject and heading for every purpose in both languages", async () =
     "O seu código de confirmação de Luis Pires Decor",
   ]);
 });
+
+test("sends notices in the same layout: inactivity warnings, a new email added, a recovery code used", async () => {
+  sent.length = 0;
+  await channel.notify!({
+    contact: { kind: "email", value: "ana@example.com" },
+    language: "en",
+    notice: { kind: "inactivity-warning", deletionAt: new Date(Date.UTC(2028, 10, 25)) },
+  });
+  expect(sent[0]).toMatchObject({ to: "ana@example.com", subject: "Your Luis Pires Decor account will be deleted" });
+  expect(sent[0]!.text).toContain("25 November 2028");
+  expect(sent[0]!.text).toContain("Sign in before then to keep it");
+  await channel.notify!({
+    contact: { kind: "email", value: "ana@example.com" },
+    language: "pt-PT",
+    notice: { kind: "inactivity-warning", deletionAt: new Date(Date.UTC(2028, 0, 2)) },
+  });
+  expect(sent[1]!.subject).toBe("A sua conta Luis Pires Decor vai ser eliminada");
+  expect(sent[1]!.text).toContain("2 de janeiro de 2028");
+  await channel.notify!({
+    contact: { kind: "email", value: "ana@example.com" },
+    language: "en",
+    notice: { kind: "contact-added", contact: "new@example.com" },
+  });
+  expect(sent[2]!.subject).toBe("An email was added to your Luis Pires Decor account");
+  expect(sent[2]!.text).toContain("new@example.com");
+  await channel.notify!({
+    contact: { kind: "email", value: "ana@example.com" },
+    language: "pt",
+    notice: { kind: "recovery-code-used" },
+  });
+  expect(sent[3]!.subject).toBe("Foi usado um código de recuperação da sua conta Luis Pires Decor");
+  expect(sent[3]!.html).toContain("<html");
+  await channel.notify!({
+    contact: { kind: "email", value: "ana@example.com" },
+    language: "en",
+    notice: { kind: "recovery-code-used" },
+  });
+  expect(sent[4]!.subject).toBe("A recovery code was used for your Luis Pires Decor account");
+  await channel.notify!({
+    contact: { kind: "email", value: "ana@example.com" },
+    language: "pt",
+    notice: { kind: "contact-added", contact: "b@example.com" },
+  });
+  expect(sent[5]!.text).toContain("b@example.com pode agora entrar");
+});
+
+test("notices go to email contacts only", async () => {
+  await expect(
+    channel.notify!({
+      contact: { kind: "phone", value: "+351" },
+      language: "en",
+      notice: { kind: "recovery-code-used" },
+    }),
+  ).rejects.toThrow(/can't send/);
+});
+
+test("notices carry the logos too", async () => {
+  sent.length = 0;
+  const withLogos = createEmailChannel({
+    sender,
+    from: { name: "Luis Pires Decor", address: "account@web.luispiresdecor.com" },
+    design: { name: "Luis Pires Decor", signature: [] },
+    logos: [{ id: "logo", content: new Uint8Array([1]), contentType: "image/png", filename: "logo.png" }],
+  });
+  await withLogos.notify!({
+    contact: { kind: "email", value: "a@example.com" },
+    language: "en",
+    notice: { kind: "recovery-code-used" },
+  });
+  expect(sent[0]!.inlineImages).toHaveLength(1);
+});

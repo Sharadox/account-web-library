@@ -3,6 +3,7 @@ import { limitRate } from "@sharadox/protection-web-library/rate-limit";
 import { accountTables, signInLimits } from "@sharadox/account-web-library/account-server";
 import type { AccountServer } from "@sharadox/account-web-library/account-server/type";
 import { signIn } from "@sharadox/account-web-library/account-sign-in";
+import { notifyAccount } from "@sharadox/account-web-library/account-notice";
 import { recordAuditEvent } from "@sharadox/account-web-library/audit-event";
 import { recoveryCodeHash } from "@sharadox/account-web-library/recovery-code-store";
 import { decryptSecret } from "@sharadox/account-web-library/secret-encryption";
@@ -17,7 +18,8 @@ import { verifyTotp } from "@sharadox/account-web-library/totp";
 /**
  * The two-factor step of signing in: the authenticator app's code (never the same step twice) or a single-use
  * recovery code, after the emailed code passed (`finishSignIn` gave the ticket). Guesses are limited per account and
- * per address group. The session is marked as having passed two-factor.
+ * per address group. The session is marked as having passed two-factor. After a recovery code, call `notify` after
+ * answering, to tell every contact.
  *
  * @example
  * const result = await finishSecondFactor(server, { ticket, code, address, token: cookie });
@@ -54,7 +56,7 @@ export async function finishSecondFactor(
         .forUpdate()
         .executeTakeFirst();
       // Two-factor was turned off since the emailed code passed: that code is the proof.
-      if (!credential) return true;
+      if (!credential) return "passed";
       const typed = code.replace(/\s/g, "");
       const secret = decryptSecret(credential.secret_ciphertext, deriveSecret(server.secret, "totp-encryption"));
       // Confirming the setup stored a step, so a confirmed credential always has one.
@@ -66,7 +68,7 @@ export async function finishSecondFactor(
           .set({ last_used_step: verification.step })
           .where("id", "=", credential.id)
           .execute();
-        return true;
+        return "passed";
       }
       const used = await transaction
         .updateTable("recovery_code")
@@ -79,11 +81,13 @@ export async function finishSecondFactor(
         )
         .where("used_at", "is", null)
         .executeTakeFirst();
-      if (used.numUpdatedRows === 0n) return false;
+      if (used.numUpdatedRows === 0n) return "wrong";
       await recordAuditEvent(transaction, { accountId, action: "second-factor.recovery-code-used", now });
-      return true;
+      return "recovery";
     });
-  if (!passed) return { status: "refused", reason: "wrong" };
+  if (passed === "wrong") return { status: "refused", reason: "wrong" };
   const session = await signIn(server.database, { accountId, token, secondFactor: true, userAgent, now });
-  return { status: "signed-in", accountId, token: session.token };
+  if (passed === "passed") return { status: "signed-in", accountId, token: session.token };
+  const notify = () => notifyAccount(server, { accountId, notice: { kind: "recovery-code-used" } });
+  return { status: "signed-in", accountId, token: session.token, notify };
 }

@@ -304,6 +304,50 @@ Removing one is `removeContact` (the last sign-in contact can't go).
 
 Tests: `createTestPerson(database, identifier)` (`test-person`).
 
+## Roles and permissions
+
+Every application declares its permissions and roles in code, and the account system answers what an account may
+do there.
+
+- `syncApplication(database, { key, name, permissions, roles })` (`application-sync`): run at every deploy. Each
+  permission starts with the application's key (`platform.job.read`); a role lists permissions, and may be the
+  application's `default` (every account holds it, with no grant) or `exclusive` (while granted, only its
+  permissions count: a ban). Undeclared permissions and roles go, except a role still granted. Refusals:
+  `foreign-permission`, `unknown-permission`, `defaults` (more than one).
+- `grantRole(database, { accountId, application, role, resource?, startsAt?, endsAt?, source?, grantedBy?, reason? })`
+  (`role-grant`) → `{ granted: true, grantId }` or a reason (`no-role`, `no-account`, `not-allowed`, `escalation`).
+  Given by someone, it needs their `account.role.assign` (`ROLE_ASSIGN_PERMISSION`, in the `account` application)
+  and every permission of the role: nobody hands out more than they hold. `revokeGrant(database, { grantId,
+revokedBy? })` ends it now (history kept); `listGrants(database, { accountId })` lists them with `active`.
+- `accountPermissions(database, { accountId, application, resource?, scope? })` (`account-permission`) → the set of
+  permissions now: the default role plus active grants (an active exclusive one wins), limited to `scope`, and for an
+  agent to what its owner may do right now. Built on `effectivePermissions`.
+
+In the database (migration `0005-role`): `permission`, `role`, `role_permission`, `role_grant`. A role still
+granted can't be deleted (`RESTRICT`); a grant outlives the account that gave it (`granted_by` becomes null).
+
+## Rules, bans and appeals
+
+- `syncRules(database, { application, rules })` (`rule-sync`): public rules, the application's own or global
+  (`application: null`), each with its words per language and its penalty schedule (seconds or `"permanent"` for the
+  1st, 2nd… offense; the last repeats). A changed rule gets a new version; bans keep the version they cited.
+  `listRules(database, { application })` gives the newest versions, for the public rules page.
+- `banAccount(database, { accountId, application, rules, statement, evidence?, by? })` (`account-ban`): the length
+  comes from the rules (this offense for each, per account, rule and application; the longest wins), so equal
+  offenses get equal penalties. The ban is the application's exclusive role, granted until then or for good. `by`
+  needs `account.ban.create` (`BAN_PERMISSION`). Refusals: `not-allowed`, `no-rule`, `no-ban-role`.
+- `appealBan(database, { banId, accountId, text })`: one appeal per ban, by the banned account.
+  `decideAppeal(database, { appealId, by, decision, reasons, endsAt? })`: `upheld`, `shortened` (to `endsAt`) or
+  `lifted`, once, by someone with `account.appeal.decide` (`APPEAL_PERMISSION`). `listBans(database, { accountId })`.
+- The banned-contact ledger (`banned-contact`): deleting a banned account (`deleteAccount` now takes
+  `ledgerPepper`, `deriveSecret(ACCOUNT_SECRET, "banned-contact")`) keeps each verified contact's HMAC (emails
+  without `+tags`) until the ban ends. `finishSignUp` and `startContactAddition` refuse such a contact
+  (`contact-banned`); `contactBanned(database, { contact, pepper, application })` asks directly;
+  `pruneBannedContacts(database)` forgets ended ones (a daily job).
+
+In the database (migration `0006-rule-ban`): `rule`, `ban`, `ban_rule` (a cited rule version can't be deleted),
+`appeal` (one per ban), `banned_contact` (no link to any account).
+
 ## License
 
 Sharadox Open Source License 0.1.0 (see `LICENSE.md`).

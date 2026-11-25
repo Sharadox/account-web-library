@@ -1,6 +1,8 @@
+import { notifyAccount } from "@sharadox/account-web-library/account-notice";
 import type { AccountServer } from "@sharadox/account-web-library/account-server/type";
 import { sendCode } from "@sharadox/account-web-library/code-sending";
 import { verifyCode } from "@sharadox/account-web-library/code-verification";
+import { contactBanned } from "@sharadox/account-web-library/banned-contact";
 import { addContact } from "@sharadox/account-web-library/contact-addition";
 import type {
   ContactAdditionFinish,
@@ -37,6 +39,9 @@ export async function startContactAddition(
   }
   const channel = server.channels.find(({ kind }) => kind === normalized.kind);
   if (!channel) return { status: "refused", reason: "contact" };
+  const pepper = deriveSecret(server.secret, "banned-contact");
+  if (await contactBanned(server.database, { contact: normalized, pepper, application: "account", now }))
+    return { status: "refused", reason: "contact-banned" };
   const existing = await server.database
     .selectFrom("contact")
     .select(["id", "verified_at"])
@@ -64,7 +69,8 @@ export async function startContactAddition(
 }
 
 /**
- * Verifies the added contact once its code comes back: it can then be used to sign in.
+ * Verifies the added contact once its code comes back: it can then be used to sign in. Call `notify` after
+ * answering, to tell the account's other contacts.
  *
  * @example
  * const result = await finishContactAddition(server, { accountId, requestId, code });
@@ -96,7 +102,12 @@ export async function finishContactAddition(
     .executeTakeFirst();
   if (!contact) return { status: "refused", reason: "no-contact" };
   const verified = await verifyContact(server.database, { accountId, contactId: contact.id, now });
-  return verified.verified
-    ? { status: "verified", contactId: contact.id }
-    : { status: "refused", reason: verified.reason };
+  if (!verified.verified) return { status: "refused", reason: verified.reason };
+  const notify = () =>
+    notifyAccount(server, {
+      accountId,
+      notice: { kind: "contact-added", contact: verification.contact.value },
+      except: contact.id,
+    });
+  return { status: "verified", contactId: contact.id, notify };
 }

@@ -80,6 +80,10 @@ test("a recovery code works once, in any case and spacing", async () => {
     now: 100_000,
   });
   expect(result.status).toBe("signed-in");
+  const notices: unknown[] = [];
+  server.channels = [{ kind: "email", send: async () => {}, notify: async (delivery) => void notices.push(delivery) }];
+  if (result.status === "signed-in") await result.notify?.();
+  expect(notices).toEqual([expect.objectContaining({ notice: { kind: "recovery-code-used" } })]);
   expect(await totpStatus(server.database, { accountId })).toEqual({ on: true, recoveryCodesLeft: 9 });
   expect(
     await finishSecondFactor(server, { ticket, code: typed, address: "203.0.113.7", token: undefined, now: 100_000 }),
