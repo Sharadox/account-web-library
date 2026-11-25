@@ -1,0 +1,30 @@
+@use "style/account" as *;
+
+.text {
+  color: $soft;
+  font-size: 14.5px;
+  line-height: 1.6;
+  p {
+    margin: 0 0 8px;
+  }
+  strong {
+    color: $text;
+  }
+}
+.recovery {
+  display: grid;
+  gap: 12px;
+}
+.status {
+  min-height: 20px;
+  margin: 0;
+  color: $soft;
+  font-size: 13px;
+  text-align: center;
+}
+.error {
+  margin: 0;
+  color: $danger;
+  font-size: 14px;
+  text-align: center;
+}

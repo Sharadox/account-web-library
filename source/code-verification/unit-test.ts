@@ -27,6 +27,9 @@ test("the right code, once, gives back the contact and account", async () => {
     valid: false,
     reason: "used",
   });
+  // A used code keeps nobody's address: it was only needed to send the code.
+  const row = await memory.database.selectFrom("code_request").select("value").executeTakeFirstOrThrow();
+  expect(row.value).toBe("");
 });
 
 test("wrong codes count, and after 5 even the right one is refused", async () => {

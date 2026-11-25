@@ -1,0 +1,28 @@
+// @vitest-environment happy-dom
+import { act, cleanup, fireEvent, screen } from "@testing-library/react";
+import { afterEach, beforeAll, expect, test, vi } from "vitest";
+import { DeletionPanel } from "@sharadox/account-web-library/deletion-panel";
+import { openDialogs, renderAccountScreen } from "@sharadox/account-web-library/test-screen";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }));
+beforeAll(openDialogs);
+afterEach(cleanup);
+
+test("asks for the identifier first; only the right one deletes", async () => {
+  const remove = vi.fn(async () => ({ status: "refused" as const, reason: "generic" }));
+  renderAccountScreen(<DeletionPanel locale="en" identifier="Ana" remove={remove} />);
+  fireEvent.click(screen.getByRole("button", { name: "Delete my account" }));
+  const field = screen.getByLabelText("Type your identifier to confirm");
+  fireEvent.change(field, { target: { value: "bea" } });
+  const submit = () =>
+    act(async () => fireEvent.click(screen.getAllByRole("button", { name: "Delete my account" }).at(-1)!));
+  await submit();
+  expect(screen.getByRole("alert").textContent).toBe("That isn't your identifier.");
+  expect(remove).not.toHaveBeenCalled();
+  fireEvent.change(field, { target: { value: "@ana" } });
+  await submit();
+  expect(remove).toHaveBeenCalledOnce();
+  expect(screen.getByRole("alert").textContent).toContain("Something went wrong.");
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(screen.queryByLabelText("Type your identifier to confirm")).toBeNull();
+});

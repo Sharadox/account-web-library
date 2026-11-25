@@ -1,0 +1,23 @@
+@use "style/account" as *;
+
+.list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.row {
+  display: grid;
+  gap: 2px;
+  padding: 12px 0;
+  border-bottom: 1px solid $line;
+  font-size: 14.5px;
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+.muted {
+  margin: 0;
+  color: $soft;
+  font-size: 13.5px;
+}

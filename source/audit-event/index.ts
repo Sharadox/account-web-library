@@ -39,3 +39,18 @@ export async function recordAuditEvent(
     .execute();
   return id;
 }
+
+/**
+ * Forgets audit events older than `before`, from the daily job: the log is kept a year, as the privacy policy says.
+ * Returns how many went.
+ *
+ * @example
+ * await pruneAuditEvents(database, { before: new Date(Date.now() - 365 * 86_400_000) });
+ */
+export async function pruneAuditEvents(
+  database: Kysely<AccountDatabase>,
+  { before }: { before: Date },
+): Promise<number> {
+  const result = await database.deleteFrom("audit_event").where("at", "<", before).executeTakeFirst();
+  return Number(result.numDeletedRows);
+}

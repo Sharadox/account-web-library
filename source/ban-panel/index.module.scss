@@ -1,0 +1,41 @@
+@use "style/account" as *;
+
+.none,
+.state,
+.statement,
+.rules,
+.appeal {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+.none,
+.rules {
+  color: $soft;
+}
+.rules a {
+  color: $text;
+}
+.field {
+  display: grid;
+  gap: 6px;
+  span {
+    color: $soft;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  textarea {
+    padding: 10px 12px;
+    border: 1px solid $line;
+    border-radius: $small-radius;
+    background: $raised;
+    color: $text;
+    font: inherit;
+    resize: vertical;
+    @include scrollbar;
+    &:focus {
+      border-color: $accent;
+      outline: 0;
+    }
+  }
+}

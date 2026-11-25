@@ -1,3 +1,4 @@
+import { notifyAccount } from "@sharadox/account-web-library/account-notice";
 import { uuidVersion7 } from "@sharadox/web-library/identifier/uuid-version-7";
 import { deleteAccount } from "@sharadox/account-web-library/account-deletion";
 import type { InactivityWarningTable } from "@sharadox/account-web-library/account-database/type";
@@ -89,20 +90,11 @@ export async function runInactivity(
       .returning("id")
       .executeTakeFirst();
     if (!recorded) continue;
-    const contacts = await server.database
-      .selectFrom("contact")
-      .select(["kind", "value"])
-      .where("account_id", "=", account.id)
-      .where("verified_at", "is not", null)
-      .execute();
-    for (const contact of contacts) {
-      const channel = server.channels.find(({ kind }) => kind === contact.kind);
-      await channel?.notify?.({
-        contact,
-        language: account.language ?? "en",
-        notice: { kind: "inactivity-warning", deletionAt: deletion },
-      });
-    }
+    await notifyAccount(server, {
+      accountId: account.id,
+      notice: { kind: "inactivity-warning", deletionAt: deletion },
+      now,
+    });
     warned++;
   }
   return { warned, deleted };

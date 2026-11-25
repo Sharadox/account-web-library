@@ -1,0 +1,16 @@
+@use "style/account" as *;
+
+.picture {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+}
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.file {
+  @include visually-hidden;
+}

@@ -1,0 +1,15 @@
+@use "style/account" as *;
+
+.button {
+  justify-self: start;
+}
+.form {
+  display: grid;
+  gap: 16px;
+}
+.text {
+  margin: 0;
+  color: $soft;
+  font-size: 14.5px;
+  line-height: 1.6;
+}

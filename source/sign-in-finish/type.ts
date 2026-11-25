@@ -1,3 +1,4 @@
+import type { SignInProgress } from "@sharadox/account-web-library/sign-in-step/type";
 import type { CodeVerificationResult } from "@sharadox/account-web-library/code-verification/type";
 
 export interface SignInFinish {
@@ -17,10 +18,8 @@ export interface SignInFinish {
 type Refusal = Extract<CodeVerificationResult, { valid: false }>["reason"];
 
 export type SignInFinishResult =
-  /** `notify`, on a browser new to the account system: tells every email (call it after answering). */
-  | { status: "signed-in"; accountId: string; token: string; notify?: () => Promise<void> }
-  /** The account has two-factor on: ask for its authenticator's code (or a recovery code), then `finishSecondFactor`. */
-  | { status: "second-factor"; ticket: string }
+  /** Signed in, or other required methods are left (`finishSignInStep`). */
+  | SignInProgress
   /** No account has this contact yet: ask for an identifier, then `finishSignUp` with the ticket. */
   | { status: "sign-up"; ticket: string }
   | { status: "refused"; reason: Refusal }

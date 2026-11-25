@@ -1,0 +1,99 @@
+"use client";
+import { useEffect, useState } from "react";
+import { Icon } from "@sharadox/icon-web-library/icon";
+import { classNames } from "@sharadox/web-library/class-name";
+import { useAccountAction } from "@sharadox/account-web-library/account-action";
+import { AccountButton } from "@sharadox/account-web-library/account-button";
+import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { formatAccountTime } from "@sharadox/account-web-library/account-time";
+import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
+import { noticeText } from "@sharadox/account-web-library/notification-bell";
+import styles from "./index.module.scss";
+import type { InboxPanelProperties } from "@sharadox/account-web-library/inbox-panel/type";
+
+/**
+ * Every notification of the account, newest first, unread ones marked: each to mark as read or delete, "Mark all as
+ * read", and "Show more" for older ones.
+ *
+ * @example
+ * <InboxPanel locale="en" {...page} loadMore={loadMore} markRead={markRead} remove={remove} />
+ */
+export function InboxPanel({ locale, notifications, unread, more, loadMore, markRead, remove }: InboxPanelProperties) {
+  const [shown, setShown] = useState(notifications);
+  const [left, setLeft] = useState(more);
+  const [loading, setLoading] = useState(false);
+  const { run, pending } = useAccountAction();
+  const words = ACCOUNT_WORDS;
+  useEffect(() => {
+    setShown(notifications);
+    setLeft(more);
+  }, [notifications, more]);
+
+  return (
+    <AccountCard>
+      {unread > 0 && (
+        <AccountButton
+          look="quiet"
+          icon="check"
+          pending={pending}
+          onClick={() => void run(() => markRead())}
+          className={styles.all}
+        >
+          {say(words.bell.markAll, locale)}
+        </AccountButton>
+      )}
+      {shown.length === 0 ? (
+        <p className={styles.empty}>{say(words.bell.empty, locale)}</p>
+      ) : (
+        <ul className={styles.list}>
+          {shown.map((notification) => (
+            <li key={notification.id} className={classNames(styles.item, !notification.readAt && styles.unread)}>
+              <span className={styles.text}>
+                <span>{noticeText(notification.kind, locale)}</span>
+                <time dateTime={notification.createdAt}>{formatAccountTime(notification.createdAt, locale)}</time>
+              </span>
+              {!notification.readAt && (
+                <button
+                  type="button"
+                  className={styles.action}
+                  aria-label={say(words.bell.markRead, locale)}
+                  onClick={() => void run(() => markRead([notification.id]))}
+                >
+                  <Icon name="check" />
+                </button>
+              )}
+              <button
+                type="button"
+                className={styles.action}
+                aria-label={say(words.common.delete, locale)}
+                onClick={() =>
+                  void run(() => remove(notification.id), {
+                    onDone: () => setShown((all) => all.filter(({ id }) => id !== notification.id)),
+                  })
+                }
+              >
+                <Icon name="trash" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {left && (
+        <AccountButton
+          look="plain"
+          pending={loading}
+          className={styles.more}
+          onClick={async () => {
+            setLoading(true);
+            const page = await loadMore(shown.at(-1)!.id);
+            setShown((all) => [...all, ...page.notifications]);
+            setLeft(page.more);
+            setLoading(false);
+          }}
+        >
+          {say(words.common.more, locale)}
+        </AccountButton>
+      )}
+    </AccountCard>
+  );
+}

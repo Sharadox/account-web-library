@@ -1,0 +1,152 @@
+@use "style/account" as *;
+
+.root {
+  position: relative;
+}
+.bell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  font-size: 22px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  @include focus;
+  &:hover,
+  &[aria-expanded="true"] {
+    background: rgb(127 127 127 / 14%);
+  }
+}
+.badge {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: $accent;
+  color: $accent-text;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+.panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: -52px;
+  z-index: 60;
+  display: grid;
+  gap: 8px;
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(480px, calc(100dvh - #{$bar} - 24px));
+  padding: 12px;
+  border: 1px solid $line;
+  border-radius: $radius;
+  background: $raised;
+  box-shadow: $shadow;
+  color: $text;
+  font-family: $font;
+  overflow-y: auto;
+  @include scrollbar;
+}
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.heading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.link,
+.all {
+  padding: 4px 6px;
+  border: 0;
+  border-radius: $small-radius;
+  background: none;
+  color: $accent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  @include focus;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+.all {
+  justify-self: center;
+}
+.empty {
+  margin: 8px 0;
+  color: $soft;
+  font-size: 14px;
+  text-align: center;
+}
+.list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border-radius: $small-radius;
+  &:hover {
+    background: $surface;
+  }
+}
+.unread .text > span::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: $accent;
+  vertical-align: middle;
+}
+.text {
+  display: grid;
+  gap: 2px;
+  font-size: 14px;
+  line-height: 1.4;
+  time {
+    color: $soft;
+    font-size: 12.5px;
+  }
+}
+.action {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: $soft;
+  font-size: 16px;
+  cursor: pointer;
+  @include focus;
+  &:hover {
+    background: $line;
+    color: $text;
+  }
+}

@@ -1,0 +1,74 @@
+@use "style/account" as *;
+
+:where(.field) {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: $soft;
+  font-size: 13px;
+  font-weight: 600;
+}
+.group {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  border: 1px solid $line;
+  border-radius: $small-radius;
+  background: $raised;
+  overflow: hidden;
+  transition: border-color 0.2s;
+  &:focus-within {
+    border-color: $accent;
+    box-shadow: 0 0 0 1px $accent;
+  }
+}
+.invalid {
+  border-color: $danger;
+}
+.prefix,
+.suffix {
+  display: flex;
+  flex: none;
+  align-items: center;
+  padding: 0 12px;
+  background: $surface;
+  color: $soft;
+  font-size: 15px;
+  user-select: none;
+}
+.prefix {
+  border-right: 1px solid $line;
+}
+.suffix {
+  border-left: 1px solid $line;
+}
+.input {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: $text;
+  font: inherit;
+  font-size: 15px;
+  &::placeholder {
+    color: $soft;
+  }
+}
+.hint {
+  color: $soft;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.error {
+  color: $danger;
+  font-size: 13px;
+  line-height: 1.5;
+}

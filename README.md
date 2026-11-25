@@ -41,20 +41,31 @@ Every key is derived from it with `deriveSecret`.
 
 3. `finishSignIn(server, { requestId, code, address, token, now? })` limits guesses per address group. It answers:
    - `signed-in`, with `{ accountId, token }`: set `token` as the cookie;
-   - `sign-up`, with `{ ticket }`, for a contact with no account;
+   - `more`, with `{ ticket, methods, recoveryCode }`, when other required methods are left (step 5);
+   - `sign-up`, with `{ ticket }`, for a contact with no account (nothing is saved until step 4);
    - `refused`, with the code's reason or `rate-limit`.
 4. `finishSignUp(server, { ticket, name, identifier, token, userAgent?, now? })` creates the account and signs it
    in. A refused name or identifier can be tried again with the same ticket, which lasts 15 minutes.
-5. With two-factor on, `finishSignIn` answers `second-factor` with a ticket (10 minutes) instead of signing in:
-   `finishSecondFactor(server, { ticket, code, address, token, userAgent?, now? })` takes the authenticator app's
-   code (never the same step twice) or a recovery code (single use). Guesses are limited per account and per
-   address group.
+5. **Authentication methods** (`authentication-method`, `sign-in-step`): an account's verified sign-in emails and
+   its authenticator apps (any number, each named). Each can be **required**: then every sign-in passes it. Without
+   any required method one is enough; with some, all of them, in any order, after the first.
+   - `startSignInWithIdentifier(server, { identifier, solution, address, now? })` starts with an identifier instead
+     of an email: `choose` with the account's `methods` (emails only hinted at: `a•••@example.com`).
+   - `sendSignInStepCode(server, { ticket, contactId, address, language })` sends an email step's code.
+   - `finishSignInStep(server, { ticket, step, address, token, userAgent?, now? })` takes one step:
+     `{ kind: "email", requestId, code }`, `{ kind: "authenticator", id, code }` (never the same 30-second step
+     twice) or `{ kind: "recovery-code", code }` (single use; stands in for an authenticator). It answers
+     `signed-in`, `more` (with what's left; tickets last 10 minutes) or `refused`. Guesses are limited per
+     account and per address group.
+   - `authenticationMethods(database, { accountId })`, `setMethodRequired(database, { accountId, kind, id,
+required })` (step-up first), `contactHint(contact)`.
 
 A sign-in on a browser new to the account system answers with `notify`: call it after answering, to tell every
 email (`new-sign-in`).
 
 Pass `token` (the cookie) to `startSignIn` too: a contact of an account already signed in on that browser gets
-`{ status: "signed-in", accountId }` and no code. Codes are 6 digits, shown in emails as `123 456`. Identifiers are
+`{ status: "signed-in", accountId }` and no code. Codes are 6 digits, shown in emails one box per digit, under
+subjects that start with "Account · " ("Conta · "). A used code request forgets the address it was sent to. Identifiers are
 always stored and passed without the `@` that the interface shows in front of them.
 
 `DEFAULT_SIGN_IN_LIMITS` (`account-server`):
@@ -286,14 +297,47 @@ Reasons: `name-invalid`, `no-account`. The audit log records that it changed, no
 code (asking again sends a new one); `finishContactAddition(server, { accountId, requestId, code })` verifies it.
 Removing one is `removeContact` (the last sign-in contact can't go).
 
-### Two-factor: `totp-setup`, `recovery-code-regeneration`, `second-factor-finish`, `secret-encryption`
+### Authenticators: `totp-setup`, `recovery-code-regeneration`, `secret-encryption`
 
-- `startTotpSetup(server, { accountId, issuer })` → `{ status: "started", uri, secret }`: show `uri` as a QR code and
-  `secret` for typing in. The secret is stored encrypted (AES-256-GCM, key derived from `ACCOUNT_SECRET`).
-- `confirmTotpSetup(server, { accountId, code })` turns it on with the app's first right code and returns 10 recovery
-  codes to show once (only their HMACs are stored).
-- `removeTotp(database, { accountId })`, `totpStatus(database, { accountId })` → `{ on, recoveryCodesLeft }`,
-  `regenerateRecoveryCodes(server, { accountId })` (the old ones stop working).
+- `startTotpSetup(server, { accountId, issuer, name })` → `{ status: "started", id, uri, secret }` (or `name`,
+  `no-account`): show `uri` as a QR code and `secret` for typing in. An account can have any number; a new setup
+  replaces only an unfinished one. The secret is stored encrypted (AES-256-GCM, key derived from `ACCOUNT_SECRET`).
+- `confirmTotpSetup(server, { accountId, id, code })` turns it on with the app's first right code. Recovery codes
+  are then **offered**, never made unasked: `regenerateRecoveryCodes(server, { accountId })` makes 10 to show once
+  (only their HMACs are stored; old ones stop working).
+- `renameTotp(database, { accountId, id, name })`, `removeTotp(database, { accountId, id })` (the recovery codes go
+  with the last authenticator), `totpStatus(database, { accountId })` → `{ authenticators: [{ id, name, required,
+createdAt }], recoveryCodesLeft }`.
+
+### Notifications: `notice-kind`, `account-notice`, `notification-inbox`, `notification-preference`
+
+- `notifyAccount(server, { accountId, notice, except? })` puts a notice in the account's inbox (the bell) and sends it
+  to every verified contact but `except`, each unless the owner turned that channel off.
+- `NOTICE_KINDS`: `new-sign-in`, `contact-added`, `recovery-code-used` (security: one channel always stays on) and
+  `inactivity-warning` (always by email).
+- `listNotifications(database, { accountId, limit = 20, before? })` → `{ notifications, unread, more }`;
+  `markNotificationsRead(database, { accountId, ids? })`; `deleteNotification(database, { accountId, id })`;
+  `pruneNotifications(database, { before })`.
+- `notificationPreferences(database, { accountId })`, `setNotificationPreference(database, { accountId, kind,
+channel: "in-app" | "email", enabled })` → `changed` or `last-channel` / `locked` / `kind`,
+  `noticeEnabled(database, { accountId, kind, channel })`.
+
+### Birthday: `account-birthday`
+
+Optional, for a birthday gift: `setBirthday(database, { accountId, birthday: { day, month, year? } | null })`,
+`accountBirthday(database, { accountId })`, `checkBirthday(birthday, { now?, minimumAge = MINIMUM_AGE (16) })`: a
+day that exists (29 February only in a leap year, when the year is given) and, with a year, an owner at least 16.
+
+### Roles: `role-deletion`
+
+`roleHolders(database, { application, role })` (how many grants deleting it takes away) and `deleteRole(database, {
+application, role, actorAccountId })`: every grant goes with it; the default role and ban roles are protected.
+
+### Nightly: `account-maintenance`
+
+`runAccountMaintenance(server, storage, { now? })` prunes expired code requests (and the addresses they hold), rate
+limits, challenges, sessions, ended bans, audit events and notifications older than a year (`pruneAuditEvents`),
+then runs the inactivity job.
 
 ### Devices, activity, export and deletion
 
@@ -359,3 +403,29 @@ In the database (migration `0006-rule-ban`): `rule`, `ban`, `ban_rule` (a cited 
 ## License
 
 Sharadox Open Source License 0.1.0 (see `LICENSE.md`).
+
+## Screens (React, for every company's account site)
+
+The account site's whole interface, generic: a company brings only its look (`AccountTheme`), its name and its server
+actions. Every screen follows the same rules: pages open at once with skeletons where data loads, every action shows a
+loader and then a notification, data is read-only until Edit (then Save and Discard), anything copyable has a copy
+button, one-time codes go in a pop-up of 6 boxes, and every scroll area has the same thin scrollbar. English and
+European Portuguese (`ACCOUNT_WORDS`, `say`, `explainRefusal`).
+
+- **Look:** `AccountTheme({ theme })` sets `--account-*` custom properties (background, surface, surfaceRaised, text,
+  textSoft, line, accent, accentText, danger, success, radius, smallRadius, font, fontDisplay, barHeight, shadow).
+- **Frame:** `ToastProvider` (notifications under the bar), `AccountActions({ locale, stepUp })` and
+  `useAccountAction()` → `{ run, submit, pending }` (loader, notification, the code pop-up when a change needs a fresh
+  code, then the action again). Actions answer `AccountAnswer`: `done`, `step-up` or `refused` with a reason.
+- **Layout:** `accountAreas({ locale, administrator })`, `accountSectionPath(locale, area, section?)`,
+  `isAccountSection(area, section)`; `AccountShell` (areas across the top, the area's sections down the side).
+- **Bar:** `AccountMenu` (picture → menu: role chips, settings, administration, switch account page with Back, add
+  another, sign out, sign out of all), `NotificationBell`, `AccountAvatar`.
+- **Sign-in:** `SignInScreen({ locale, company, actions, next, rulesHref })` (email or identifier, the methods,
+  required steps, sign-up with name and identifier).
+- **Panels:** `OverviewPanel`, `IdentityPanel`, `PicturePanel`, `BirthdayPanel`, `EmailMethods`,
+  `AuthenticatorMethods`, `RecoveryCodes`, `DevicePanel`, `ActivityPanel`, `InboxPanel`, `PreferencePanel`,
+  `DownloadPanel`, `BanPanel`, `DeletionPanel`, and for administrators `AccountAdministration`, `RoleAdministration`,
+  `BanAdministration`, `AppealAdministration`, `RuleAdministration`.
+- **Pieces:** `AccountButton`, `AccountCard`, `TextField` (prefix and suffix as their own sections), `Tip`,
+  `CopyButton`, `Skeleton`, `Dialog`, `CodeBoxes`, `CodeDialog`, `EditablePanel`, `RequiredSwitch`.

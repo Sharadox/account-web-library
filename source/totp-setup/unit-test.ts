@@ -3,10 +3,17 @@ import type { MemoryDatabase } from "@sharadox/database-web-library/memory-datab
 import type { AccountServerDatabase } from "@sharadox/account-web-library/account-database/type";
 import type { AccountServer } from "@sharadox/account-web-library/account-server/type";
 import { decodeBase32 } from "@sharadox/account-web-library/base-32";
+import { regenerateRecoveryCodes } from "@sharadox/account-web-library/recovery-code-regeneration";
 import { createTestPerson } from "@sharadox/account-web-library/test-person";
 import { createTestServerDatabase } from "@sharadox/account-web-library/test-server";
 import { totpCode } from "@sharadox/account-web-library/totp";
-import { confirmTotpSetup, removeTotp, startTotpSetup, totpStatus } from "@sharadox/account-web-library/totp-setup";
+import {
+  confirmTotpSetup,
+  removeTotp,
+  renameTotp,
+  startTotpSetup,
+  totpStatus,
+} from "@sharadox/account-web-library/totp-setup";
 
 let memory: MemoryDatabase<AccountServerDatabase>;
 let server: AccountServer;
@@ -18,52 +25,93 @@ beforeEach(async () => {
 });
 afterEach(() => memory.close());
 
-test("sets up an authenticator app: a secret to scan or type, turned on by its first right code", async () => {
-  const setup = await startTotpSetup(server, { accountId, issuer: "Luis Pires Decor" });
+/** An authenticator set up and turned on, named `name`; returns its id and secret. */
+const authenticator = async (name: string, now = 0) => {
+  const setup = await startTotpSetup(server, { accountId, issuer: "Company", name });
   if (setup.status !== "started") throw new Error(setup.status);
+  const secret = decodeBase32(setup.secret);
+  const confirmed = await confirmTotpSetup(server, { accountId, id: setup.id, code: totpCode(secret, now), now });
+  if (!confirmed.confirmed) throw new Error(confirmed.reason);
+  return { id: setup.id, secret };
+};
+
+test("sets up a named authenticator app: a secret to scan or type, turned on by its first right code", async () => {
+  const setup = await startTotpSetup(server, { accountId, issuer: "Luis Pires Decor", name: "  My phone " });
+  if (setup.status !== "started") throw new Error(setup.status);
+  expect(setup.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7/);
   expect(setup.uri).toMatch(/^otpauth:\/\/totp\/Luis%20Pires%20Decor:ana\?/);
   expect(setup.secret).toMatch(/^[A-Z2-7]{32}$/);
   const row = await memory.database.selectFrom("totp_credential").selectAll().executeTakeFirstOrThrow();
   expect(row.secret_ciphertext).not.toContain(setup.secret);
-  expect(row.confirmed_at).toBeNull();
-  expect(await totpStatus(server.database, { accountId })).toEqual({ on: false, recoveryCodesLeft: 0 });
+  expect(row).toMatchObject({ name: "My phone", confirmed_at: null, required: false });
+  expect(await totpStatus(server.database, { accountId })).toEqual({ authenticators: [], recoveryCodesLeft: 0 });
   const secret = decodeBase32(setup.secret);
-  expect(await confirmTotpSetup(server, { accountId, code: "000000", now: 30_000 })).toEqual({
+  expect(await confirmTotpSetup(server, { accountId, id: setup.id, code: "000000", now: 30_000 })).toEqual({
     confirmed: false,
     reason: "wrong",
   });
-  const confirmed = await confirmTotpSetup(server, { accountId, code: totpCode(secret, 60_000), now: 60_000 });
-  if (!confirmed.confirmed) throw new Error(confirmed.reason);
-  expect(confirmed.recoveryCodes).toHaveLength(10);
-  expect(await totpStatus(server.database, { accountId })).toEqual({ on: true, recoveryCodesLeft: 10 });
-  const hashes = await memory.database.selectFrom("recovery_code").select("code_hash").execute();
-  expect(hashes.map(({ code_hash }) => code_hash)).not.toContain(confirmed.recoveryCodes[0]);
-  const actions = await memory.database.selectFrom("audit_event").select("action").execute();
-  expect(actions.map(({ action }) => action)).toContain("second-factor.turned-on");
-});
-
-test("a new setup replaces an unfinished one, and can't start while one is on", async () => {
-  await startTotpSetup(server, { accountId, issuer: "Company" });
-  const second = await startTotpSetup(server, { accountId, issuer: "Company" });
-  if (second.status !== "started") throw new Error(second.status);
-  expect(await memory.database.selectFrom("totp_credential").select("id").execute()).toHaveLength(1);
-  await confirmTotpSetup(server, { accountId, code: totpCode(decodeBase32(second.secret), 0), now: 0 });
-  expect(await startTotpSetup(server, { accountId, issuer: "Company" })).toEqual({ status: "already-on" });
-  expect(await confirmTotpSetup(server, { accountId, code: "123456" })).toEqual({ confirmed: false, reason: "none" });
-});
-
-test("refuses unknown accounts, and confirming with nothing set up", async () => {
   expect(
-    await startTotpSetup(server, { accountId: "0198f5a2-7a4c-7000-8000-000000000009", issuer: "Company" }),
-  ).toEqual({ status: "no-account" });
-  expect(await confirmTotpSetup(server, { accountId, code: "123456" })).toEqual({ confirmed: false, reason: "none" });
+    await confirmTotpSetup(server, { accountId, id: setup.id, code: totpCode(secret, 60_000), now: 60_000 }),
+  ).toEqual({ confirmed: true });
+  // Recovery codes are offered, never made on their own.
+  expect(await totpStatus(server.database, { accountId })).toEqual({
+    authenticators: [{ id: setup.id, name: "My phone", required: false, createdAt: expect.any(Date) }],
+    recoveryCodesLeft: 0,
+  });
+  expect(await memory.database.selectFrom("recovery_code").select("id").execute()).toEqual([]);
+  const actions = await memory.database.selectFrom("audit_event").select("action").execute();
+  expect(actions.map(({ action }) => action)).toContain("authenticator.added");
 });
 
-test("turns two-factor off, with its recovery codes", async () => {
-  const setup = await startTotpSetup(server, { accountId, issuer: "Company" });
-  if (setup.status !== "started") throw new Error(setup.status);
-  await confirmTotpSetup(server, { accountId, code: totpCode(decodeBase32(setup.secret), 0), now: 0 });
-  expect(await removeTotp(server.database, { accountId })).toEqual({ removed: true });
-  expect(await totpStatus(server.database, { accountId })).toEqual({ on: false, recoveryCodesLeft: 0 });
-  expect(await removeTotp(server.database, { accountId })).toEqual({ removed: false });
+test("an account can have any number of authenticators; a new setup replaces only an unfinished one", async () => {
+  await authenticator("Phone");
+  await startTotpSetup(server, { accountId, issuer: "Company", name: "Abandoned" });
+  const tablet = await authenticator("Tablet");
+  const rows = await memory.database.selectFrom("totp_credential").select("name").orderBy("name").execute();
+  expect(rows.map(({ name }) => name)).toEqual(["Phone", "Tablet"]);
+  const status = await totpStatus(server.database, { accountId });
+  expect(status.authenticators.map(({ name }) => name)).toEqual(["Phone", "Tablet"]);
+  expect(await confirmTotpSetup(server, { accountId, id: tablet.id, code: "123456" })).toEqual({
+    confirmed: false,
+    reason: "none",
+  });
+});
+
+test("names have 1 to 50 characters; refuses unknown accounts and confirming nothing", async () => {
+  expect(await startTotpSetup(server, { accountId, issuer: "Company", name: " " })).toEqual({ status: "name" });
+  expect(await startTotpSetup(server, { accountId, issuer: "Company", name: "x".repeat(51) })).toEqual({
+    status: "name",
+  });
+  expect(
+    await startTotpSetup(server, { accountId: "0198f5a2-7a4c-7000-8000-000000000009", issuer: "C", name: "Phone" }),
+  ).toEqual({ status: "no-account" });
+  expect(
+    await confirmTotpSetup(server, { accountId, id: "0198f5a2-7a4c-7000-8000-000000000009", code: "123456" }),
+  ).toEqual({ confirmed: false, reason: "none" });
+});
+
+test("renames an authenticator of the account only", async () => {
+  const { id } = await authenticator("Phone");
+  expect(await renameTotp(server.database, { accountId, id, name: " Old phone " })).toEqual({ renamed: true });
+  expect((await totpStatus(server.database, { accountId })).authenticators[0]!.name).toBe("Old phone");
+  expect(await renameTotp(server.database, { accountId, id, name: "" })).toEqual({ renamed: false, reason: "name" });
+  const { accountId: other } = await createTestPerson(memory.database, "bea");
+  expect(await renameTotp(server.database, { accountId: other, id, name: "Mine" })).toEqual({
+    renamed: false,
+    reason: "none",
+  });
+});
+
+test("removes one authenticator; the recovery codes go with the last one", async () => {
+  const phone = await authenticator("Phone");
+  const tablet = await authenticator("Tablet");
+  const made = await regenerateRecoveryCodes(server, { accountId });
+  expect(made.status).toBe("made");
+  expect(await removeTotp(server.database, { accountId, id: phone.id })).toEqual({ removed: true });
+  expect(await totpStatus(server.database, { accountId })).toMatchObject({ recoveryCodesLeft: 10 });
+  expect(await removeTotp(server.database, { accountId, id: phone.id })).toEqual({ removed: false });
+  expect(await removeTotp(server.database, { accountId, id: tablet.id })).toEqual({ removed: true });
+  expect(await totpStatus(server.database, { accountId })).toEqual({ authenticators: [], recoveryCodesLeft: 0 });
+  const actions = await memory.database.selectFrom("audit_event").select("action").execute();
+  expect(actions.map(({ action }) => action)).toContain("authenticator.removed");
 });

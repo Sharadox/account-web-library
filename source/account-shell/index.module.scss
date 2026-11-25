@@ -1,0 +1,123 @@
+@use "style/account" as *;
+
+.shell {
+  display: grid;
+  gap: 24px;
+  width: 100%;
+  min-width: 0;
+  color: $text;
+  font-family: $font;
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+    @include focus;
+  }
+}
+.areas {
+  border-bottom: 1px solid $line;
+  overflow-x: auto;
+  @include scrollbar;
+  ul {
+    display: flex;
+    gap: 4px;
+    min-width: max-content;
+  }
+  a {
+    position: relative;
+    display: block;
+    padding: 12px 14px;
+    color: $soft;
+    font-size: 14.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: color 0.2s;
+    &:hover {
+      color: $text;
+    }
+    &[aria-current="page"] {
+      color: $text;
+      &::after {
+        content: "";
+        position: absolute;
+        right: 10px;
+        bottom: -1px;
+        left: 10px;
+        height: 2px;
+        border-radius: 2px;
+        background: $accent;
+      }
+    }
+  }
+}
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  @media (min-width: 860px) {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+}
+.sections {
+  overflow-x: auto;
+  @include scrollbar;
+  ul {
+    display: flex;
+    gap: 6px;
+    min-width: max-content;
+    @media (min-width: 860px) {
+      position: sticky;
+      top: calc(#{$bar} + 24px);
+      flex-direction: column;
+      min-width: 0;
+    }
+  }
+  a {
+    display: block;
+    padding: 8px 12px;
+    border-radius: $small-radius;
+    color: $soft;
+    font-size: 14px;
+    white-space: nowrap;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+    &:hover {
+      background: $surface;
+      color: $text;
+    }
+    &[aria-current="page"] {
+      background: $surface;
+      color: $text;
+      font-weight: 600;
+    }
+  }
+}
+.content {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.header {
+  display: grid;
+  gap: 6px;
+}
+.title {
+  margin: 0;
+  font-family: $display;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 600;
+  line-height: 1.2;
+}
+.description {
+  max-width: 68ch;
+  margin: 0;
+  color: $soft;
+  font-size: 15px;
+  line-height: 1.6;
+}

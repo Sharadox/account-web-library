@@ -10,7 +10,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Checks a typed one-time code against its request, with the row locked so concurrent guesses can't pass the
- * attempt limit. The right code works once, before it expires, unless a newer request replaced it or 5 wrong codes
+ * attempt limit. The right code works once (the request then forgets the address), before it expires, unless a newer request replaced it or 5 wrong codes
  * came first. Returns the proved contact and the account that asked (null for sign-in).
  *
  * @example
@@ -37,7 +37,8 @@ export async function verifyCode(
     if (request.attempts >= maximumAttempts) return { valid: false, reason: "attempts" };
     const at = transaction.updateTable("code_request").where("id", "=", requestId);
     if (matchesOneTimeCode(code, request.code_hash, { pepper, purpose: `${purpose}:${requestId}` })) {
-      await at.set({ used_at: new Date(now) }).execute();
+      // The address was only needed to send the code: a used request forgets it.
+      await at.set({ used_at: new Date(now), value: "" }).execute();
       return { valid: true, contact: { kind: request.kind, value: request.value }, accountId: request.account_id };
     }
     const attempts = request.attempts + 1;

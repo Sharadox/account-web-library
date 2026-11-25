@@ -1,3 +1,1 @@
-{
-  "extends": "@sharadox/type-script-configuration-web-library/node.json"
-}
+{ "extends": "@sharadox/type-script-configuration-web-library/react-library.json" }
