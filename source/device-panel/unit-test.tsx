@@ -41,6 +41,13 @@ test("each browser by name, this one marked; the others can be signed out", asyn
   expect(screen.getByText("An unknown browser")).toBeTruthy();
   const buttons = screen.getAllByRole("button", { name: "Sign out there" });
   expect(buttons).toHaveLength(1);
-  await act(async () => fireEvent.click(buttons[0]!));
+  let finish: () => void = () => {};
+  end.mockImplementationOnce(() => new Promise((resolve) => (finish = () => resolve({ status: "done" as const }))));
+  fireEvent.click(buttons[0]!);
   expect(end).toHaveBeenCalledWith("s2");
+  // A loader on that device while it's signed out.
+  expect(screen.getByRole("button", { name: "Signing out…" })).toBeTruthy();
+  expect(screen.getAllByRole("listitem")[1]!.getAttribute("aria-busy")).toBe("true");
+  await act(async () => finish());
+  expect(screen.queryByRole("button", { name: "Signing out…" })).toBeNull();
 });

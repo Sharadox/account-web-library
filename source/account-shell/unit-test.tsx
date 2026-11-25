@@ -55,6 +55,7 @@ test("the areas across the top, the area's heading, and its sections to jump to"
   expect(within(sections).getByRole("link", { name: "Sign-In Methods" }).getAttribute("aria-current")).toBe("true");
   expect(screen.getByRole("region", { name: "Devices" }).textContent).toContain("Devices list");
   expect(screen.getByText("Every way you can sign in.")).toBeTruthy();
+  expect(screen.getByRole("heading", { level: 1 }).closest("[data-sections]")).toBeTruthy();
   expect(watched.map(({ id }) => id).filter(Boolean)).toEqual(["methods", "devices", "activity"]);
 });
 
@@ -98,6 +99,8 @@ test("one section needs no side menu; outside the areas nothing is marked", () =
   );
   expect(screen.queryByRole("navigation", { name: "Secções" })).toBeNull();
   expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Resumo");
+  // Without a side menu, the page takes the whole width.
+  expect(screen.getByRole("heading", { level: 1 }).closest("[data-sections]")).toBeNull();
   path = "/pt/nowhere";
   rerender(
     <AccountShell locale="pt" areas={areas}>

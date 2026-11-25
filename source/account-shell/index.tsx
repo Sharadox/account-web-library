@@ -68,7 +68,7 @@ export function AccountShell({ locale, areas, children }: AccountShellProperties
           ))}
         </ul>
       </nav>
-      <div className={styles.body}>
+      <div className={styles.body} data-sections={sections.length > 0 || undefined}>
         {sections.length > 0 && (
           <nav className={styles.sections} aria-label={say(ACCOUNT_WORDS.area.sections, locale)}>
             <ul>
