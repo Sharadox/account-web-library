@@ -171,3 +171,21 @@ test("notices carry the logos too", async () => {
   });
   expect(sent[0]!.inlineImages).toHaveLength(1);
 });
+
+test("tells of a sign-in on a new browser, with when", async () => {
+  sent.length = 0;
+  await channel.notify!({
+    contact: { kind: "email", value: "ana@example.com" },
+    language: "en",
+    notice: { kind: "new-sign-in", at: new Date(Date.UTC(2026, 6, 1, 12, 5)) },
+  });
+  expect(sent[0]!.subject).toBe("New sign-in to your Luis Pires Decor account");
+  expect(sent[0]!.text).toContain("1 July 2026 at 13:05");
+  await channel.notify!({
+    contact: { kind: "email", value: "ana@example.com" },
+    language: "pt",
+    notice: { kind: "new-sign-in", at: new Date(Date.UTC(2026, 0, 15, 9, 30)) },
+  });
+  expect(sent[1]!.subject).toBe("Nova entrada na sua conta Luis Pires Decor");
+  expect(sent[1]!.text).toContain("15 de janeiro de 2026");
+});

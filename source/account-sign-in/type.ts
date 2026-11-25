@@ -19,4 +19,6 @@ export interface SignInResult {
   token: string;
   browserSessionId: string;
   accountSessionId: string;
+  /** Whether the browser had no session before (tell the account's emails: someone signed in somewhere new). */
+  newBrowser: boolean;
 }

@@ -124,3 +124,29 @@ test("uses the current time by default", async () => {
     "sign-up",
   );
 });
+
+test("signing in on a new browser tells every email after the answer; the same browser again doesn't", async () => {
+  const created = await createPersonAccount(memory.database, {
+    name: "A Person",
+    identifier: "rui",
+    contact: { kind: "email", value: "rui@example.com" },
+  });
+  if (!created.created) throw new Error("not created");
+  const notices: unknown[] = [];
+  server.channels[0]!.notify = async (delivery) => void notices.push(delivery);
+  const first = await codeFor("rui@example.com", 0);
+  const signedIn = await finishSignIn(server, { ...first, address: "203.0.113.7", token: undefined, now: 1_000 });
+  if (signedIn.status !== "signed-in") throw new Error(signedIn.status);
+  await signedIn.notify?.();
+  expect(notices).toEqual([
+    {
+      contact: { kind: "email", value: "rui@example.com" },
+      language: "en",
+      notice: { kind: "new-sign-in", at: new Date(1_000) },
+    },
+  ]);
+  const second = await codeFor("rui@example.com", 2_000);
+  const again = await finishSignIn(server, { ...second, address: "203.0.113.7", token: signedIn.token, now: 3_000 });
+  if (again.status !== "signed-in") throw new Error(again.status);
+  expect(again.notify).toBeUndefined();
+});

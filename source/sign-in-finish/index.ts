@@ -1,5 +1,6 @@
 import { addressGroup } from "@sharadox/protection-web-library/address-group";
 import { limitRate } from "@sharadox/protection-web-library/rate-limit";
+import { notifyAccount } from "@sharadox/account-web-library/account-notice";
 import { signIn } from "@sharadox/account-web-library/account-sign-in";
 import { signInLimits } from "@sharadox/account-web-library/account-server";
 import type { AccountServer } from "@sharadox/account-web-library/account-server/type";
@@ -16,7 +17,8 @@ const SECOND_FACTOR_SECONDS = 600;
 
 /**
  * The second step: the typed code. Guesses are limited per address group (and per request by `verifyCode`). With the
- * right code, an account with that contact is signed in (or, with two-factor on, gets a ticket for that step) on the browser (the new token goes in its cookie); a contact
+ * right code, an account with that contact is signed in (or, with two-factor on, gets a ticket for that step); on a new browser, call `notify` after answering to tell
+ * every email on the browser (the new token goes in its cookie); a contact
  * with no account gets a sign-up ticket for choosing an identifier.
  *
  * @example
@@ -73,5 +75,8 @@ export async function finishSignIn(
     return { status: "second-factor", ticket };
   }
   const session = await signIn(server.database, { accountId: found.accountId, token, userAgent, now });
-  return { status: "signed-in", accountId: found.accountId, token: session.token };
+  if (!session.newBrowser) return { status: "signed-in", accountId: found.accountId, token: session.token };
+  const notify = () =>
+    notifyAccount(server, { accountId: found.accountId, notice: { kind: "new-sign-in", at: new Date(now) } });
+  return { status: "signed-in", accountId: found.accountId, token: session.token, notify };
 }

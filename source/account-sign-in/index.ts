@@ -87,6 +87,6 @@ export async function signIn(
       detail: { accountSessionId, secondFactor },
       now,
     });
-    return { token: fresh.token, browserSessionId, accountSessionId };
+    return { token: fresh.token, browserSessionId, accountSessionId, newBrowser: !browser };
   });
 }

@@ -50,6 +50,9 @@ Every key is derived from it with `deriveSecret`.
    code (never the same step twice) or a recovery code (single use). Guesses are limited per account and per
    address group.
 
+A sign-in on a browser new to the account system answers with `notify`: call it after answering, to tell every
+email (`new-sign-in`).
+
 Pass `token` (the cookie) to `startSignIn` too: a contact of an account already signed in on that browser gets
 `{ status: "signed-in", accountId }` and no code. Codes are 6 digits, shown in emails as `123 456`. Identifiers are
 always stored and passed without the `@` that the interface shows in front of them.

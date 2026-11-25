@@ -17,7 +17,8 @@ export interface SignInFinish {
 type Refusal = Extract<CodeVerificationResult, { valid: false }>["reason"];
 
 export type SignInFinishResult =
-  | { status: "signed-in"; accountId: string; token: string }
+  /** `notify`, on a browser new to the account system: tells every email (call it after answering). */
+  | { status: "signed-in"; accountId: string; token: string; notify?: () => Promise<void> }
   /** The account has two-factor on: ask for its authenticator's code (or a recovery code), then `finishSecondFactor`. */
   | { status: "second-factor"; ticket: string }
   /** No account has this contact yet: ask for an identifier, then `finishSignUp` with the ticket. */
