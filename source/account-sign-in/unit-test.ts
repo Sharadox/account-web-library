@@ -119,3 +119,16 @@ test("remembers the browser's description, trimmed to 500 characters, for the li
   const browser = await memory.database.selectFrom("browser_session").select("user_agent").executeTakeFirstOrThrow();
   expect(browser.user_agent).toBe("x".repeat(500));
 });
+
+test("says whether the browser is new to the account system", async () => {
+  const created = await createPersonAccount(memory.database, {
+    name: "A Person",
+    identifier: "fresh",
+    contact: { kind: "email", value: "fresh@example.com" },
+  });
+  if (!created.created) throw new Error("not created");
+  const first = await signIn(memory.database, { accountId: created.accountId });
+  expect(first.newBrowser).toBe(true);
+  expect((await signIn(memory.database, { accountId: created.accountId, token: first.token })).newBrowser).toBe(false);
+  expect((await signIn(memory.database, { accountId: created.accountId, token: "unknown" })).newBrowser).toBe(true);
+});

@@ -6,6 +6,9 @@ What changed in each version of `@sharadox/account-web-library`, newest first.
 
 First building blocks:
 
+- a sign-in on a new browser tells every email (`new-sign-in` notice; `signIn` returns `newBrowser`, `finishSignIn`
+  and `finishSecondFactor` return `notify`);
+
 - inactivity: `runInactivity` deletes a person unused for 2 years after warnings 6 months, 3 months, 1 month, 1 week
   and 1 day before (`deletionDate`; migration `0007-language-inactivity` adds the account's `language`); notices by email
   (`ContactChannel.notify`: inactivity warnings, a new email, a recovery code used) through `notifyAccount`;

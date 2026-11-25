@@ -26,6 +26,8 @@ interface Words {
 
 const date = (language: string, at: Date) =>
   new Intl.DateTimeFormat(language, { dateStyle: "long", timeZone: "Europe/Lisbon" }).format(at);
+const moment = (language: string, at: Date) =>
+  new Intl.DateTimeFormat(language, { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Lisbon" }).format(at);
 
 const ENGLISH: Words = {
   language: "en",
@@ -60,6 +62,14 @@ const ENGLISH: Words = {
       body: (notice) => [
         `${(notice as { contact: string }).contact} can now sign in to your account.`,
         "If it wasn't you, sign in, remove it, and sign out of the devices you don't recognize.",
+      ],
+    },
+    "new-sign-in": {
+      subject: (company) => `New sign-in to your ${company} account`,
+      heading: "A new sign-in",
+      body: (notice) => [
+        `Someone signed in to your account on a browser that hadn't been used before, on ${moment("en-GB", (notice as { at: Date }).at)} (Portugal's time).`,
+        "If it was you, there is nothing to do. If not, sign in, sign out of the devices you don't recognize, and turn on two-step verification.",
       ],
     },
     "recovery-code-used": {
@@ -106,6 +116,14 @@ const PORTUGUESE: Words = {
       body: (notice) => [
         `${(notice as { contact: string }).contact} pode agora entrar na sua conta.`,
         "Se não foi você, entre, remova-o e termine a sessão nos dispositivos que não reconhece.",
+      ],
+    },
+    "new-sign-in": {
+      subject: (company) => `Nova entrada na sua conta ${company}`,
+      heading: "Uma nova entrada",
+      body: (notice) => [
+        `Alguém entrou na sua conta num navegador que nunca tinha sido usado, a ${moment("pt-PT", (notice as { at: Date }).at)} (hora de Portugal).`,
+        "Se foi você, não tem de fazer nada. Se não, entre, termine a sessão nos dispositivos que não reconhece e ligue a verificação em dois passos.",
       ],
     },
     "recovery-code-used": {

@@ -83,7 +83,10 @@ test("a recovery code works once, in any case and spacing", async () => {
   const notices: unknown[] = [];
   server.channels = [{ kind: "email", send: async () => {}, notify: async (delivery) => void notices.push(delivery) }];
   if (result.status === "signed-in") await result.notify?.();
-  expect(notices).toEqual([expect.objectContaining({ notice: { kind: "recovery-code-used" } })]);
+  expect(notices).toEqual([
+    expect.objectContaining({ notice: { kind: "recovery-code-used" } }),
+    expect.objectContaining({ notice: { kind: "new-sign-in", at: new Date(100_000) } }),
+  ]);
   expect(await totpStatus(server.database, { accountId })).toEqual({ on: true, recoveryCodesLeft: 9 });
   expect(
     await finishSecondFactor(server, { ticket, code: typed, address: "203.0.113.7", token: undefined, now: 100_000 }),
@@ -115,4 +118,18 @@ test("an account turned off two-factor in the meantime passes with its ticket's 
       now: 100_000,
     }),
   ).toMatchObject({ status: "signed-in" });
+});
+
+test("an authenticator code on a browser already known sends no notice", async () => {
+  const { signIn } = await import("@sharadox/account-web-library/account-sign-in");
+  const { token } = await signIn(memory.database, { accountId, now: 50_000 });
+  const ticket = await ticketAfterCode();
+  const result = await finishSecondFactor(server, {
+    ticket,
+    code: totpCode(totp, 100_000),
+    address: "203.0.113.7",
+    token,
+    now: 100_000,
+  });
+  expect(result).toEqual({ status: "signed-in", accountId, token: expect.any(String) });
 });

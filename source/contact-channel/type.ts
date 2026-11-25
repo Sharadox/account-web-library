@@ -18,7 +18,9 @@ export type Notice =
   /** Another email was added to the account. */
   | { kind: "contact-added"; contact: string }
   /** A recovery code was used to sign in. */
-  | { kind: "recovery-code-used" };
+  | { kind: "recovery-code-used" }
+  /** Someone signed in on a browser that had never signed in before. */
+  | { kind: "new-sign-in"; at: Date };
 
 export interface NoticeDelivery {
   contact: Contact;

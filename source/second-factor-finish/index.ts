@@ -18,8 +18,8 @@ import { verifyTotp } from "@sharadox/account-web-library/totp";
 /**
  * The two-factor step of signing in: the authenticator app's code (never the same step twice) or a single-use
  * recovery code, after the emailed code passed (`finishSignIn` gave the ticket). Guesses are limited per account and
- * per address group. The session is marked as having passed two-factor. After a recovery code, call `notify` after
- * answering, to tell every contact.
+ * per address group. The session is marked as having passed two-factor. After a recovery code or on a new browser,
+ * call `notify` after answering, to tell every contact.
  *
  * @example
  * const result = await finishSecondFactor(server, { ticket, code, address, token: cookie });
@@ -87,7 +87,13 @@ export async function finishSecondFactor(
     });
   if (passed === "wrong") return { status: "refused", reason: "wrong" };
   const session = await signIn(server.database, { accountId, token, secondFactor: true, userAgent, now });
-  if (passed === "passed") return { status: "signed-in", accountId, token: session.token };
-  const notify = () => notifyAccount(server, { accountId, notice: { kind: "recovery-code-used" } });
+  const notices = [
+    ...(passed === "recovery" ? [{ kind: "recovery-code-used" as const }] : []),
+    ...(session.newBrowser ? [{ kind: "new-sign-in" as const, at: new Date(now) }] : []),
+  ];
+  if (notices.length === 0) return { status: "signed-in", accountId, token: session.token };
+  const notify = async () => {
+    for (const notice of notices) await notifyAccount(server, { accountId, notice });
+  };
   return { status: "signed-in", accountId, token: session.token, notify };
 }
