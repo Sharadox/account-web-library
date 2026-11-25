@@ -6,6 +6,8 @@ What changed in each version of `@sharadox/account-web-library`, newest first.
 
 First building blocks:
 
+- the account system's own application (`ACCOUNT_APPLICATION`) and `setUpAccountSystem`;
+
 - a sign-in on a new browser tells every email (`new-sign-in` notice; `signIn` returns `newBrowser`, `finishSignIn`
   and `finishSecondFactor` return `notify`);
 
