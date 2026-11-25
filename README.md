@@ -426,7 +426,8 @@ European Portuguese (`ACCOUNT_WORDS`, `say`, `explainRefusal`).
   code, then the action again). Actions answer `AccountAnswer`: `done`, `step-up` or `refused` with a reason.
 - **Layout:** each area is one page (`/<locale>/<area>`, the overview `/<locale>`) with its sections one under
   another: `accountAreas({ locale, administrator })`, `accountSectionPath(locale, area, section?)`
-  (`/<locale>/<area>#<section>`), `accountAreaOfPath(path)`, `isAccountSection(area, section)` (for old
+  (`/<locale>/<area>#<section>`; the privacy area is `/<locale>/data`, leaving `/privacy` to the policy),
+  `accountAreaOfPath(path)`, `isAccountSection(area, section)` (for old
   `/<area>/<section>` addresses). `AccountShell({ locale, areas })`, put in a layout so it stays between areas: the
   areas across the top, the area's heading, and a side menu that jumps to each `AccountSection({ id, title,
 description?, hideTitle? })` and marks the one being read.

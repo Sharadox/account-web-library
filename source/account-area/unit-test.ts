@@ -29,8 +29,11 @@ test("six areas for administrators, five for everyone else, each one page with i
 });
 
 test("addresses, the sections that exist, and the area an address is in", () => {
-  expect(accountSectionPath("pt", "privacy", "deletion")).toBe("/pt/privacy#deletion");
-  expect(accountSectionPath("pt", "privacy")).toBe("/pt/privacy");
+  // The privacy area's address leaves /privacy to the privacy policy.
+  expect(accountSectionPath("pt", "privacy", "deletion")).toBe("/pt/data#deletion");
+  expect(accountSectionPath("pt", "privacy")).toBe("/pt/data");
+  expect(accountAreaOfPath("/pt/data")).toBe("privacy");
+  expect(accountAreaOfPath("/pt/privacy")).toBeUndefined();
   expect(accountSectionPath("en", "overview")).toBe("/en");
   expect(accountSectionPath("en", "overview", "summary")).toBe("/en");
   expect(isAccountSection("administration", "bans")).toBe(true);

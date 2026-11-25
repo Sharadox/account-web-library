@@ -26,7 +26,7 @@ test("who the account is, then a card per area with its number, each leading to 
   ).toBe("/en/security#methods");
   expect(screen.getByRole("link", { name: /Devices 2 signed in/ }).getAttribute("href")).toBe("/en/security#devices");
   expect(screen.getByRole("link", { name: /Inbox 4 unread/ }).getAttribute("href")).toBe("/en/notifications#inbox");
-  expect(screen.getByRole("link", { name: /Download Your Data/ }).getAttribute("href")).toBe("/en/privacy#download");
+  expect(screen.getByRole("link", { name: /Download Your Data/ }).getAttribute("href")).toBe("/en/data#download");
 });
 
 test("one of each reads in the singular, in Portuguese too", () => {
