@@ -6,6 +6,8 @@ What changed in each version of `@sharadox/account-web-library`, newest first.
 
 First building blocks:
 
+- a jump to a section holds it in place while the sections above it fill in, until the reader scrolls;
+
 - the generic pieces (button, card, code boxes, copy button, dialog, pending mark, skeleton, switch, text field, tip,
   notifications) now come from `@sharadox/interface-web-library`; `AccountTheme` dresses them too (`AccountThemeValues`
   is its `InterfaceThemeValues`);

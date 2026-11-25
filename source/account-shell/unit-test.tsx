@@ -79,6 +79,58 @@ test("a jump scrolls to its section and marks it; reading further down moves the
   expect(scrolled).toHaveBeenCalledOnce();
 });
 
+test("after a jump, the section stays in place while what is above it fills in, until the reader scrolls", () => {
+  path = "/en/security";
+  let resized: () => void = () => {};
+  globalThis.ResizeObserver = class {
+    constructor(callback: () => void) {
+      let on = true;
+      resized = () => on && callback();
+      this.disconnect = () => void (on = false);
+    }
+    observe() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+  render(security());
+  const scrolled = vi.fn();
+  document.getElementById("activity")!.scrollIntoView = scrolled;
+  fireEvent.click(within(screen.getByRole("navigation", { name: "Sections" })).getByRole("link", { name: "Activity" }));
+  act(() => resized());
+  expect(scrolled).toHaveBeenLastCalledWith({ block: "start" });
+  expect(scrolled).toHaveBeenCalledTimes(2);
+  fireEvent.wheel(window);
+  act(() => resized());
+  expect(scrolled).toHaveBeenCalledTimes(2);
+});
+
+test("a held jump lets go by itself after a while", () => {
+  vi.useFakeTimers();
+  try {
+    path = "/en/security";
+    let resized: () => void = () => {};
+    globalThis.ResizeObserver = class {
+      constructor(callback: () => void) {
+        let on = true;
+        resized = () => on && callback();
+        this.disconnect = () => void (on = false);
+      }
+      observe() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+    render(security());
+    const scrolled = vi.fn();
+    document.getElementById("devices")!.scrollIntoView = scrolled;
+    fireEvent.click(
+      within(screen.getByRole("navigation", { name: "Sections" })).getByRole("link", { name: "Devices" }),
+    );
+    act(() => vi.advanceTimersByTime(3_000));
+    act(() => resized());
+    expect(scrolled).toHaveBeenCalledOnce();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
 test("an address with a section opens there", () => {
   path = "/en/security";
   window.location.hash = "#devices";
