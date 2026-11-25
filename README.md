@@ -326,6 +326,11 @@ revokedBy? })` ends it now (history kept); `listGrants(database, { accountId })`
   permissions now: the default role plus active grants (an active exclusive one wins), limited to `scope`, and for an
   agent to what its owner may do right now. Built on `effectivePermissions`.
 
+The account system's own application is `ACCOUNT_APPLICATION` (`account-application`): permissions to see the
+administration, read and give roles, ban and decide appeals; roles `administrator`, `moderator` and the ban.
+`setUpAccountSystem(database, { administrators })` (`account-setup`) syncs it and makes the identifiers listed
+(`ACCOUNT_ADMINISTRATORS`) administrators when they aren't: run it at start and after sign-ins.
+
 In the database (migration `0005-role`): `permission`, `role`, `role_permission`, `role_grant`. A role still
 granted can't be deleted (`RESTRICT`); a grant outlives the account that gave it (`granted_by` becomes null).
 
