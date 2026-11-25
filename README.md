@@ -294,18 +294,21 @@ Reasons: `name-invalid`, `no-account`. The audit log records that it changed, no
 ### Contacts: `contact-addition-flow`
 
 `startContactAddition(server, { accountId, contact, address, language })` adds the contact unverified and sends it a
-code (asking again sends a new one); `finishContactAddition(server, { accountId, requestId, code })` verifies it.
+code (asking again sends a new one); `finishContactAddition(server, { accountId, requestId, code, required? })` verifies
+it (with `required`, it is asked for at every sign-in from then on).
 Removing one is `removeContact` (the last sign-in contact can't go).
 
 ### Authenticators: `totp-setup`, `recovery-code-regeneration`, `secret-encryption`
 
-- `startTotpSetup(server, { accountId, issuer, name })` → `{ status: "started", id, uri, secret }` (or `name`,
-  `no-account`): show `uri` as a QR code and `secret` for typing in. An account can have any number; a new setup
+- `startTotpSetup(server, { accountId, issuer, name? })` → `{ status: "started", id, uri, secret }` (or `name` when
+  over 50 characters, `no-account`): show `uri` as a QR code and `secret` for typing in. The name is optional (null
+  without one: `authenticatorLabel` then calls it by the day it was added). An account can have any number; a new setup
   replaces only an unfinished one. The secret is stored encrypted (AES-256-GCM, key derived from `ACCOUNT_SECRET`).
-- `confirmTotpSetup(server, { accountId, id, code })` turns it on with the app's first right code. Recovery codes
+- `confirmTotpSetup(server, { accountId, id, code, name? })` turns it on with the app's first right code, named then
+  if its owner wants. Recovery codes
   are then **offered**, never made unasked: `regenerateRecoveryCodes(server, { accountId })` makes 10 to show once
   (only their HMACs are stored; old ones stop working).
-- `renameTotp(database, { accountId, id, name })`, `removeTotp(database, { accountId, id })` (the recovery codes go
+- `renameTotp(database, { accountId, id, name })` (an empty name takes it away), `removeTotp(database, { accountId, id })` (the recovery codes go
   with the last authenticator), `totpStatus(database, { accountId })` → `{ authenticators: [{ id, name, required,
 createdAt }], recoveryCodesLeft }`.
 
@@ -408,24 +411,39 @@ Sharadox Open Source License 0.1.0 (see `LICENSE.md`).
 
 The account site's whole interface, generic: a company brings only its look (`AccountTheme`), its name and its server
 actions. Every screen follows the same rules: pages open at once with skeletons where data loads, every action shows a
-loader and then a notification, data is read-only until Edit (then Save and Discard), anything copyable has a copy
-button, one-time codes go in a pop-up of 6 boxes, and every scroll area has the same thin scrollbar. English and
+loader and then a notification, a change shows at once (a switch flips, a saved value appears, marked as saving) and
+goes back if it fails, data is read-only until Edit (then Save and Cancel), anything copyable has a copy button,
+one-time codes go in a pop-up of 6 boxes in the middle of the screen with a countdown to their expiry, titles are in
+Title Case, and every scroll area has the same thin scrollbar. English and
 European Portuguese (`ACCOUNT_WORDS`, `say`, `explainRefusal`).
 
 - **Look:** `AccountTheme({ theme })` sets `--account-*` custom properties (background, surface, surfaceRaised, text,
-  textSoft, line, accent, accentText, danger, success, radius, smallRadius, font, fontDisplay, barHeight, shadow).
+  textSoft, line, accent, accentText, danger, success, radius, smallRadius, font, fontDisplay, barHeight, shadow, and
+  for fields fieldBackground, fieldBorder, fieldHeight, fieldFocus, labelSize, labelSpacing, labelCase), so a company's
+  account forms can look like its own.
 - **Frame:** `ToastProvider` (notifications under the bar), `AccountActions({ locale, stepUp })` and
   `useAccountAction()` → `{ run, submit, pending }` (loader, notification, the code pop-up when a change needs a fresh
   code, then the action again). Actions answer `AccountAnswer`: `done`, `step-up` or `refused` with a reason.
-- **Layout:** `accountAreas({ locale, administrator })`, `accountSectionPath(locale, area, section?)`,
-  `isAccountSection(area, section)`; `AccountShell` (areas across the top, the area's sections down the side).
+- **Layout:** each area is one page (`/<locale>/<area>`, the overview `/<locale>`) with its sections one under
+  another: `accountAreas({ locale, administrator })`, `accountSectionPath(locale, area, section?)`
+  (`/<locale>/<area>#<section>`; the privacy area is `/<locale>/data`, leaving `/privacy` to the policy),
+  `accountAreaOfPath(path)`, `isAccountSection(area, section)` (for old
+  `/<area>/<section>` addresses). `AccountShell({ locale, areas })`, put in a layout so it stays between areas: the
+  areas across the top, the area's heading, and a side menu that jumps to each `AccountSection({ id, title,
+description?, hideTitle? })` and marks the one being read.
 - **Bar:** `AccountMenu` (picture → menu: role chips, settings, administration, switch account page with Back, add
   another, sign out, sign out of all), `NotificationBell`, `AccountAvatar`.
-- **Sign-in:** `SignInScreen({ locale, company, actions, next, rulesHref })` (email or identifier, the methods,
-  required steps, sign-up with name and identifier).
+- **Sign-in:** `SignInScreen({ locale, company, actions, next, rulesHref, framed?, className? })` (email or identifier,
+  the methods, required steps, sign-up with name and identifier; `framed={false}` when the site puts it in its own
+  card).
 - **Panels:** `OverviewPanel`, `IdentityPanel`, `PicturePanel`, `BirthdayPanel`, `EmailMethods`,
   `AuthenticatorMethods`, `RecoveryCodes`, `DevicePanel`, `ActivityPanel`, `InboxPanel`, `PreferencePanel`,
   `DownloadPanel`, `BanPanel`, `DeletionPanel`, and for administrators `AccountAdministration`, `RoleAdministration`,
   `BanAdministration`, `AppealAdministration`, `RuleAdministration`.
 - **Pieces:** `AccountButton`, `AccountCard`, `TextField` (prefix and suffix as their own sections), `Tip`,
-  `CopyButton`, `Skeleton`, `Dialog`, `CodeBoxes`, `CodeDialog`, `EditablePanel`, `RequiredSwitch`.
+  `CopyButton`, `Skeleton` (`shape`: lines, card, list, profile, cards), `Dialog` (always centered), `CodeBoxes`,
+  `CodeDialog` (`lifetimeSeconds`: a countdown, then Send a new code or Cancel; `CODE_LIFETIME_SECONDS`),
+  `EditablePanel` (`preview`: the new value shown at once), `RequiredSwitch` (flips at once, a loader on its knob,
+  back if `onChange` answers false), `PendingMark` ("Saving…" beside a value), `authenticatorLabel`.
+- **Emails:** every code, whatever it is for, comes in one email: "Account · Authentication Code" ("Conta · Código de
+  Autenticação").

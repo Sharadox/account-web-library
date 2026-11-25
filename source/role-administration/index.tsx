@@ -48,7 +48,7 @@ export function RoleAdministration({ locale, roles, remove }: RoleAdministration
       <Dialog
         open={asking !== null}
         onClose={() => setAsking(null)}
-        title={say(words.deleteRole, locale)}
+        title={say(words.deleteRoleTitle, locale)}
         closeLabel={say(ACCOUNT_WORDS.common.close, locale)}
       >
         <p className={styles.text}>

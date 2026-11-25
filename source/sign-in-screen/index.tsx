@@ -3,12 +3,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Icon } from "@sharadox/icon-web-library/icon";
+import { classNames } from "@sharadox/web-library/class-name";
 import { solveChallenge } from "@sharadox/protection-web-library/proof-of-work-solver";
 import type { Solution } from "@sharadox/protection-web-library/proof-of-work/type";
 import { AccountButton } from "@sharadox/account-web-library/account-button";
 import { ACCOUNT_WORDS, explainRefusal, say } from "@sharadox/account-web-library/account-words";
 import type { MethodChoice } from "@sharadox/account-web-library/authentication-method/type";
+import { authenticatorLabel } from "@sharadox/account-web-library/authenticator-label";
 import { CodeDialog } from "@sharadox/account-web-library/code-dialog";
+import { CODE_LIFETIME_SECONDS } from "@sharadox/account-web-library/code-lifetime";
 import { normalizeEmail } from "@sharadox/account-web-library/email-contact";
 import { TextField } from "@sharadox/account-web-library/input-group";
 import { useToast } from "@sharadox/account-web-library/toast";
@@ -39,12 +42,20 @@ export function readWho(typed: string): { kind: "email" | "identifier"; value: s
  * 2. an email gets a code, typed in a pop-up of 6 boxes; an identifier lists the account's ways in;
  * 3. every method the account marks required is asked for next, one after another;
  * 4. an email with no account asks for a name and an identifier: nothing is saved until then.
- * Every step shows a loader while it's checked.
+ * Every step shows a loader while it's checked. It sits in its own card, or (`framed={false}`) in the site's.
  *
  * @example
  * <SignInScreen locale="en" company="Luis Pires Decor" actions={actions} next="/en" rulesHref="/en/rules" />
  */
-export function SignInScreen({ locale, company, actions, next, rulesHref }: SignInScreenProperties) {
+export function SignInScreen({
+  locale,
+  company,
+  actions,
+  next,
+  rulesHref,
+  framed = true,
+  className,
+}: SignInScreenProperties) {
   const router = useRouter();
   const { notify } = useToast();
   const [stage, setStage] = useState<"who" | "methods" | "sign-up">("who");
@@ -202,7 +213,7 @@ export function SignInScreen({ locale, company, actions, next, rulesHref }: Sign
   };
 
   return (
-    <div className={styles.screen}>
+    <div className={classNames(styles.screen, framed && styles.framed, className)}>
       {stage === "who" && (
         <form className={styles.step} onSubmit={submitWho} noValidate>
           <h1 className={styles.title}>{say(words.title, locale)}</h1>
@@ -239,7 +250,7 @@ export function SignInScreen({ locale, company, actions, next, rulesHref }: Sign
                   onClick={() =>
                     method.kind === "email"
                       ? void chooseEmail(method.id, method.hint)
-                      : setAsking({ kind: "authenticator", id: method.id, name: method.name })
+                      : setAsking({ kind: "authenticator", id: method.id, name: authenticatorLabel(method, locale) })
                   }
                 >
                   <Icon name={method.kind === "email" ? "email" : "key"} />
@@ -250,7 +261,7 @@ export function SignInScreen({ locale, company, actions, next, rulesHref }: Sign
                       </>
                     ) : (
                       <>
-                        {say(words.byAuthenticator, locale)}: <strong>{method.name}</strong>
+                        {say(words.byAuthenticator, locale)}: <strong>{authenticatorLabel(method, locale)}</strong>
                       </>
                     )}
                   </span>
@@ -344,7 +355,7 @@ export function SignInScreen({ locale, company, actions, next, rulesHref }: Sign
           )
         }
         onSubmit={check}
-        {...(asking?.kind === "email" ? { onResend: resend } : {})}
+        {...(asking?.kind === "email" ? { onResend: resend, lifetimeSeconds: CODE_LIFETIME_SECONDS } : {})}
       />
     </div>
   );

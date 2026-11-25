@@ -4,25 +4,33 @@ import styles from "./index.module.scss";
 import type { RequiredSwitchProperties } from "@sharadox/account-web-library/required-switch/type";
 
 /**
- * An on/off switch (a button with the switch role, read as on or off), busy while its change runs.
+ * An on/off switch (a button with the switch role, read as on or off). It flips the moment it's pressed, with a loader
+ * on its knob while the change runs, and flips back if the change fails (`onChange` answering false).
  *
  * @example
- * <RequiredSwitch label="Required at every sign-in" checked={required} onChange={(on) => setRequired(on)} />
+ * <RequiredSwitch label="Required at every sign-in" checked={required} onChange={(on) => save(on)} />
  */
 export function RequiredSwitch({ label, checked, onChange, disabled }: RequiredSwitchProperties) {
   const [pending, setPending] = useState(false);
+  // The value it was flipped to, kept until the page's own value changes (then that one is shown).
+  const [flipped, setFlipped] = useState<{ value: boolean; from: boolean } | null>(null);
+  const shown = flipped && flipped.from === checked ? flipped.value : checked;
   return (
     <button
       type="button"
       role="switch"
-      aria-checked={checked}
+      aria-checked={shown}
       aria-busy={pending || undefined}
       className={styles.switch}
       disabled={disabled || pending}
       onClick={async () => {
+        const before = flipped;
+        setFlipped({ value: !shown, from: checked });
         setPending(true);
-        await onChange(!checked);
+        const applied = await onChange(!shown);
         setPending(false);
+        // Failed: back to what it showed before.
+        if (applied === false) setFlipped(before);
       }}
     >
       <span className={styles.track} aria-hidden="true">

@@ -42,7 +42,7 @@ const ticketSecret = (server: AccountServer) => deriveSecret(server.secret, "sig
 const choice = (method: AuthenticationMethod): MethodChoice =>
   method.kind === "email"
     ? { kind: "email", id: method.id, hint: contactHint({ kind: "email", value: method.value }) }
-    : { kind: "authenticator", id: method.id, name: method.name };
+    : { kind: "authenticator", id: method.id, name: method.name, createdAt: method.createdAt.toISOString() };
 
 /** Whether the account has a recovery code left to use (only with an authenticator on). */
 async function recoveryCodeLeft(server: AccountServer, accountId: string, methods: AuthenticationMethod[]) {

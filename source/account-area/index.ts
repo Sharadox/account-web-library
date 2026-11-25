@@ -4,11 +4,17 @@ import type { Words } from "@sharadox/account-web-library/account-words/type";
 
 const S = ACCOUNT_WORDS.section;
 
-/** Every area's sections, each a page: `/<locale>/<area>/<section>` (the overview is `/<locale>`). */
-export const ACCOUNT_AREAS: readonly { key: AccountAreaKey; sections: readonly [string, Words][] }[] = [
-  { key: "overview", sections: [["summary", S.summary]] },
+/** Every area, one page (`/<locale>/<area>`; the overview is `/<locale>`), and its sections, one under another. */
+export const ACCOUNT_AREAS: readonly {
+  key: AccountAreaKey;
+  /** Its address after the locale (the privacy area's is `data`: `/privacy` is the privacy policy). */
+  path: string;
+  sections: readonly [string, Words][];
+}[] = [
+  { key: "overview", path: "", sections: [["summary", S.summary]] },
   {
     key: "profile",
+    path: "profile",
     sections: [
       ["identity", S.identity],
       ["picture", S.picture],
@@ -17,6 +23,7 @@ export const ACCOUNT_AREAS: readonly { key: AccountAreaKey; sections: readonly [
   },
   {
     key: "security",
+    path: "security",
     sections: [
       ["methods", S.methods],
       ["devices", S.devices],
@@ -25,6 +32,7 @@ export const ACCOUNT_AREAS: readonly { key: AccountAreaKey; sections: readonly [
   },
   {
     key: "notifications",
+    path: "notifications",
     sections: [
       ["inbox", S.inbox],
       ["preferences", S.preferences],
@@ -32,6 +40,7 @@ export const ACCOUNT_AREAS: readonly { key: AccountAreaKey; sections: readonly [
   },
   {
     key: "privacy",
+    path: "data",
     sections: [
       ["download", S.download],
       ["bans", S.bans],
@@ -40,6 +49,7 @@ export const ACCOUNT_AREAS: readonly { key: AccountAreaKey; sections: readonly [
   },
   {
     key: "administration",
+    path: "administration",
     sections: [
       ["accounts", S.accounts],
       ["roles", S.roles],
@@ -51,15 +61,28 @@ export const ACCOUNT_AREAS: readonly { key: AccountAreaKey; sections: readonly [
 ];
 
 /**
- * The address of an area's section: the overview at the locale's root, the rest `/<locale>/<area>/<section>`.
+ * The address of an area, or of one of its sections on the area's page: the overview at the locale's root, the rest
+ * `/<locale>/<area>` (the privacy area `/<locale>/data`), a section `/<locale>/<area>#<section>`.
  *
  * @example
- * accountSectionPath("en", "security", "devices"); // "/en/security/devices"
+ * accountSectionPath("en", "security", "devices"); // "/en/security#devices"
  */
 export function accountSectionPath(locale: string, area: AccountAreaKey, section?: string): string {
   if (area === "overview") return `/${locale}`;
-  const first = ACCOUNT_AREAS.find(({ key }) => key === area)!.sections[0]![0];
-  return `/${locale}/${area}/${section ?? first}`;
+  const { path } = ACCOUNT_AREAS.find(({ key }) => key === area)!;
+  return `/${locale}/${path}${section ? `#${section}` : ""}`;
+}
+
+/**
+ * Which area an address is in (`/<locale>` is the overview); undefined outside the areas (the rules, signing in).
+ *
+ * @example
+ * accountAreaOfPath("/en/security"); // "security"
+ */
+export function accountAreaOfPath(path: string): AccountAreaKey | undefined {
+  const [, , segment] = path.split("/");
+  if (!segment) return "overview";
+  return ACCOUNT_AREAS.find((area) => area.path === segment)?.key;
 }
 
 /**
@@ -83,7 +106,7 @@ export function accountAreas({ locale, administrator }: AccountAreaOptions): Acc
 }
 
 /**
- * Whether an address names a section that exists (for the page's `notFound()`).
+ * Whether an area has that section (the old `/<area>/<section>` addresses lead to it on the area's page).
  *
  * @example
  * isAccountSection("security", "devices"); // true

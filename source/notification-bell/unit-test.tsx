@@ -42,7 +42,7 @@ test("a badge with the unread count; opening loads the latest behind a skeleton"
   expect(screen.getByRole("status", { name: "Loading…" })).toBeTruthy();
   await act(async () => finish(page()));
   expect(screen.getAllByRole("listitem")).toHaveLength(3);
-  expect(screen.getByText("New sign-in on a browser not used before")).toBeTruthy();
+  expect(screen.getByText("New Sign-In on a Browser Not Used Before")).toBeTruthy();
   expect(screen.getByRole("link", { name: "See all notifications" }).getAttribute("href")).toBe(
     "/en/notifications/inbox",
   );

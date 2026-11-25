@@ -25,15 +25,18 @@ const monthName = (month: number, locale: string) =>
 export function BirthdayPanel({ locale, birthday, save }: BirthdayPanelProperties) {
   const { submit, run, pending } = useAccountAction();
   const words = ACCOUNT_WORDS.profile;
-  const shown = birthday
-    ? `${birthday.day} ${monthName(birthday.month, locale)}${birthday.year ? ` ${birthday.year}` : ""}`
-    : say(words.noBirthday, locale);
+  const written = (day: number, month: number, year: number | null) =>
+    `${day} ${monthName(month, locale)}${year ? ` ${year}` : ""}`;
+  const shown = birthday ? written(birthday.day, birthday.month, birthday.year) : say(words.noBirthday, locale);
   return (
     <AccountCard description={say(words.birthdayText, locale)}>
       <EditablePanel
         locale={locale}
         label={say(ACCOUNT_WORDS.section.birthday, locale)}
         view={shown}
+        preview={(form) =>
+          written(Number(form.get("day")), Number(form.get("month")), Number(String(form.get("year")).trim()) || null)
+        }
         editLabel={birthday ? undefined : say(ACCOUNT_WORDS.common.add, locale)}
         extra={
           birthday && (

@@ -11,7 +11,7 @@ import type { BanPanelProperties } from "@sharadox/account-web-library/ban-panel
 /**
  * The account's bans, or a thank-you without any: for each, whether it's active and until when, the statement of
  * reasons, the rules it broke (linked to the public rules), and its one appeal: Appeal shows the text with Save and
- * Discard; then its decision.
+ * Cancel; then its decision.
  *
  * @example
  * <BanPanel locale="en" bans={bans} rulesHref="/en/rules" appeal={appeal} />

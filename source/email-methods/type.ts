@@ -14,7 +14,8 @@ export interface EmailMethodsProperties {
   locale: AccountLocale;
   emails: readonly EmailMethod[];
   add: (email: string) => Promise<AccountAnswer<{ requestId: string }>>;
-  verify: (requestId: string, code: string) => Promise<AccountAnswer>;
+  /** Verifies the new email with its code; `required`: asked for at every sign-in from then on. */
+  verify: (requestId: string, code: string, required: boolean) => Promise<AccountAnswer>;
   remove: (id: string) => Promise<AccountAnswer>;
   setRequired: (id: string, required: boolean) => Promise<AccountAnswer>;
 }

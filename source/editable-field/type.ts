@@ -5,8 +5,13 @@ export interface EditablePanelProperties {
   locale: AccountLocale;
   /** What the panel shows, its heading ("Name"). */
   label: string;
-  /** The value as it is, read-only. */
+  /** The value as it is, read-only (a string, or an element that keeps its identity until the value changes). */
   view: ReactNode;
+  /**
+   * The value as it will be, from the form: shown at once on Save, marked as saving, until the page's new value
+   * arrives. Without it, the form waits with a loader.
+   */
+  preview?: (form: FormData) => ReactNode;
   /** The form's fields while editing (named inputs). */
   fields: ReactNode;
   /**

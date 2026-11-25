@@ -87,7 +87,9 @@ test("an account with a required authenticator is asked for it after the emailed
   const phone = await authenticator("Phone", true);
   const first = await afterEmail();
   if (first.status !== "more") throw new Error(first.status);
-  expect(first.methods).toEqual([{ kind: "authenticator", id: phone.id, name: "Phone" }]);
+  expect(first.methods).toEqual([
+    { kind: "authenticator", id: phone.id, name: "Phone", createdAt: expect.stringMatching(/^\d{4}-/) },
+  ]);
   expect(first.recoveryCode).toBe(false);
   expect(await memory.database.selectFrom("account_session").select("id").execute()).toEqual([]);
   const code = totpCode(phone.totp, now);
@@ -108,7 +110,7 @@ test("an identifier starts with any of the account's methods; one is enough when
   if (started.status !== "choose") throw new Error(started.status);
   expect(started.methods).toEqual([
     { kind: "email", id: contactId, hint: "a•••@example.com" },
-    { kind: "authenticator", id: phone.id, name: "Phone" },
+    { kind: "authenticator", id: phone.id, name: "Phone", createdAt: expect.stringMatching(/^\d{4}-/) },
   ]);
   const signedIn = await step(started.ticket, { kind: "authenticator", id: phone.id, code: totpCode(phone.totp, now) });
   expect(signedIn).toMatchObject({ status: "signed-in", accountId });

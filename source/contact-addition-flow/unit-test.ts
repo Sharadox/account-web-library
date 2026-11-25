@@ -147,3 +147,23 @@ test("a contact of a deleted, banned account can't be added", async () => {
     .execute();
   expect(await add("gone@example.com")).toEqual({ status: "refused", reason: "contact-banned" });
 });
+
+test("a contact can be required at every sign-in from the moment it is verified", async () => {
+  const result = await add("work@example.com");
+  if (result.status !== "sent") throw new Error(result.status);
+  await result.deliver();
+  const finished = await finishContactAddition(server, {
+    accountId,
+    requestId: result.requestId,
+    code: delivered.at(-1)!.code,
+    required: true,
+    now: 2_000,
+  });
+  expect(finished.status).toBe("verified");
+  const contact = await memory.database
+    .selectFrom("contact")
+    .select("required")
+    .where("id", "=", result.contactId)
+    .executeTakeFirstOrThrow();
+  expect(contact.required).toBe(true);
+});

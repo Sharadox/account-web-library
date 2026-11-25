@@ -86,7 +86,7 @@ test("a change that needs a fresh code asks for it in the pop-up, then runs agai
   let calls = 0;
   setUp(async () => (++calls === 1 ? { status: "step-up" } : { status: "done" }));
   await act(async () => fireEvent.click(screen.getByText("go")));
-  expect(screen.getByRole("heading", { name: "Confirm it's you" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Confirm It's You" })).toBeTruthy();
   expect(screen.getByText("ana@example.com")).toBeTruthy();
   await act(async () => paste("000000"));
   expect(screen.getAllByRole("alert").some((alert) => alert.textContent === "That code isn't right.")).toBe(true);

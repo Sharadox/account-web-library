@@ -1,0 +1,29 @@
+@use "style/account" as *;
+
+.section {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  scroll-margin-top: calc(#{$bar} + 24px);
+}
+.header {
+  display: grid;
+  gap: 6px;
+}
+.title {
+  margin: 0;
+  font-family: $display;
+  font-size: clamp(1.25rem, 2.4vw, 1.5rem);
+  font-weight: 600;
+  line-height: 1.25;
+}
+.description {
+  max-width: 68ch;
+  margin: 0;
+  color: $soft;
+  font-size: 14.5px;
+  line-height: 1.6;
+  p {
+    margin: 0;
+  }
+}

@@ -9,8 +9,8 @@ import { TextField } from "@sharadox/account-web-library/input-group";
 import type { IdentityPanelProperties } from "@sharadox/account-web-library/identity-panel/type";
 
 /**
- * The account's name and identifier, each read-only until Edit, then saved or discarded on its own; values are checked
- * here first, then by the server. The identifier's "@" is its own part of the field, never part of the value.
+ * The account's name and identifier, each read-only until Edit, then saved (shown at once, marked as saving) or
+ * cancelled on its own; values are checked here first, then by the server. The identifier's "@" is its own part of the field, never part of the value.
  *
  * @example
  * <IdentityPanel locale="en" name="Ana" identifier="ana" changeName={changeName} changeIdentifier={changeIdentifier} />
@@ -25,6 +25,7 @@ export function IdentityPanel({ locale, name, identifier, changeName, changeIden
         locale={locale}
         label={say(words.profile.name, locale)}
         view={name}
+        preview={(form) => String(form.get("name")).trim()}
         fields={
           <TextField
             label={say(words.profile.name, locale)}
@@ -47,6 +48,7 @@ export function IdentityPanel({ locale, name, identifier, changeName, changeIden
         locale={locale}
         label={say(words.profile.identifier, locale)}
         view={`@${identifier}`}
+        preview={(form) => `@${String(form.get("identifier")).trim().replace(/^@+/, "")}`}
         fields={
           <TextField
             label={say(words.profile.identifier, locale)}

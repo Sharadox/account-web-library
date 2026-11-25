@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useRef, useState } from "react";
 import { ACCOUNT_WORDS, explainRefusal, say } from "@sharadox/account-web-library/account-words";
 import { CodeDialog } from "@sharadox/account-web-library/code-dialog";
+import { CODE_LIFETIME_SECONDS } from "@sharadox/account-web-library/code-lifetime";
 import { useToast } from "@sharadox/account-web-library/toast";
 import type {
   AccountActionRunner,
@@ -60,6 +61,7 @@ export function AccountActions({ locale, stepUp, children }: AccountActionsPrope
     <ActionContext.Provider value={{ locale, confirm }}>
       {children}
       <CodeDialog
+        lifetimeSeconds={CODE_LIFETIME_SECONDS}
         locale={locale}
         open={asking}
         onClose={() => close(false)}
