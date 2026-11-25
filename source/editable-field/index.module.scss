@@ -1,0 +1,44 @@
+@use "style/account" as *;
+
+.panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid $line;
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.label {
+  margin: 0;
+  color: $soft;
+  font-size: 13px;
+  font-weight: 600;
+}
+.actions,
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.view {
+  color: $text;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.form {
+  display: grid;
+  gap: 12px;
+}
+.error {
+  margin: 0;
+  color: $danger;
+  font-size: 14px;
+}

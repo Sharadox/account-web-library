@@ -1,0 +1,20 @@
+@use "style/account" as *;
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: $small-radius;
+  background: $accent;
+  color: $accent-text;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  @include focus;
+  svg {
+    font-size: 18px;
+  }
+}

@@ -1,0 +1,41 @@
+@use "style/account" as *;
+
+.left {
+  margin: 0;
+  color: $soft;
+  font-size: 14px;
+  strong {
+    color: $text;
+  }
+}
+.shown {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.note {
+  margin: 0;
+  color: $text;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.codes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 24px;
+  width: 100%;
+  margin: 0;
+  padding: 16px;
+  border: 1px dashed $line;
+  border-radius: $small-radius;
+  background: $surface;
+  list-style: none;
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 15px;
+    letter-spacing: 0.06em;
+  }
+}
+.make {
+  justify-self: start;
+}

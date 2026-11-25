@@ -1,0 +1,37 @@
+@use "style/account" as *;
+
+.list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid $line;
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+.muted {
+  color: $soft;
+  font-size: 13.5px;
+}
+.text {
+  margin: 0;
+  color: $soft;
+  line-height: 1.6;
+  strong {
+    color: $text;
+  }
+}
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

@@ -1,0 +1,30 @@
+@use "style/account" as *;
+
+.fields {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 12px;
+  @media (max-width: 480px) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+.month {
+  display: grid;
+  gap: 6px;
+  label {
+    color: $soft;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  select {
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid $line;
+    border-radius: $small-radius;
+    background: $raised;
+    color: $text;
+    font: inherit;
+    font-size: 15px;
+    @include focus;
+  }
+}

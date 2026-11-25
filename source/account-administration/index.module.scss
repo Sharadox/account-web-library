@@ -1,0 +1,82 @@
+@use "style/account" as *;
+
+.search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  @media (max-width: 480px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  > span {
+    display: grid;
+    gap: 2px;
+  }
+  span span {
+    color: $soft;
+    font-size: 14px;
+  }
+}
+.subtitle {
+  margin: 8px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.muted {
+  margin: 0;
+  color: $soft;
+  font-size: 14px;
+}
+.list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid $line;
+  font-size: 14.5px;
+}
+.fields {
+  display: grid;
+  gap: 12px;
+}
+.field {
+  @include control-field;
+}
+.rules {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid $line;
+  border-radius: $small-radius;
+  legend {
+    padding: 0 4px;
+    color: $soft;
+    font-size: 13px;
+    font-weight: 600;
+  }
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  input {
+    width: 18px;
+    height: 18px;
+    accent-color: $accent;
+  }
+}

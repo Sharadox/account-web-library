@@ -1,0 +1,100 @@
+// The account screens' look, from custom properties a company sets (`AccountTheme`), each with a plain default, so
+// any company's account site wears its own colors, corners and fonts without touching these styles.
+
+$background: var(--account-background, #ffffff);
+$surface: var(--account-surface, #f6f6f6);
+$raised: var(--account-surface-raised, #ffffff);
+$text: var(--account-text, #111111);
+$soft: var(--account-text-soft, #5e5e5e);
+$line: var(--account-line, #e5e5e5);
+$accent: var(--account-accent, #111111);
+$accent-text: var(--account-accent-text, #ffffff);
+$danger: var(--account-danger, #c0392b);
+$success: var(--account-success, #2e7d32);
+$radius: var(--account-radius, 12px);
+$small-radius: var(--account-small-radius, 8px);
+$font: var(--account-font, inherit);
+$display: var(--account-font-display, inherit);
+$bar: var(--account-bar-height, 64px);
+$shadow: var(--account-shadow, 0 12px 40px -12px rgb(0 0 0 / 25%));
+$ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+/** Thin scrollbars in the line color, the same in every browser that styles them. */
+@mixin scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: $line transparent;
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: $line;
+    background-clip: padding-box;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: $soft;
+  }
+}
+
+/** The keyboard's focus ring. */
+@mixin focus {
+  &:focus-visible {
+    outline: 2px solid $accent;
+    outline-offset: 2px;
+  }
+}
+
+/** A card: the surface every panel sits on. */
+@mixin card {
+  border: 1px solid $line;
+  border-radius: $radius;
+  background: $raised;
+}
+
+/** Hidden but read aloud. */
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/** A labelled control that isn't a text field (a select, a text area, a date): label above, outlined box. */
+@mixin control-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  > span {
+    color: $soft;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  select,
+  textarea,
+  input {
+    min-height: 42px;
+    padding: 8px 12px;
+    border: 1px solid $line;
+    border-radius: $small-radius;
+    background: $raised;
+    color: $text;
+    font: inherit;
+    font-size: 15px;
+    &:focus {
+      border-color: $accent;
+      outline: 0;
+      box-shadow: 0 0 0 1px $accent;
+    }
+  }
+  textarea {
+    resize: vertical;
+    @include scrollbar;
+  }
+}

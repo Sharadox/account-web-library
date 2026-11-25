@@ -1,0 +1,20 @@
+@use "style/account" as *;
+
+:where(.avatar) {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  object-fit: cover;
+}
+:where(.initials) {
+  border: 1px solid $accent;
+  background: $surface;
+  color: $text;
+  font-size: calc(var(--size) * 0.38);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  user-select: none;
+}

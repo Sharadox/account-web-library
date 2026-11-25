@@ -403,3 +403,29 @@ In the database (migration `0006-rule-ban`): `rule`, `ban`, `ban_rule` (a cited 
 ## License
 
 Sharadox Open Source License 0.1.0 (see `LICENSE.md`).
+
+## Screens (React, for every company's account site)
+
+The account site's whole interface, generic: a company brings only its look (`AccountTheme`), its name and its server
+actions. Every screen follows the same rules: pages open at once with skeletons where data loads, every action shows a
+loader and then a notification, data is read-only until Edit (then Save and Discard), anything copyable has a copy
+button, one-time codes go in a pop-up of 6 boxes, and every scroll area has the same thin scrollbar. English and
+European Portuguese (`ACCOUNT_WORDS`, `say`, `explainRefusal`).
+
+- **Look:** `AccountTheme({ theme })` sets `--account-*` custom properties (background, surface, surfaceRaised, text,
+  textSoft, line, accent, accentText, danger, success, radius, smallRadius, font, fontDisplay, barHeight, shadow).
+- **Frame:** `ToastProvider` (notifications under the bar), `AccountActions({ locale, stepUp })` and
+  `useAccountAction()` → `{ run, submit, pending }` (loader, notification, the code pop-up when a change needs a fresh
+  code, then the action again). Actions answer `AccountAnswer`: `done`, `step-up` or `refused` with a reason.
+- **Layout:** `accountAreas({ locale, administrator })`, `accountSectionPath(locale, area, section?)`,
+  `isAccountSection(area, section)`; `AccountShell` (areas across the top, the area's sections down the side).
+- **Bar:** `AccountMenu` (picture → menu: role chips, settings, administration, switch account page with Back, add
+  another, sign out, sign out of all), `NotificationBell`, `AccountAvatar`.
+- **Sign-in:** `SignInScreen({ locale, company, actions, next, rulesHref })` (email or identifier, the methods,
+  required steps, sign-up with name and identifier).
+- **Panels:** `OverviewPanel`, `IdentityPanel`, `PicturePanel`, `BirthdayPanel`, `EmailMethods`,
+  `AuthenticatorMethods`, `RecoveryCodes`, `DevicePanel`, `ActivityPanel`, `InboxPanel`, `PreferencePanel`,
+  `DownloadPanel`, `BanPanel`, `DeletionPanel`, and for administrators `AccountAdministration`, `RoleAdministration`,
+  `BanAdministration`, `AppealAdministration`, `RuleAdministration`.
+- **Pieces:** `AccountButton`, `AccountCard`, `TextField` (prefix and suffix as their own sections), `Tip`,
+  `CopyButton`, `Skeleton`, `Dialog`, `CodeBoxes`, `CodeDialog`, `EditablePanel`, `RequiredSwitch`.

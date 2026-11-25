@@ -1,0 +1,65 @@
+@use "style/account" as *;
+
+.list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.item {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid $line;
+}
+.form {
+  display: grid;
+  gap: 12px;
+}
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.add {
+  justify-self: start;
+}
+.setup {
+  display: grid;
+  gap: 16px;
+  justify-items: start;
+  p {
+    margin: 0;
+    color: $soft;
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+}
+.qr {
+  padding: 12px;
+  border-radius: $small-radius;
+  background: #ffffff;
+}
+.key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  span {
+    color: $soft;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    overflow-wrap: anywhere;
+  }
+}
+.offer {
+  margin: 0;
+  color: $soft;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
