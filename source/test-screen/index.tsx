@@ -2,7 +2,7 @@ import { render, type RenderResult } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { AccountActions } from "@sharadox/account-web-library/account-action";
 import type { StepUp } from "@sharadox/account-web-library/account-action/type";
-import { ToastProvider } from "@sharadox/account-web-library/toast";
+import { ToastProvider } from "@sharadox/interface-web-library/toast";
 
 /**
  * For tests of the account screens: renders `screen` inside the notifications and the action runner, with a step-up

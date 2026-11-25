@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "@sharadox/icon-web-library/icon";
 import { classNames } from "@sharadox/web-library/class-name";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
-import { Skeleton } from "@sharadox/account-web-library/skeleton";
+import { Skeleton } from "@sharadox/interface-web-library/skeleton";
 import styles from "./index.module.scss";
 import type { BellPage, NotificationBellProperties } from "@sharadox/account-web-library/notification-bell/type";
 

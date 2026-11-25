@@ -1,11 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { accountAreaOfPath } from "@sharadox/account-web-library/account-area";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import styles from "./index.module.scss";
 import type { AccountShellProperties } from "@sharadox/account-web-library/account-shell/type";
+
+/** How long a jump holds its section in place while the page above it is still filling in. */
+const HOLD_MILLISECONDS = 2_500;
 
 /** A click the browser should handle itself (a new tab or window). */
 const ownClick = (event: MouseEvent) => event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
@@ -25,6 +28,9 @@ export function AccountShell({ locale, areas, children }: AccountShellProperties
   const sections = open && open.sections.length > 1 ? open.sections : [];
   const [current, setCurrent] = useState<string | undefined>(sections[0]?.key);
   const keys = sections.map((section) => section.key).join(" ");
+  const content = useRef<HTMLDivElement>(null);
+  const release = useRef<() => void>(() => {});
+  useEffect(() => () => release.current(), []);
 
   // The section being read: the highest one on screen.
   useEffect(() => {
@@ -53,6 +59,23 @@ export function AccountShell({ locale, areas, children }: AccountShellProperties
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
     window.history.replaceState(null, "", `#${id}`);
     setCurrent(id);
+    hold(id);
+  };
+
+  // Sections above may still be loading: as they fill in, the jumped-to one is put back at the top, until the reader
+  // scrolls or a moment passes.
+  const hold = (id: string) => {
+    release.current();
+    const observer = new ResizeObserver(() => document.getElementById(id)?.scrollIntoView({ block: "start" }));
+    observer.observe(content.current!);
+    const stop = () => {
+      observer.disconnect();
+      clearTimeout(timer);
+      for (const event of ["wheel", "touchstart", "keydown"]) window.removeEventListener(event, stop);
+    };
+    const timer = setTimeout(stop, HOLD_MILLISECONDS);
+    for (const event of ["wheel", "touchstart", "keydown"]) window.addEventListener(event, stop, { passive: true });
+    release.current = stop;
   };
 
   return (
@@ -86,7 +109,7 @@ export function AccountShell({ locale, areas, children }: AccountShellProperties
             </ul>
           </nav>
         )}
-        <div className={styles.content}>
+        <div ref={content} className={styles.content}>
           {open && <h1 className={styles.title}>{open.label}</h1>}
           {children}
         </div>

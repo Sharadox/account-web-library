@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, beforeAll, expect, test, vi } from "vitest";
 import { readWho, SignInScreen } from "@sharadox/account-web-library/sign-in-screen";
 import type { SignInActions, SignInAnswer } from "@sharadox/account-web-library/sign-in-screen/type";
-import { ToastProvider } from "@sharadox/account-web-library/toast";
+import { ToastProvider } from "@sharadox/interface-web-library/toast";
 
 const replace = vi.fn();
 const refresh = vi.fn();

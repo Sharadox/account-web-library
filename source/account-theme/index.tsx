@@ -1,17 +1,22 @@
 import type { CSSProperties } from "react";
+import { interfaceThemeStyle } from "@sharadox/interface-web-library/interface-theme";
 import type { AccountThemeProperties, AccountThemeValues } from "@sharadox/account-web-library/account-theme/type";
 
 /** `surfaceRaised` → `--account-surface-raised`. */
 const property = (key: string) => `--account-${key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
 
 /**
- * The custom properties that dress the account screens in a company's look.
+ * The custom properties that dress the account screens in a company's look, and the interface pieces they are made
+ * of (`@sharadox/interface-web-library`, `--interface-*`) with them.
  *
  * @example
  * accountThemeStyle({ accent: "var(--gold)" }); // { "--account-accent": "var(--gold)" }
  */
 export function accountThemeStyle(theme: Partial<AccountThemeValues>): CSSProperties {
-  return Object.fromEntries(Object.entries(theme).map(([key, value]) => [property(key), value])) as CSSProperties;
+  return {
+    ...(Object.fromEntries(Object.entries(theme).map(([key, value]) => [property(key), value])) as CSSProperties),
+    ...interfaceThemeStyle(theme),
+  };
 }
 
 /**

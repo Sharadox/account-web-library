@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useId, useState, type FormEvent } from "react";
-import { AccountButton } from "@sharadox/account-web-library/account-button";
+import { Button } from "@sharadox/interface-web-library/button";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
-import { CodeBoxes } from "@sharadox/account-web-library/code-boxes";
-import { Dialog } from "@sharadox/account-web-library/dialog";
-import { TextField } from "@sharadox/account-web-library/input-group";
+import { CodeBoxes } from "@sharadox/interface-web-library/code-boxes";
+import { Dialog } from "@sharadox/interface-web-library/dialog";
+import { TextField } from "@sharadox/interface-web-library/text-field";
 import styles from "./index.module.scss";
 import type { CodeDialogProperties } from "@sharadox/account-web-library/code-dialog/type";
 
@@ -70,10 +70,10 @@ function CodeBody({
         <div className={styles.expired}>
           <p role="alert">{say(words.expired, locale)}</p>
           <div className={styles.buttons}>
-            {onResend && <AccountButton onClick={resend}>{say(words.resend, locale)}</AccountButton>}
-            <AccountButton look="quiet" onClick={onClose}>
+            {onResend && <Button onClick={resend}>{say(words.resend, locale)}</Button>}
+            <Button look="quiet" onClick={onClose}>
               {say(ACCOUNT_WORDS.common.cancel, locale)}
-            </AccountButton>
+            </Button>
           </div>
         </div>
       ) : (
@@ -107,9 +107,9 @@ function CodeBody({
                 autoFocus
                 required
               />
-              <AccountButton type="submit" pending={pending} pendingLabel={say(words.checking, locale)}>
+              <Button type="submit" pending={pending} pendingLabel={say(words.checking, locale)}>
                 {say(words.confirm, locale)}
-              </AccountButton>
+              </Button>
             </form>
           )}
           {left !== undefined && (
@@ -127,9 +127,9 @@ function CodeBody({
             </p>
           )}
           {onResend && (
-            <AccountButton look="plain" onClick={resend}>
+            <Button look="plain" onClick={resend}>
               {say(words.resend, locale)}
-            </AccountButton>
+            </Button>
           )}
         </>
       )}

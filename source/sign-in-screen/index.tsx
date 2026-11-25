@@ -6,15 +6,15 @@ import { Icon } from "@sharadox/icon-web-library/icon";
 import { classNames } from "@sharadox/web-library/class-name";
 import { solveChallenge } from "@sharadox/protection-web-library/proof-of-work-solver";
 import type { Solution } from "@sharadox/protection-web-library/proof-of-work/type";
-import { AccountButton } from "@sharadox/account-web-library/account-button";
+import { Button } from "@sharadox/interface-web-library/button";
 import { ACCOUNT_WORDS, explainRefusal, say } from "@sharadox/account-web-library/account-words";
 import type { MethodChoice } from "@sharadox/account-web-library/authentication-method/type";
 import { authenticatorLabel } from "@sharadox/account-web-library/authenticator-label";
 import { CodeDialog } from "@sharadox/account-web-library/code-dialog";
 import { CODE_LIFETIME_SECONDS } from "@sharadox/account-web-library/code-lifetime";
 import { normalizeEmail } from "@sharadox/account-web-library/email-contact";
-import { TextField } from "@sharadox/account-web-library/input-group";
-import { useToast } from "@sharadox/account-web-library/toast";
+import { TextField } from "@sharadox/interface-web-library/text-field";
+import { useToast } from "@sharadox/interface-web-library/toast";
 import styles from "./index.module.scss";
 import type { SignInAnswer, SignInScreenProperties } from "@sharadox/account-web-library/sign-in-screen/type";
 
@@ -231,9 +231,9 @@ export function SignInScreen({
             error={error}
             autoFocus
           />
-          <AccountButton type="submit" pending={pending} pendingLabel={say(words.sending, locale)}>
+          <Button type="submit" pending={pending} pendingLabel={say(words.sending, locale)}>
             {say(words.continue, locale)}
-          </AccountButton>
+          </Button>
         </form>
       )}
       {stage === "methods" && (
@@ -279,9 +279,9 @@ export function SignInScreen({
               </li>
             )}
           </ul>
-          <AccountButton look="plain" onClick={restart}>
+          <Button look="plain" onClick={restart}>
             {say(words.useAnother, locale)}
-          </AccountButton>
+          </Button>
         </div>
       )}
       {stage === "sign-up" && (
@@ -319,12 +319,12 @@ export function SignInScreen({
               {error}
             </p>
           )}
-          <AccountButton type="submit" pending={pending} pendingLabel={say(ACCOUNT_WORDS.signUp.creating, locale)}>
+          <Button type="submit" pending={pending} pendingLabel={say(ACCOUNT_WORDS.signUp.creating, locale)}>
             {say(ACCOUNT_WORDS.signUp.submit, locale)}
-          </AccountButton>
-          <AccountButton look="plain" onClick={restart}>
+          </Button>
+          <Button look="plain" onClick={restart}>
             {say(words.useAnother, locale)}
-          </AccountButton>
+          </Button>
         </form>
       )}
       <CodeDialog

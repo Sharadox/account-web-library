@@ -2,11 +2,11 @@
 import { useRef, useState } from "react";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
 import { AccountAvatar } from "@sharadox/account-web-library/account-avatar";
-import { AccountButton } from "@sharadox/account-web-library/account-button";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Button } from "@sharadox/interface-web-library/button";
+import { Card } from "@sharadox/interface-web-library/card";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
-import { PendingMark } from "@sharadox/account-web-library/pending-mark";
-import { useToast } from "@sharadox/account-web-library/toast";
+import { PendingMark } from "@sharadox/interface-web-library/pending-mark";
+import { useToast } from "@sharadox/interface-web-library/toast";
 import styles from "./index.module.scss";
 import type { PicturePanelProperties } from "@sharadox/account-web-library/picture-panel/type";
 
@@ -55,7 +55,7 @@ export function PicturePanel({ locale, name, pictureUrl, upload, remove }: Pictu
   };
 
   return (
-    <AccountCard description={say(words.pictureText, locale)}>
+    <Card description={say(words.pictureText, locale)}>
       <div className={styles.picture}>
         <span className={styles.preview}>
           <AccountAvatar name={name} pictureUrl={picture} size={96} />
@@ -72,21 +72,21 @@ export function PicturePanel({ locale, name, pictureUrl, upload, remove }: Pictu
             className={styles.file}
             aria-label={say(words.choosePicture, locale)}
           />
-          <AccountButton
+          <Button
             icon="plus"
             pending={uploading.pending}
             pendingLabel={say(words.uploading, locale)}
             onClick={() => file.current!.click()}
           >
             {say(words.choosePicture, locale)}
-          </AccountButton>
+          </Button>
           {picture && (
-            <AccountButton look="quiet" icon="trash" pending={removing.pending} onClick={() => void drop()}>
+            <Button look="quiet" icon="trash" pending={removing.pending} onClick={() => void drop()}>
               {say(words.removePicture, locale)}
-            </AccountButton>
+            </Button>
           )}
         </div>
       </div>
-    </AccountCard>
+    </Card>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 import { useMemo } from "react";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Card } from "@sharadox/interface-web-library/card";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import type { Words } from "@sharadox/account-web-library/account-words/type";
 import { EditablePanel } from "@sharadox/account-web-library/editable-field";
@@ -72,7 +72,7 @@ export function PreferencePanel({ locale, preferences, save }: PreferencePanelPr
   // The same view until the preferences change, so a saved choice shows until the new ones arrive.
   const view = useMemo(() => table(false), [preferences, locale]);
   return (
-    <AccountCard description={say(words.preferencesText, locale)}>
+    <Card description={say(words.preferencesText, locale)}>
       <EditablePanel
         locale={locale}
         label={say(ACCOUNT_WORDS.section.preferences, locale)}
@@ -93,6 +93,6 @@ export function PreferencePanel({ locale, preferences, save }: PreferencePanelPr
           )
         }
       />
-    </AccountCard>
+    </Card>
   );
 }

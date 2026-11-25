@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
-import { AccountButton } from "@sharadox/account-web-library/account-button";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Button } from "@sharadox/interface-web-library/button";
+import { Card } from "@sharadox/interface-web-library/card";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
-import { CopyButton } from "@sharadox/account-web-library/copy-button";
+import { CopyButton } from "@sharadox/interface-web-library/copy-button";
 import styles from "./index.module.scss";
 import type {
   RecoveryCodeListProperties,
@@ -51,19 +51,19 @@ export function RecoveryCodes({ locale, authenticators, left, make }: RecoveryCo
   const words = ACCOUNT_WORDS.security;
   if (!authenticators) return null;
   return (
-    <AccountCard title={say(words.recoveryCodes, locale)} description={say(words.recoveryText, locale)}>
+    <Card title={say(words.recoveryCodes, locale)} description={say(words.recoveryText, locale)}>
       <p className={styles.left}>
         <strong>{left}</strong> {say(words.codesLeft, locale)}
       </p>
       {codes && <RecoveryCodeList locale={locale} codes={codes} />}
-      <AccountButton
+      <Button
         look={left > 0 ? "quiet" : "primary"}
         pending={pending}
         onClick={() => void run(make, { onDone: (answer) => setCodes(answer.recoveryCodes) })}
         className={styles.make}
       >
         {say(left > 0 ? words.remakeCodes : words.makeCodes, locale)}
-      </AccountButton>
-    </AccountCard>
+      </Button>
+    </Card>
   );
 }

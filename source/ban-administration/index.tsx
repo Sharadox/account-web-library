@@ -1,4 +1,4 @@
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Card } from "@sharadox/interface-web-library/card";
 import { formatAccountTime } from "@sharadox/account-web-library/account-time";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import styles from "./index.module.scss";
@@ -13,7 +13,7 @@ import type { BanAdministrationProperties } from "@sharadox/account-web-library/
 export function BanAdministration({ locale, bans }: BanAdministrationProperties) {
   const words = ACCOUNT_WORDS;
   return (
-    <AccountCard>
+    <Card>
       {bans.length === 0 ? (
         <p className={styles.muted}>{say(words.administration.noActiveBans, locale)}</p>
       ) : (
@@ -32,6 +32,6 @@ export function BanAdministration({ locale, bans }: BanAdministrationProperties)
           ))}
         </ul>
       )}
-    </AccountCard>
+    </Card>
   );
 }

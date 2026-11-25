@@ -1,5 +1,5 @@
 import { Icon } from "@sharadox/icon-web-library/icon";
-import { AccountCard } from "@sharadox/account-web-library/account-card";
+import { Card } from "@sharadox/interface-web-library/card";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import styles from "./index.module.scss";
 import type { DownloadPanelProperties } from "@sharadox/account-web-library/download-panel/type";
@@ -12,12 +12,12 @@ import type { DownloadPanelProperties } from "@sharadox/account-web-library/down
  */
 export function DownloadPanel({ locale, href }: DownloadPanelProperties) {
   return (
-    <AccountCard description={say(ACCOUNT_WORDS.privacy.downloadText, locale)}>
+    <Card description={say(ACCOUNT_WORDS.privacy.downloadText, locale)}>
       {/* A plain anchor: a file to save, not a page to open. */}
       <a href={href} download className={styles.link}>
         <Icon name="download" />
         {say(ACCOUNT_WORDS.privacy.download, locale)}
       </a>
-    </AccountCard>
+    </Card>
   );
 }
