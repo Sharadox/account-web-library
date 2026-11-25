@@ -51,13 +51,23 @@ test("applies once, tracked in its own table, and knows the account application"
     "account_migration",
     "account_picture",
     "account_session",
+    "appeal",
     "application",
     "audit_event",
+    "ban",
+    "ban_rule",
+    "banned_contact",
     "browser_session",
     "code_request",
     "contact",
     "identifier",
+    "inactivity_warning",
+    "permission",
     "recovery_code",
+    "role",
+    "role_grant",
+    "role_permission",
+    "rule",
     "totp_credential",
   ]);
 });
@@ -111,7 +121,7 @@ test("every account keeps exactly one identifier, freed when the account goes", 
   expect(await code(() => person("keeper"))).toBe("none");
 });
 
-test("every foreign key cascades updates and deletes, except where deleting must be refused", async () => {
+test("every foreign key cascades updates and deletes, except where deleting must be refused (or only forgets)", async () => {
   const keys = await sql<{ name: string; update: string; delete: string }>`select conname as name,
       confupdtype as update, confdeltype as delete from pg_constraint where contype = 'f' order by 1`.execute(
     memory.database,
@@ -121,11 +131,28 @@ test("every foreign key cascades updates and deletes, except where deleting must
     { name: "account_picture_account_id_fkey", update: "c", delete: "c" },
     { name: "account_session_account_id_fkey", update: "c", delete: "c" },
     { name: "account_session_browser_session_id_fkey", update: "c", delete: "c" },
+    { name: "appeal_ban_id_fkey", update: "c", delete: "c" },
+    { name: "appeal_decided_by_fkey", update: "c", delete: "n" },
     { name: "audit_event_application_id_fkey", update: "c", delete: "r" },
+    { name: "ban_account_id_fkey", update: "c", delete: "c" },
+    { name: "ban_created_by_fkey", update: "c", delete: "n" },
+    { name: "ban_grant_id_fkey", update: "c", delete: "c" },
+    { name: "ban_rule_ban_id_fkey", update: "c", delete: "c" },
+    { name: "ban_rule_rule_id_fkey", update: "c", delete: "r" },
+    { name: "banned_contact_application_id_fkey", update: "c", delete: "c" },
     { name: "code_request_account_id_fkey", update: "c", delete: "c" },
     { name: "contact_account_id_fkey", update: "c", delete: "c" },
     { name: "identifier_account_id_fkey", update: "c", delete: "c" },
+    { name: "inactivity_warning_account_id_fkey", update: "c", delete: "c" },
+    { name: "permission_application_id_fkey", update: "c", delete: "c" },
     { name: "recovery_code_account_id_fkey", update: "c", delete: "c" },
+    { name: "role_application_id_fkey", update: "c", delete: "c" },
+    { name: "role_grant_account_id_fkey", update: "c", delete: "c" },
+    { name: "role_grant_granted_by_fkey", update: "c", delete: "n" },
+    { name: "role_grant_role_id_fkey", update: "c", delete: "r" },
+    { name: "role_permission_permission_id_fkey", update: "c", delete: "c" },
+    { name: "role_permission_role_id_fkey", update: "c", delete: "c" },
+    { name: "rule_application_id_fkey", update: "c", delete: "c" },
     { name: "totp_credential_account_id_fkey", update: "c", delete: "c" },
   ]);
 });
@@ -138,7 +165,7 @@ test("every table's id is a UUIDv7 primary key", async () => {
       join pg_namespace n on n.oid = c.relnamespace
       where i.indisprimary and n.nspname = 'public' order by 1`.execute(memory.database);
   expect(keys.rows.every(({ key, type }) => key === "id" && type === "uuid")).toBe(true);
-  expect(keys.rows.length).toBe(12);
+  expect(keys.rows.length).toBe(22);
 });
 
 test("ids must be UUID version 7", async () => {
@@ -229,4 +256,153 @@ test("audit events can be added and deleted (retention) but never changed", asyn
     await code(() => sql`update audit_event set action = 'changed' where id = ${id}`.execute(memory.database)),
   ).toBe("P0001");
   expect(await code(() => memory.database.deleteFrom("audit_event").where("id", "=", id).execute())).toBe("none");
+});
+
+test("roles: permissions and roles per application, grants that keep a role in use from being deleted", async () => {
+  const [application] = await memory.database.selectFrom("application").select("id").execute();
+  const permission = uuidVersion7();
+  await memory.database
+    .insertInto("permission")
+    .values({ id: permission, application_id: application!.id, key: "account.role.assign" })
+    .execute();
+  expect(
+    await code(() =>
+      memory.database
+        .insertInto("permission")
+        .values({ id: uuidVersion7(), application_id: application!.id, key: "Not A Key" })
+        .execute(),
+    ),
+  ).toBe("permission_key_check");
+  const role = uuidVersion7();
+  await memory.database
+    .insertInto("role")
+    .values({ id: role, application_id: application!.id, key: "moderator", name: "Moderator" })
+    .execute();
+  await memory.database
+    .insertInto("role_permission")
+    .values({ id: uuidVersion7(), role_id: role, permission_id: permission })
+    .execute();
+  expect(
+    await code(() =>
+      memory.database
+        .insertInto("role")
+        .values({ id: uuidVersion7(), application_id: application!.id, key: "moderator", name: "Again" })
+        .execute(),
+    ),
+  ).toBe("role_key");
+  expect(
+    await code(() =>
+      memory.database
+        .insertInto("role")
+        .values({
+          id: uuidVersion7(),
+          application_id: null,
+          key: "banned",
+          name: "Banned",
+          exclusive: true,
+          is_default: true,
+        })
+        .execute(),
+    ),
+  ).toBe("role_default_check");
+  const accountId = await person("granted");
+  await memory.database
+    .insertInto("role_grant")
+    .values({ id: uuidVersion7(), account_id: accountId, role_id: role, source: "manual", granted_by: null })
+    .execute();
+  expect(await code(() => memory.database.deleteFrom("role").where("id", "=", role).execute())).toBe(
+    "role_grant_role_id_fkey",
+  );
+  expect(
+    await code(() =>
+      memory.database
+        .insertInto("role_grant")
+        .values({
+          id: uuidVersion7(),
+          account_id: accountId,
+          role_id: role,
+          source: "manual",
+          starts_at: new Date(10),
+          ends_at: new Date(5),
+        })
+        .execute(),
+    ),
+  ).toBe("role_grant_check");
+});
+
+test("rules and bans: versioned rules, a ban citing the rules it broke, one appeal, and a ledger outliving accounts", async () => {
+  const [application] = await memory.database.selectFrom("application").select("id").execute();
+  const rule = uuidVersion7();
+  await memory.database
+    .insertInto("rule")
+    .values({
+      id: rule,
+      application_id: application!.id,
+      code: "spam",
+      version: 1,
+      title: { en: "No spam", pt: "Sem spam" },
+      description: { en: "…", pt: "…" },
+      schedule: [604_800, "permanent"],
+    })
+    .execute();
+  expect(
+    await code(() =>
+      memory.database
+        .insertInto("rule")
+        .values({
+          id: uuidVersion7(),
+          application_id: application!.id,
+          code: "spam",
+          version: 1,
+          title: {},
+          description: {},
+          schedule: [1],
+        })
+        .execute(),
+    ),
+  ).toBe("rule_version_key");
+  const accountId = await person("banned");
+  const role = uuidVersion7();
+  await memory.database
+    .insertInto("role")
+    .values({ id: role, application_id: application!.id, key: "banned", name: "Banned", exclusive: true })
+    .execute();
+  const grant = uuidVersion7();
+  await memory.database
+    .insertInto("role_grant")
+    .values({ id: grant, account_id: accountId, role_id: role, source: "ban" })
+    .execute();
+  const ban = uuidVersion7();
+  await memory.database
+    .insertInto("ban")
+    .values({ id: ban, grant_id: grant, account_id: accountId, statement: "Posted spam", penalty: "604800" })
+    .execute();
+  await memory.database.insertInto("ban_rule").values({ id: uuidVersion7(), ban_id: ban, rule_id: rule }).execute();
+  expect(await code(() => memory.database.deleteFrom("rule").where("id", "=", rule).execute())).toBe(
+    "ban_rule_rule_id_fkey",
+  );
+  await memory.database
+    .insertInto("appeal")
+    .values({ id: uuidVersion7(), ban_id: ban, text: "It wasn't me" })
+    .execute();
+  expect(
+    await code(() =>
+      memory.database.insertInto("appeal").values({ id: uuidVersion7(), ban_id: ban, text: "Again" }).execute(),
+    ),
+  ).toBe("appeal_ban_id_key");
+  await memory.database
+    .insertInto("banned_contact")
+    .values({
+      id: uuidVersion7(),
+      contact_hash: "hash",
+      application_id: application!.id,
+      ends_at: null,
+      rule_codes: ["spam"],
+    })
+    .execute();
+  await memory.database.deleteFrom("account").where("id", "=", accountId).execute();
+  expect(await memory.database.selectFrom("ban").select("id").execute()).toEqual([]);
+  expect(await memory.database.selectFrom("banned_contact").select("contact_hash").execute()).toEqual([
+    { contact_hash: "hash" },
+  ]);
 });

@@ -7,6 +7,8 @@ export interface PersonAccountRequest {
   identifier: string;
   /** Already proved by a one-time code: it is stored verified. */
   contact: Contact;
+  /** The person's language, for notices (`pt-PT`); English without it. */
+  language?: string;
   /** Milliseconds since 1970 (now by default). */
   now?: number;
 }

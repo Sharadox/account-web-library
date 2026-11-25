@@ -44,10 +44,18 @@ test("adds a contact unverified, sends it a code, and verifies it when the code 
     status: "refused",
     reason: "wrong",
   });
-  expect(await finishContactAddition(server, { accountId, requestId: result.requestId, code, now: 2_000 })).toEqual({
-    status: "verified",
-    contactId: result.contactId,
-  });
+  const finished = await finishContactAddition(server, { accountId, requestId: result.requestId, code, now: 2_000 });
+  expect(finished).toEqual({ status: "verified", contactId: result.contactId, notify: expect.any(Function) });
+  const notices: unknown[] = [];
+  server.channels[0]!.notify = async (delivery) => void notices.push(delivery);
+  if (finished.status === "verified") await finished.notify();
+  expect(notices).toEqual([
+    {
+      contact: { kind: "email", value: "ana@example.com" },
+      language: "en",
+      notice: { kind: "contact-added", contact: "new@example.com" },
+    },
+  ]);
   const contact = await memory.database
     .selectFrom("contact")
     .select("verified_at")
@@ -119,4 +127,23 @@ test("passes on rate limits, and refuses a contact removed or verified by anothe
     status: "refused",
     reason: "contact-taken",
   });
+});
+
+test("a contact of a deleted, banned account can't be added", async () => {
+  const { deriveSecret } = await import("@sharadox/account-web-library/secret-derivation");
+  const { bannedContactHash } = await import("@sharadox/account-web-library/banned-contact");
+  await memory.database
+    .insertInto("banned_contact")
+    .values({
+      id: "0198f5a2-7a4c-7000-8000-000000000001",
+      contact_hash: bannedContactHash(
+        { kind: "email", value: "gone@example.com" },
+        deriveSecret(server.secret, "banned-contact"),
+      ),
+      application_id: null,
+      ends_at: null,
+      rule_codes: ["fraud"],
+    })
+    .execute();
+  expect(await add("gone@example.com")).toEqual({ status: "refused", reason: "contact-banned" });
 });
