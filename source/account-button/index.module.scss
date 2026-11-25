@@ -33,11 +33,11 @@
     font-size: 18px;
   }
 }
-:where(.primary) {
+.primary {
   background: $accent;
   color: $accent-text;
 }
-:where(.quiet) {
+.quiet {
   border-color: $line;
   background: transparent;
   color: $text;
@@ -45,11 +45,11 @@
     border-color: $soft;
   }
 }
-:where(.danger) {
+.danger {
   background: $danger;
   color: #ffffff;
 }
-:where(.plain) {
+.plain {
   min-height: 32px;
   padding: 0 8px;
   background: transparent;
