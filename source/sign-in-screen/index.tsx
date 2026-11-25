@@ -205,7 +205,7 @@ export function SignInScreen({ locale, company, actions, next, rulesHref }: Sign
     <div className={styles.screen}>
       {stage === "who" && (
         <form className={styles.step} onSubmit={submitWho} noValidate>
-          <h2 className={styles.title}>{say(words.title, locale)}</h2>
+          <h1 className={styles.title}>{say(words.title, locale)}</h1>
           <p className={styles.lead}>{say(words.text, locale)}</p>
           <TextField
             label={say(words.who, locale)}
@@ -227,7 +227,7 @@ export function SignInScreen({ locale, company, actions, next, rulesHref }: Sign
       )}
       {stage === "methods" && (
         <div className={styles.step}>
-          <h2 className={styles.title}>{say(methods.more ? words.next : words.choose, locale)}</h2>
+          <h1 className={styles.title}>{say(methods.more ? words.next : words.choose, locale)}</h1>
           {methods.more && <p className={styles.lead}>{say(words.nextText, locale)}</p>}
           <ul className={styles.methods}>
             {methods.list.map((method) => (
@@ -275,7 +275,7 @@ export function SignInScreen({ locale, company, actions, next, rulesHref }: Sign
       )}
       {stage === "sign-up" && (
         <form className={styles.step} onSubmit={submitSignUp} noValidate>
-          <h2 className={styles.title}>{say(ACCOUNT_WORDS.signUp.title, locale)}</h2>
+          <h1 className={styles.title}>{say(ACCOUNT_WORDS.signUp.title, locale)}</h1>
           <p className={styles.lead}>{say(ACCOUNT_WORDS.signUp.text, locale)}</p>
           <TextField
             label={say(ACCOUNT_WORDS.signUp.name, locale)}

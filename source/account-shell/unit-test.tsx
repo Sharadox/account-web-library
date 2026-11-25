@@ -39,6 +39,17 @@ test("one section needs no side menu; a title can replace the section's name", (
   expect(screen.queryByRole("navigation", { name: "Secções" })).toBeNull();
   expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Resumo");
   rerender(
+    <AccountShell
+      locale="en"
+      areas={accountAreas({ locale: "en", administrator: false })}
+      area="overview"
+      section="summary"
+    >
+      <p>Overview</p>
+    </AccountShell>,
+  );
+  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Overview");
+  rerender(
     <AccountShell locale="pt" areas={areas} area="administration" section="nowhere" title="Contas">
       <p />
     </AccountShell>,

@@ -44,7 +44,7 @@ export function AccountShell({ locale, areas, area, section, title, description,
         <section className={styles.content} aria-labelledby="account-section-title">
           <header className={styles.header}>
             <h1 id="account-section-title" className={styles.title}>
-              {title ?? current?.label ?? open?.label}
+              {title ?? (open && open.sections.length > 1 ? current?.label : undefined) ?? open?.label}
             </h1>
             {description && <p className={styles.description}>{description}</p>}
           </header>
