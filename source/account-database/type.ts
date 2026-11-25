@@ -26,6 +26,10 @@ export interface AccountTable {
   last_active_at: DefaultTime;
   /** The language its notices are written in (`pt-PT`); English when null. */
   language: ColumnType<string | null, string | null | undefined, string | null>;
+  /** The birthday, for a gift: day and month (both or neither), and the year only if the owner gave it. */
+  birth_day: ColumnType<number | null, number | null | undefined, number | null>;
+  birth_month: ColumnType<number | null, number | null | undefined, number | null>;
+  birth_year: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 /** A way to reach an account (email now; phone and messaging later). */
@@ -39,6 +43,8 @@ export interface ContactTable {
   verified_at: Date | null;
   /** Whether codes for signing in may be sent to it. */
   sign_in: Generated<boolean>;
+  /** Whether every sign-in must pass a code sent to it (otherwise it is one way among others). */
+  required: Generated<boolean>;
   created_at: DefaultTime;
 }
 
@@ -103,6 +109,10 @@ export interface AccountPictureTable {
 export interface TotpCredentialTable {
   id: string;
   account_id: string;
+  /** What the owner calls it ("Phone"), 1 to 50 characters; an account can have any number. */
+  name: string;
+  /** Whether every sign-in must pass a code from it (otherwise it is one way among others). */
+  required: Generated<boolean>;
   secret_ciphertext: string;
   /** The last 30-second step accepted, so a code can't be replayed. */
   last_used_step: ColumnType<string | null, number | string | null | undefined, number | string | null>;
@@ -258,6 +268,28 @@ export interface InactivityWarningTable {
   sent_at: DefaultTime;
 }
 
+/** Something an account was told, in its inbox (the bell). */
+export interface NotificationTable {
+  id: string;
+  account_id: string;
+  /** What happened: a `Notice` kind (`new-sign-in`, `contact-added`…). */
+  kind: string;
+  /** The notice's details (dates as ISO strings). */
+  detail: ColumnType<Record<string, unknown>, string | undefined, string>;
+  created_at: DefaultTime;
+  /** When the owner read it; null while unread. */
+  read_at: Date | null;
+}
+
+/** An owner's choice for one kind of notice on one channel; without a row, the default applies. */
+export interface NotificationPreferenceTable {
+  id: string;
+  account_id: string;
+  kind: string;
+  channel: "in-app" | "email";
+  enabled: boolean;
+}
+
 /** The tables `migrateAccount` creates, for typing a Kysely instance. */
 export interface AccountDatabase {
   application: ApplicationTable;
@@ -281,6 +313,8 @@ export interface AccountDatabase {
   appeal: AppealTable;
   banned_contact: BannedContactTable;
   inactivity_warning: InactivityWarningTable;
+  notification: NotificationTable;
+  notification_preference: NotificationPreferenceTable;
 }
 
 /** The account tables and the protection tables (rate limits, spending caps, used challenges) the server needs. */

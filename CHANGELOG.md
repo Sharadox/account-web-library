@@ -6,6 +6,8 @@ What changed in each version of `@sharadox/account-web-library`, newest first.
 
 First building blocks:
 
+- authentication methods: any number of named authenticators, any email or authenticator required at every sign-in (`authentication-method`, `sign-in-step` with identifier sign-in; `second-factor-finish` is gone); recovery codes offered, never made unasked; notifications in an inbox and by email per the owner's choices (`notification-inbox`, `notification-preference`, `notice-kind`); optional birthdays (`account-birthday`, 16 or older with a year); `deleteRole` (a deleted role leaves its holders); `runAccountMaintenance` keeping a year of audit log and notifications; subjects "Account · …" and codes in boxes; a used code request forgets its address (migration `0008-method-notification-birthday`);
+
 - the account system's own application (`ACCOUNT_APPLICATION`) and `setUpAccountSystem`;
 
 - a sign-in on a new browser tells every email (`new-sign-in` notice; `signIn` returns `newBrowser`, `finishSignIn`

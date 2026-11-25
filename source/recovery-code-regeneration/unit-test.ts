@@ -19,20 +19,17 @@ beforeEach(async () => {
 });
 afterEach(() => memory.close());
 
-test("makes 10 new codes and voids the old ones, only while two-factor is on", async () => {
+test("makes 10 codes when asked, voiding any old ones, only with an authenticator on", async () => {
   expect(await regenerateRecoveryCodes(server, { accountId })).toEqual({ status: "second-factor-off" });
-  const setup = await startTotpSetup(server, { accountId, issuer: "Company" });
+  const setup = await startTotpSetup(server, { accountId, issuer: "Company", name: "Phone" });
   if (setup.status !== "started") throw new Error(setup.status);
-  const confirmed = await confirmTotpSetup(server, {
-    accountId,
-    code: totpCode(decodeBase32(setup.secret), 0),
-    now: 0,
-  });
-  if (!confirmed.confirmed) throw new Error(confirmed.reason);
+  await confirmTotpSetup(server, { accountId, id: setup.id, code: totpCode(decodeBase32(setup.secret), 0), now: 0 });
+  const first = await regenerateRecoveryCodes(server, { accountId });
+  if (first.status !== "made") throw new Error(first.status);
   const fresh = await regenerateRecoveryCodes(server, { accountId });
   if (fresh.status !== "made") throw new Error(fresh.status);
   expect(fresh.recoveryCodes).toHaveLength(10);
-  expect(fresh.recoveryCodes).not.toContain(confirmed.recoveryCodes[0]);
-  expect(await totpStatus(server.database, { accountId })).toEqual({ on: true, recoveryCodesLeft: 10 });
+  expect(fresh.recoveryCodes).not.toContain(first.recoveryCodes[0]);
+  expect(await totpStatus(server.database, { accountId })).toMatchObject({ recoveryCodesLeft: 10 });
   expect(await memory.database.selectFrom("recovery_code").select("id").execute()).toHaveLength(10);
 });

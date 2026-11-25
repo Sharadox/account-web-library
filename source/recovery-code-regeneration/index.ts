@@ -5,7 +5,8 @@ import { replaceRecoveryCodes } from "@sharadox/account-web-library/recovery-cod
 import { deriveSecret } from "@sharadox/account-web-library/secret-derivation";
 
 /**
- * Makes 10 new recovery codes, voiding the old ones, for an account with two-factor on. Show them once. Ask for a
+ * Makes 10 recovery codes when the owner asks (never on their own), voiding any old ones, for an account with an
+ * authenticator on. Show them once. Ask for a
  * fresh code first (step-up).
  *
  * @example

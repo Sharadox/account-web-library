@@ -5,24 +5,36 @@ import { accountTables } from "@sharadox/account-web-library/account-server";
 import type { AccountServer } from "@sharadox/account-web-library/account-server/type";
 import { recordAuditEvent } from "@sharadox/account-web-library/audit-event";
 import { encodeBase32 } from "@sharadox/account-web-library/base-32";
-import { replaceRecoveryCodes } from "@sharadox/account-web-library/recovery-code-store";
 import { decryptSecret, encryptSecret } from "@sharadox/account-web-library/secret-encryption";
 import { deriveSecret } from "@sharadox/account-web-library/secret-derivation";
 import { createTotpSecret, totpUri, verifyTotp } from "@sharadox/account-web-library/totp";
-import type { TotpSetupConfirmation, TotpSetupStart, TotpStatus } from "@sharadox/account-web-library/totp-setup/type";
+import type {
+  TotpRename,
+  TotpSetupConfirmation,
+  TotpSetupStart,
+  TotpStatus,
+} from "@sharadox/account-web-library/totp-setup/type";
+
+/** An authenticator's name as kept: trimmed, 1 to 50 characters, or undefined when it can't be. */
+function authenticatorName(name: string): string | undefined {
+  const trimmed = name.trim();
+  return trimmed.length >= 1 && trimmed.length <= 50 ? trimmed : undefined;
+}
 
 /**
- * Starts setting up an authenticator app (two-factor): a new secret, stored encrypted and not yet on, to show as a
- * QR code (`uri`) or to type in (`secret`). Starting again replaces an unfinished setup. Ask for a fresh code first
- * (step-up).
+ * Starts setting up an authenticator app, named by its owner ("Phone"): a new secret, stored encrypted and not yet
+ * on, to show as a QR code (`uri`) or to type in (`secret`). An account can have any number of authenticators;
+ * starting again replaces only an unfinished setup. Ask for a fresh code first (step-up).
  *
  * @example
- * const setup = await startTotpSetup(server, { accountId, issuer: "Luis Pires Decor" });
+ * const setup = await startTotpSetup(server, { accountId, issuer: "Luis Pires Decor", name: "Phone" });
  */
 export async function startTotpSetup(
   server: AccountServer,
-  { accountId, issuer, now = Date.now() }: { accountId: string; issuer: string; now?: number },
+  { accountId, issuer, name, now = Date.now() }: { accountId: string; issuer: string; name: string; now?: number },
 ): Promise<TotpSetupStart> {
+  const kept = authenticatorName(name);
+  if (!kept) return { status: "name" };
   const account = await server.database
     .selectFrom("identifier")
     .select("value")
@@ -30,51 +42,52 @@ export async function startTotpSetup(
     .executeTakeFirst();
   if (!account) return { status: "no-account" };
   const secret = createTotpSecret();
-  return accountTables(server)
+  const id = uuidVersion7({ now });
+  await accountTables(server)
     .transaction()
-    .execute(async (transaction): Promise<TotpSetupStart> => {
-      const existing = await transaction
-        .selectFrom("totp_credential")
-        .select(["id", "confirmed_at"])
+    .execute(async (transaction) => {
+      await transaction
+        .deleteFrom("totp_credential")
         .where("account_id", "=", accountId)
-        .forUpdate()
-        .executeTakeFirst();
-      if (existing?.confirmed_at) return { status: "already-on" };
-      if (existing) await transaction.deleteFrom("totp_credential").where("id", "=", existing.id).execute();
+        .where("confirmed_at", "is", null)
+        .execute();
       await transaction
         .insertInto("totp_credential")
         .values({
-          id: uuidVersion7({ now }),
+          id,
           account_id: accountId,
+          name: kept,
           secret_ciphertext: encryptSecret(secret, deriveSecret(server.secret, "totp-encryption")),
           created_at: new Date(now),
         })
         .execute();
-      return {
-        status: "started",
-        uri: totpUri({ issuer, account: account.value, secret }),
-        secret: encodeBase32(secret),
-      };
     });
+  return {
+    status: "started",
+    id,
+    uri: totpUri({ issuer, account: account.value, secret }),
+    secret: encodeBase32(secret),
+  };
 }
 
 /**
- * Turns two-factor on once the authenticator app shows a right code, and makes 10 recovery codes to show once.
+ * Turns an authenticator on once it shows a right code. Recovery codes are then offered, never made on their own
+ * (`regenerateRecoveryCodes`).
  *
  * @example
- * const result = await confirmTotpSetup(server, { accountId, code });
- * if (result.confirmed) show(result.recoveryCodes);
+ * const result = await confirmTotpSetup(server, { accountId, id: setup.id, code });
  */
 export async function confirmTotpSetup(
   server: AccountServer,
-  { accountId, code, now = Date.now() }: { accountId: string; code: string; now?: number },
+  { accountId, id, code, now = Date.now() }: { accountId: string; id: string; code: string; now?: number },
 ): Promise<TotpSetupConfirmation> {
   return accountTables(server)
     .transaction()
     .execute(async (transaction): Promise<TotpSetupConfirmation> => {
       const pending = await transaction
         .selectFrom("totp_credential")
-        .select(["id", "secret_ciphertext"])
+        .select(["id", "name", "secret_ciphertext"])
+        .where("id", "=", id)
         .where("account_id", "=", accountId)
         .where("confirmed_at", "is", null)
         .forUpdate()
@@ -88,56 +101,91 @@ export async function confirmTotpSetup(
         .set({ confirmed_at: new Date(now), last_used_step: verification.step })
         .where("id", "=", pending.id)
         .execute();
-      const recoveryCodes = await replaceRecoveryCodes(transaction, {
+      await recordAuditEvent(transaction, {
         accountId,
-        pepper: deriveSecret(server.secret, "recovery-code"),
+        action: "authenticator.added",
+        detail: { authenticatorId: pending.id },
         now,
       });
-      await recordAuditEvent(transaction, { accountId, action: "second-factor.turned-on", now });
-      return { confirmed: true, recoveryCodes };
+      return { confirmed: true };
     });
 }
 
 /**
- * Turns two-factor off: the authenticator app and the recovery codes. Ask for a fresh code first (step-up).
+ * Renames one of the account's authenticators.
  *
  * @example
- * await removeTotp(database, { accountId }); // { removed: true }
+ * await renameTotp(database, { accountId, id, name: "Old phone" }); // { renamed: true }
+ */
+export async function renameTotp(
+  database: Kysely<AccountDatabase>,
+  { accountId, id, name }: { accountId: string; id: string; name: string },
+): Promise<TotpRename> {
+  const kept = authenticatorName(name);
+  if (!kept) return { renamed: false, reason: "name" };
+  const result = await database
+    .updateTable("totp_credential")
+    .set({ name: kept })
+    .where("id", "=", id)
+    .where("account_id", "=", accountId)
+    .executeTakeFirst();
+  return result.numUpdatedRows === 0n ? { renamed: false, reason: "none" } : { renamed: true };
+}
+
+/**
+ * Removes one authenticator; with the last one, the recovery codes go too (they stand in for an authenticator). Ask
+ * for a fresh code first (step-up).
+ *
+ * @example
+ * await removeTotp(database, { accountId, id }); // { removed: true }
  */
 export async function removeTotp(
   database: Kysely<AccountDatabase>,
-  { accountId }: { accountId: string },
+  { accountId, id, now = Date.now() }: { accountId: string; id: string; now?: number },
 ): Promise<{ removed: boolean }> {
   return database.transaction().execute(async (transaction) => {
     const removed = await transaction
       .deleteFrom("totp_credential")
+      .where("id", "=", id)
       .where("account_id", "=", accountId)
       .where("confirmed_at", "is not", null)
       .executeTakeFirst();
     if (removed.numDeletedRows === 0n) return { removed: false };
-    await transaction.deleteFrom("recovery_code").where("account_id", "=", accountId).execute();
-    await recordAuditEvent(transaction, { accountId, action: "second-factor.turned-off" });
+    const left = await transaction
+      .selectFrom("totp_credential")
+      .select("id")
+      .where("account_id", "=", accountId)
+      .where("confirmed_at", "is not", null)
+      .executeTakeFirst();
+    if (!left) await transaction.deleteFrom("recovery_code").where("account_id", "=", accountId).execute();
+    await recordAuditEvent(transaction, {
+      accountId,
+      action: "authenticator.removed",
+      detail: { authenticatorId: id },
+      now,
+    });
     return { removed: true };
   });
 }
 
 /**
- * Whether an account has two-factor on, and how many recovery codes it has left.
+ * The account's authenticators that are on (oldest first), and how many recovery codes it has left.
  *
  * @example
- * const { on, recoveryCodesLeft } = await totpStatus(database, { accountId });
+ * const { authenticators, recoveryCodesLeft } = await totpStatus(database, { accountId });
  */
 export async function totpStatus(
   database: Kysely<AccountDatabase>,
   { accountId }: { accountId: string },
 ): Promise<TotpStatus> {
-  const [credential, codes] = await Promise.all([
+  const [authenticators, codes] = await Promise.all([
     database
       .selectFrom("totp_credential")
-      .select("id")
+      .select(["id", "name", "required", "created_at"])
       .where("account_id", "=", accountId)
       .where("confirmed_at", "is not", null)
-      .executeTakeFirst(),
+      .orderBy("id")
+      .execute(),
     database
       .selectFrom("recovery_code")
       .select("id")
@@ -145,5 +193,13 @@ export async function totpStatus(
       .where("used_at", "is", null)
       .execute(),
   ]);
-  return { on: credential !== undefined, recoveryCodesLeft: codes.length };
+  return {
+    authenticators: authenticators.map(({ id, name, required, created_at }) => ({
+      id,
+      name,
+      required,
+      createdAt: created_at,
+    })),
+    recoveryCodesLeft: codes.length,
+  };
 }

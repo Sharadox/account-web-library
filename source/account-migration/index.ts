@@ -367,6 +367,59 @@ export const accountMigrations: Migration[] = [
       );
     `,
   },
+  {
+    name: "0008-method-notification-birthday",
+    sql: `
+      -- Deleting a role takes it from everyone who held it (the administration page says how many first).
+      alter table role_grant drop constraint role_grant_role_id_fkey, add constraint role_grant_role_id_fkey
+        foreign key (role_id) references role (id) on update cascade on delete cascade;
+
+      -- Any number of authenticator apps, each named; any contact or authenticator can be required at every sign-in.
+      alter table totp_credential drop constraint totp_credential_account_id_key;
+      create index totp_credential_account on totp_credential (account_id);
+      alter table totp_credential
+        add column name text not null default 'Authenticator'
+          constraint totp_credential_name_check check (length(name) between 1 and 50),
+        add column required boolean not null default false;
+      alter table totp_credential alter column name drop default;
+      -- Two-factor as it was: an authenticator already on stays asked for at every sign-in.
+      update totp_credential set required = true where confirmed_at is not null;
+      alter table contact add column required boolean not null default false;
+
+      create table notification (
+        id uuid primary key check (uuid_extract_version(id) = 7),
+        account_id uuid not null references account (id) on update cascade on delete cascade,
+        kind text not null check (length(kind) <= 50),
+        detail jsonb not null default '{}',
+        created_at timestamptz not null default now(),
+        read_at timestamptz
+      );
+      create index notification_account on notification (account_id, created_at desc);
+
+      create table notification_preference (
+        id uuid primary key check (uuid_extract_version(id) = 7),
+        account_id uuid not null references account (id) on update cascade on delete cascade,
+        kind text not null check (length(kind) <= 50),
+        channel text not null constraint notification_preference_channel_check check (channel in ('in-app', 'email')),
+        enabled boolean not null,
+        unique (account_id, kind, channel)
+      );
+
+      -- A birthday: day and month, the year if given, a date that exists.
+      alter table account
+        add column birth_day smallint constraint account_birth_day_check check (birth_day between 1 and 31),
+        add column birth_month smallint constraint account_birth_month_check check (birth_month between 1 and 12),
+        add column birth_year smallint constraint account_birth_year_check check (birth_year between 1900 and 2100),
+        add constraint account_birth_check check (
+          (birth_day is null) = (birth_month is null)
+          and (birth_year is null or birth_day is not null)
+          and (birth_day is null or birth_day <= case
+            when birth_month = 2 then 29 when birth_month in (4, 6, 9, 11) then 30 else 31 end)
+          and (birth_year is null or birth_month <> 2 or birth_day <> 29
+            or (birth_year % 4 = 0 and (birth_year % 100 <> 0 or birth_year % 400 = 0)))
+        );
+    `,
+  },
 ];
 
 /**

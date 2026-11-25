@@ -10,7 +10,7 @@ import type { EmailChannelOptions } from "@sharadox/account-web-library/email-ch
 
 interface Words {
   language: string;
-  subject: Record<CodePurpose, (company: string) => string>;
+  subject: Record<CodePurpose, string>;
   eyebrow: Record<CodePurpose, string>;
   heading: Record<CodePurpose, string>;
   label: string;
@@ -18,10 +18,7 @@ interface Words {
   ignore: string;
   never: string;
   closing: string;
-  notice: Record<
-    Notice["kind"],
-    { subject: (company: string) => string; heading: string; body: (notice: Notice) => string[] }
-  >;
+  notice: Record<Notice["kind"], { subject: string; heading: string; body: (notice: Notice) => string[] }>;
 }
 
 const date = (language: string, at: Date) =>
@@ -32,9 +29,9 @@ const moment = (language: string, at: Date) =>
 const ENGLISH: Words = {
   language: "en",
   subject: {
-    "sign-in": (company) => `Your ${company} sign-in code`,
-    "contact-verification": (company) => `Confirm your address for ${company}`,
-    "step-up": (company) => `Your ${company} confirmation code`,
+    "sign-in": "Account · Authentication Code",
+    "contact-verification": "Account · Email Confirmation",
+    "step-up": "Account · Confirmation Code",
   },
   eyebrow: { "sign-in": "Sign in", "contact-verification": "Confirm address", "step-up": "Confirmation" },
   heading: {
@@ -49,7 +46,7 @@ const ENGLISH: Words = {
   closing: "Best regards,",
   notice: {
     "inactivity-warning": {
-      subject: (company) => `Your ${company} account will be deleted`,
+      subject: "Account · Deletion Warning",
       heading: "Your account will be deleted",
       body: (notice) => [
         `Nobody has signed in to it for a long time, so it will be deleted on ${date("en-GB", (notice as { deletionAt: Date }).deletionAt)}, with everything in it.`,
@@ -57,7 +54,7 @@ const ENGLISH: Words = {
       ],
     },
     "contact-added": {
-      subject: (company) => `An email was added to your ${company} account`,
+      subject: "Account · Email Added",
       heading: "An email was added",
       body: (notice) => [
         `${(notice as { contact: string }).contact} can now sign in to your account.`,
@@ -65,7 +62,7 @@ const ENGLISH: Words = {
       ],
     },
     "new-sign-in": {
-      subject: (company) => `New sign-in to your ${company} account`,
+      subject: "Account · New Sign-in",
       heading: "A new sign-in",
       body: (notice) => [
         `Someone signed in to your account on a browser that hadn't been used before, on ${moment("en-GB", (notice as { at: Date }).at)} (Portugal's time).`,
@@ -73,7 +70,7 @@ const ENGLISH: Words = {
       ],
     },
     "recovery-code-used": {
-      subject: (company) => `A recovery code was used for your ${company} account`,
+      subject: "Account · Recovery Code Used",
       heading: "A recovery code was used",
       body: () => [
         "Someone signed in to your account with one of its recovery codes.",
@@ -86,9 +83,9 @@ const ENGLISH: Words = {
 const PORTUGUESE: Words = {
   language: "pt-PT",
   subject: {
-    "sign-in": (company) => `O seu código para entrar em ${company}`,
-    "contact-verification": (company) => `Confirme o seu endereço em ${company}`,
-    "step-up": (company) => `O seu código de confirmação de ${company}`,
+    "sign-in": "Conta · Código de Autenticação",
+    "contact-verification": "Conta · Confirmação de Email",
+    "step-up": "Conta · Código de Confirmação",
   },
   eyebrow: { "sign-in": "Entrar", "contact-verification": "Confirmar endereço", "step-up": "Confirmação" },
   heading: {
@@ -103,7 +100,7 @@ const PORTUGUESE: Words = {
   closing: "Com os melhores cumprimentos,",
   notice: {
     "inactivity-warning": {
-      subject: (company) => `A sua conta ${company} vai ser eliminada`,
+      subject: "Conta · Aviso de Eliminação",
       heading: "A sua conta vai ser eliminada",
       body: (notice) => [
         `Ninguém entra nela há muito tempo, por isso será eliminada a ${date("pt-PT", (notice as { deletionAt: Date }).deletionAt)}, com tudo o que contém.`,
@@ -111,7 +108,7 @@ const PORTUGUESE: Words = {
       ],
     },
     "contact-added": {
-      subject: (company) => `Foi adicionado um email à sua conta ${company}`,
+      subject: "Conta · Email Adicionado",
       heading: "Foi adicionado um email",
       body: (notice) => [
         `${(notice as { contact: string }).contact} pode agora entrar na sua conta.`,
@@ -119,7 +116,7 @@ const PORTUGUESE: Words = {
       ],
     },
     "new-sign-in": {
-      subject: (company) => `Nova entrada na sua conta ${company}`,
+      subject: "Conta · Nova Entrada",
       heading: "Uma nova entrada",
       body: (notice) => [
         `Alguém entrou na sua conta num navegador que nunca tinha sido usado, a ${moment("pt-PT", (notice as { at: Date }).at)} (hora de Portugal).`,
@@ -127,7 +124,7 @@ const PORTUGUESE: Words = {
       ],
     },
     "recovery-code-used": {
-      subject: (company) => `Foi usado um código de recuperação da sua conta ${company}`,
+      subject: "Conta · Código de Recuperação Usado",
       heading: "Foi usado um código de recuperação",
       body: () => [
         "Alguém entrou na sua conta com um dos códigos de recuperação.",
@@ -139,8 +136,9 @@ const PORTUGUESE: Words = {
 
 /**
  * Sends one-time codes by email, in the shared Sharadox email layout (email-web-library), in English or European
- * Portuguese (any `pt` reader). The code is in the body only, never the subject (lock screens show subjects), with
- * no link to click: nothing to imitate in a phishing email.
+ * Portuguese (any `pt` reader). Every subject starts with "Account · " ("Conta · "); the sender's name says whose.
+ * The code is in the body only, one box per digit, never the subject (lock screens show subjects), with no link to
+ * click: nothing to imitate in a phishing email.
  *
  * @example
  * const channel = createEmailChannel({ sender: createAmazonSesSender(configuration), from, design });
@@ -168,7 +166,7 @@ export function createEmailChannel({
           preview: words.heading[purpose],
           eyebrow: words.eyebrow[purpose],
           heading: words.heading[purpose],
-          rows: [{ label: words.label, value: shown }],
+          code: { label: words.label, value: code },
           paragraphs,
           closing: words.closing,
         },
@@ -188,7 +186,7 @@ export function createEmailChannel({
       await sender.send({
         from,
         to: contact.value,
-        subject: words.subject[purpose](design.name),
+        subject: words.subject[purpose],
         html,
         text,
         ...(logos.length > 0 ? { inlineImages: logos } : {}),
@@ -216,7 +214,7 @@ export function createEmailChannel({
       await sender.send({
         from,
         to: contact.value,
-        subject: message.subject(design.name),
+        subject: message.subject,
         html,
         text,
         ...(logos.length > 0 ? { inlineImages: logos } : {}),

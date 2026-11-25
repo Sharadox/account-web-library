@@ -62,6 +62,8 @@ test("applies once, tracked in its own table, and knows the account application"
     "contact",
     "identifier",
     "inactivity_warning",
+    "notification",
+    "notification_preference",
     "permission",
     "recovery_code",
     "role",
@@ -144,12 +146,14 @@ test("every foreign key cascades updates and deletes, except where deleting must
     { name: "contact_account_id_fkey", update: "c", delete: "c" },
     { name: "identifier_account_id_fkey", update: "c", delete: "c" },
     { name: "inactivity_warning_account_id_fkey", update: "c", delete: "c" },
+    { name: "notification_account_id_fkey", update: "c", delete: "c" },
+    { name: "notification_preference_account_id_fkey", update: "c", delete: "c" },
     { name: "permission_application_id_fkey", update: "c", delete: "c" },
     { name: "recovery_code_account_id_fkey", update: "c", delete: "c" },
     { name: "role_application_id_fkey", update: "c", delete: "c" },
     { name: "role_grant_account_id_fkey", update: "c", delete: "c" },
     { name: "role_grant_granted_by_fkey", update: "c", delete: "n" },
-    { name: "role_grant_role_id_fkey", update: "c", delete: "r" },
+    { name: "role_grant_role_id_fkey", update: "c", delete: "c" },
     { name: "role_permission_permission_id_fkey", update: "c", delete: "c" },
     { name: "role_permission_role_id_fkey", update: "c", delete: "c" },
     { name: "rule_application_id_fkey", update: "c", delete: "c" },
@@ -165,7 +169,7 @@ test("every table's id is a UUIDv7 primary key", async () => {
       join pg_namespace n on n.oid = c.relnamespace
       where i.indisprimary and n.nspname = 'public' order by 1`.execute(memory.database);
   expect(keys.rows.every(({ key, type }) => key === "id" && type === "uuid")).toBe(true);
-  expect(keys.rows.length).toBe(22);
+  expect(keys.rows.length).toBe(24);
 });
 
 test("ids must be UUID version 7", async () => {
@@ -258,7 +262,7 @@ test("audit events can be added and deleted (retention) but never changed", asyn
   expect(await code(() => memory.database.deleteFrom("audit_event").where("id", "=", id).execute())).toBe("none");
 });
 
-test("roles: permissions and roles per application, grants that keep a role in use from being deleted", async () => {
+test("roles: permissions and roles per application, a deleted role taken from everyone who held it", async () => {
   const [application] = await memory.database.selectFrom("application").select("id").execute();
   const permission = uuidVersion7();
   await memory.database
@@ -310,9 +314,6 @@ test("roles: permissions and roles per application, grants that keep a role in u
     .insertInto("role_grant")
     .values({ id: uuidVersion7(), account_id: accountId, role_id: role, source: "manual", granted_by: null })
     .execute();
-  expect(await code(() => memory.database.deleteFrom("role").where("id", "=", role).execute())).toBe(
-    "role_grant_role_id_fkey",
-  );
   expect(
     await code(() =>
       memory.database
@@ -328,6 +329,8 @@ test("roles: permissions and roles per application, grants that keep a role in u
         .execute(),
     ),
   ).toBe("role_grant_check");
+  await memory.database.deleteFrom("role").where("id", "=", role).execute();
+  expect(await memory.database.selectFrom("role_grant").select("id").execute()).toEqual([]);
 });
 
 test("rules and bans: versioned rules, a ban citing the rules it broke, one appeal, and a ledger outliving accounts", async () => {
@@ -405,4 +408,68 @@ test("rules and bans: versioned rules, a ban citing the rules it broke, one appe
   expect(await memory.database.selectFrom("banned_contact").select("contact_hash").execute()).toEqual([
     { contact_hash: "hash" },
   ]);
+});
+
+test("authentication methods: any number of named authenticators, and any contact or authenticator required", async () => {
+  const accountId = await person("methods");
+  const authenticator = (name: string) =>
+    memory.database
+      .insertInto("totp_credential")
+      .values({ id: uuidVersion7(), account_id: accountId, name, secret_ciphertext: "x" })
+      .execute();
+  await authenticator("Phone");
+  await authenticator("Tablet");
+  expect(await code(() => authenticator(""))).toBe("totp_credential_name_check");
+  expect(await code(() => authenticator("x".repeat(51)))).toBe("totp_credential_name_check");
+  const rows = await memory.database
+    .selectFrom("totp_credential")
+    .select(["name", "required"])
+    .orderBy("name")
+    .execute();
+  expect(rows).toEqual([
+    { name: "Phone", required: false },
+    { name: "Tablet", required: false },
+  ]);
+  const [contact] = await memory.database.selectFrom("contact").select("required").execute();
+  expect(contact).toEqual({ required: false });
+});
+
+test("a birthday is a day and month, with an optional year, that exist on the calendar", async () => {
+  const accountId = await person("birthday");
+  const set = (birth: { birth_day: number | null; birth_month: number | null; birth_year?: number | null }) =>
+    code(() => memory.database.updateTable("account").set(birth).where("id", "=", accountId).execute());
+  expect(await set({ birth_day: 29, birth_month: 2 })).toBe("none");
+  expect(await set({ birth_day: 31, birth_month: 12, birth_year: 1990 })).toBe("none");
+  expect(await set({ birth_day: null, birth_month: null, birth_year: null })).toBe("none");
+  expect(await set({ birth_day: 31, birth_month: 4 })).toBe("account_birth_check");
+  expect(await set({ birth_day: 30, birth_month: 2 })).toBe("account_birth_check");
+  expect(await set({ birth_day: 29, birth_month: 2, birth_year: 2023 })).toBe("account_birth_check");
+  expect(await set({ birth_day: 29, birth_month: 2, birth_year: 2024 })).toBe("none");
+  expect(await set({ birth_day: 5, birth_month: null })).toBe("account_birth_check");
+  expect(await set({ birth_day: null, birth_month: null, birth_year: 1990 })).toBe("account_birth_check");
+  expect(await set({ birth_day: 0, birth_month: 1 })).toBe("account_birth_day_check");
+  expect(await set({ birth_day: 1, birth_month: 13 })).toBe("account_birth_month_check");
+  expect(await set({ birth_day: 1, birth_month: 1, birth_year: 1800 })).toBe("account_birth_year_check");
+});
+
+test("notifications: an inbox per account, and one choice per kind and channel", async () => {
+  const accountId = await person("inbox");
+  await memory.database
+    .insertInto("notification")
+    .values({ id: uuidVersion7(), account_id: accountId, kind: "new-sign-in", detail: JSON.stringify({ at: 1 }) })
+    .execute();
+  const [row] = await memory.database.selectFrom("notification").select(["kind", "detail", "read_at"]).execute();
+  expect(row).toEqual({ kind: "new-sign-in", detail: { at: 1 }, read_at: null });
+  const choose = (channel: "in-app" | "email") =>
+    memory.database
+      .insertInto("notification_preference")
+      .values({ id: uuidVersion7(), account_id: accountId, kind: "new-sign-in", channel, enabled: false })
+      .execute();
+  await choose("email");
+  await choose("in-app");
+  expect(await code(() => choose("email"))).toBe("notification_preference_account_id_kind_channel_key");
+  expect(await code(() => choose("pigeon" as "email"))).toBe("notification_preference_channel_check");
+  await memory.database.deleteFrom("account").where("id", "=", accountId).execute();
+  expect(await memory.database.selectFrom("notification").select("id").execute()).toEqual([]);
+  expect(await memory.database.selectFrom("notification_preference").select("id").execute()).toEqual([]);
 });

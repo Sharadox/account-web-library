@@ -53,8 +53,8 @@
     "*.{json,md,yml,yaml}": "prettier --write"
   },
   "dependencies": {
-    "@sharadox/database-web-library": "0.1.0-development.9",
-    "@sharadox/email-web-library": "^0.7.1",
+    "@sharadox/database-web-library": "0.1.0-development.14",
+    "@sharadox/email-web-library": "0.8.0-account-experience.59",
     "@sharadox/protection-web-library": "0.1.0-development.12",
     "@sharadox/web-library": "^0.11.1",
     "kysely": "^0.28.20",

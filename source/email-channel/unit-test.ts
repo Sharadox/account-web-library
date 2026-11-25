@@ -34,10 +34,12 @@ test("sends the code to the address, in the company's layout and as plain text, 
   expect(message).toMatchObject({
     from: { name: "Luis Pires Decor", address: "account@web.luispiresdecor.com" },
     to: "ana@example.com",
-    subject: "Your Luis Pires Decor sign-in code",
+    subject: "Account · Authentication Code",
   });
   expect(message!.subject).not.toContain("123");
-  expect(message!.html).toContain("123 456");
+  // The code in boxes, one per digit, as the sign-in page types it.
+  expect(String(message!.html).match(/class="code-box/g)).toHaveLength(6);
+  expect(message!.html).toContain('aria-label="Code: 1 2 3 4 5 6"');
   expect(message!.html).toContain('lang="en"');
   expect(message!.text).toContain("123 456");
   expect(message!.text).toContain("10 minutes");
@@ -47,7 +49,7 @@ test("sends the code to the address, in the company's layout and as plain text, 
 test("speaks European Portuguese for any Portuguese reader", async () => {
   sent.length = 0;
   await channel.send(delivery({ language: "pt-BR", purpose: "step-up" }));
-  expect(sent[0]!.subject).toBe("O seu código de confirmação de Luis Pires Decor");
+  expect(sent[0]!.subject).toBe("Conta · Código de Confirmação");
   expect(sent[0]!.text).toContain("durante 10 minutos");
   expect(sent[0]!.html).toContain('lang="pt-PT"');
 });
@@ -55,7 +57,7 @@ test("speaks European Portuguese for any Portuguese reader", async () => {
 test("has its own words for verifying a contact, and falls back to English", async () => {
   sent.length = 0;
   await channel.send(delivery({ language: "de", purpose: "contact-verification", expiresAt: new Date(60_000) }));
-  expect(sent[0]!.subject).toBe("Confirm your address for Luis Pires Decor");
+  expect(sent[0]!.subject).toBe("Account · Email Confirmation");
   expect(sent[0]!.text).toContain("1 minute.");
 });
 
@@ -92,12 +94,12 @@ test("has a subject and heading for every purpose in both languages", async () =
     }
   }
   expect(subjects).toEqual([
-    "Your Luis Pires Decor sign-in code",
-    "Confirm your address for Luis Pires Decor",
-    "Your Luis Pires Decor confirmation code",
-    "O seu código para entrar em Luis Pires Decor",
-    "Confirme o seu endereço em Luis Pires Decor",
-    "O seu código de confirmação de Luis Pires Decor",
+    "Account · Authentication Code",
+    "Account · Email Confirmation",
+    "Account · Confirmation Code",
+    "Conta · Código de Autenticação",
+    "Conta · Confirmação de Email",
+    "Conta · Código de Confirmação",
   ]);
 });
 
@@ -108,7 +110,7 @@ test("sends notices in the same layout: inactivity warnings, a new email added, 
     language: "en",
     notice: { kind: "inactivity-warning", deletionAt: new Date(Date.UTC(2028, 10, 25)) },
   });
-  expect(sent[0]).toMatchObject({ to: "ana@example.com", subject: "Your Luis Pires Decor account will be deleted" });
+  expect(sent[0]).toMatchObject({ to: "ana@example.com", subject: "Account · Deletion Warning" });
   expect(sent[0]!.text).toContain("25 November 2028");
   expect(sent[0]!.text).toContain("Sign in before then to keep it");
   await channel.notify!({
@@ -116,28 +118,28 @@ test("sends notices in the same layout: inactivity warnings, a new email added, 
     language: "pt-PT",
     notice: { kind: "inactivity-warning", deletionAt: new Date(Date.UTC(2028, 0, 2)) },
   });
-  expect(sent[1]!.subject).toBe("A sua conta Luis Pires Decor vai ser eliminada");
+  expect(sent[1]!.subject).toBe("Conta · Aviso de Eliminação");
   expect(sent[1]!.text).toContain("2 de janeiro de 2028");
   await channel.notify!({
     contact: { kind: "email", value: "ana@example.com" },
     language: "en",
     notice: { kind: "contact-added", contact: "new@example.com" },
   });
-  expect(sent[2]!.subject).toBe("An email was added to your Luis Pires Decor account");
+  expect(sent[2]!.subject).toBe("Account · Email Added");
   expect(sent[2]!.text).toContain("new@example.com");
   await channel.notify!({
     contact: { kind: "email", value: "ana@example.com" },
     language: "pt",
     notice: { kind: "recovery-code-used" },
   });
-  expect(sent[3]!.subject).toBe("Foi usado um código de recuperação da sua conta Luis Pires Decor");
+  expect(sent[3]!.subject).toBe("Conta · Código de Recuperação Usado");
   expect(sent[3]!.html).toContain("<html");
   await channel.notify!({
     contact: { kind: "email", value: "ana@example.com" },
     language: "en",
     notice: { kind: "recovery-code-used" },
   });
-  expect(sent[4]!.subject).toBe("A recovery code was used for your Luis Pires Decor account");
+  expect(sent[4]!.subject).toBe("Account · Recovery Code Used");
   await channel.notify!({
     contact: { kind: "email", value: "ana@example.com" },
     language: "pt",
@@ -179,13 +181,13 @@ test("tells of a sign-in on a new browser, with when", async () => {
     language: "en",
     notice: { kind: "new-sign-in", at: new Date(Date.UTC(2026, 6, 1, 12, 5)) },
   });
-  expect(sent[0]!.subject).toBe("New sign-in to your Luis Pires Decor account");
+  expect(sent[0]!.subject).toBe("Account · New Sign-in");
   expect(sent[0]!.text).toContain("1 July 2026 at 13:05");
   await channel.notify!({
     contact: { kind: "email", value: "ana@example.com" },
     language: "pt",
     notice: { kind: "new-sign-in", at: new Date(Date.UTC(2026, 0, 15, 9, 30)) },
   });
-  expect(sent[1]!.subject).toBe("Nova entrada na sua conta Luis Pires Decor");
+  expect(sent[1]!.subject).toBe("Conta · Nova Entrada");
   expect(sent[1]!.text).toContain("15 de janeiro de 2026");
 });
