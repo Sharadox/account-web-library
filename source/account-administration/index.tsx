@@ -4,6 +4,8 @@ import { useAccountAction } from "@sharadox/account-web-library/account-action";
 import { AccountAvatar } from "@sharadox/account-web-library/account-avatar";
 import { Button } from "@sharadox/interface-web-library/button";
 import { Card } from "@sharadox/interface-web-library/card";
+import { Checkbox } from "@sharadox/interface-web-library/checkbox";
+import { Select } from "@sharadox/interface-web-library/select";
 import { formatAccountTime } from "@sharadox/account-web-library/account-time";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import { EditablePanel } from "@sharadox/account-web-library/editable-field";
@@ -123,16 +125,15 @@ export function AccountAdministration({
             editLabel={say(words.grant, locale)}
             fields={
               <div className={styles.fields}>
-                <label className={styles.field}>
-                  <span>{say(words.role, locale)}</span>
-                  <select name="role">
-                    {roles.map((role) => (
-                      <option key={`${role.application}/${role.key}`} value={`${role.application}/${role.key}`}>
-                        {role.name} ({role.application})
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <Select
+                  label={say(words.role, locale)}
+                  name="role"
+                  defaultValue={roles[0] && `${roles[0].application}/${roles[0].key}`}
+                  options={roles.map((role) => ({
+                    value: `${role.application}/${role.key}`,
+                    label: `${role.name} (${role.application})`,
+                  }))}
+                />
                 <TextField label={say(words.resourceLabel, locale)} name="resource" maxLength={200} />
                 <label className={styles.field}>
                   <span>{say(words.endsLabel, locale)}</span>
@@ -182,23 +183,25 @@ export function AccountAdministration({
               editLabel={say(words.ban, locale)}
               fields={
                 <div className={styles.fields}>
-                  <label className={styles.field}>
-                    <span>{say(words.where, locale)}</span>
-                    <select name="application">
-                      {banApplications.map((application) => (
-                        <option key={application}>{application}</option>
-                      ))}
-                    </select>
-                  </label>
+                  <Select
+                    label={say(words.where, locale)}
+                    name="application"
+                    defaultValue={banApplications[0]}
+                    options={banApplications.map((application) => ({ value: application, label: application }))}
+                  />
                   <fieldset className={styles.rules}>
                     <legend>{say(words.rulesBroken, locale)}</legend>
                     {rules.map((rule) => (
-                      <label key={`${rule.application}-${rule.code}`} className={styles.check}>
-                        <input type="checkbox" name="rule" value={rule.code} />
-                        <span>
-                          {rule.title} <span className={styles.muted}>{rule.application ?? "*"}</span>
-                        </span>
-                      </label>
+                      <Checkbox
+                        key={`${rule.application}-${rule.code}`}
+                        name="rule"
+                        value={rule.code}
+                        label={
+                          <>
+                            {rule.title} <span className={styles.muted}>{rule.application ?? "*"}</span>
+                          </>
+                        }
+                      />
                     ))}
                   </fieldset>
                   <label className={styles.field}>
