@@ -22,18 +22,18 @@ test("lists them, marks one or all read, deletes one, and shows more", async () 
     remove: vi.fn(async () => ({ status: "done" as const })),
   };
   renderAccountScreen(<InboxPanel locale="en" notifications={first} unread={1} more {...actions} />);
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Mark as read" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Mark as Read" })));
   expect(actions.markRead).toHaveBeenCalledWith(["3"]);
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Mark all as read" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Mark All as Read" })));
   expect(actions.markRead).toHaveBeenLastCalledWith();
   await act(async () => fireEvent.click(screen.getAllByRole("button", { name: "Delete" })[1]!));
   expect(actions.remove).toHaveBeenCalledWith("2");
   expect(screen.getAllByRole("listitem")).toHaveLength(1);
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Show more" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Show More" })));
   // Older than the last one loaded (even if it was just deleted).
   expect(actions.loadMore).toHaveBeenCalledWith("2");
   expect(screen.getAllByRole("listitem")).toHaveLength(2);
-  expect(screen.queryByRole("button", { name: "Show more" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Show More" })).toBeNull();
 });
 
 test("marking read and deleting show at once, and go back if refused", async () => {
@@ -42,17 +42,17 @@ test("marking read and deleting show at once, and go back if refused", async () 
     new Promise<{ status: "done" } | { status: "refused"; reason: string }>((resolve) => (finish = resolve));
   const actions = { loadMore: vi.fn(), markRead: vi.fn(pending), remove: vi.fn(pending) };
   renderAccountScreen(<InboxPanel locale="en" notifications={first} unread={1} more={false} {...actions} />);
-  fireEvent.click(screen.getByRole("button", { name: "Mark as read" }));
-  expect(screen.queryByRole("button", { name: "Mark as read" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Mark as Read" }));
+  expect(screen.queryByRole("button", { name: "Mark as Read" })).toBeNull();
   await act(async () => finish({ status: "refused", reason: "generic" }));
-  expect(screen.getByRole("button", { name: "Mark as read" })).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Mark all as read" }));
-  expect(screen.queryByRole("button", { name: "Mark as read" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Mark as Read" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Mark All as Read" }));
+  expect(screen.queryByRole("button", { name: "Mark as Read" })).toBeNull();
   await act(async () => finish({ status: "refused", reason: "generic" }));
-  expect(screen.getByRole("button", { name: "Mark all as read" })).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Mark all as read" }));
+  expect(screen.getByRole("button", { name: "Mark All as Read" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Mark All as Read" }));
   await act(async () => finish({ status: "done" }));
-  expect(screen.queryByRole("button", { name: "Mark all as read" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Mark All as Read" })).toBeNull();
   fireEvent.click(screen.getAllByRole("button", { name: "Delete" })[0]!);
   expect(screen.getAllByRole("listitem")).toHaveLength(1);
   await act(async () => finish({ status: "refused", reason: "generic" }));
@@ -72,5 +72,5 @@ test("an empty inbox says so", () => {
     />,
   );
   expect(screen.getByText("Nothing new.")).toBeTruthy();
-  expect(screen.queryByRole("button", { name: "Mark all as read" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Mark All as Read" })).toBeNull();
 });

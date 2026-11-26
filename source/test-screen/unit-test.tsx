@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeAll, expect, test, vi } from "vitest";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
-import { openDialogs, renderAccountScreen } from "@sharadox/account-web-library/test-screen";
+import { confirmItsMe, openDialogs, renderAccountScreen } from "@sharadox/account-web-library/test-screen";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }));
 beforeAll(openDialogs);
@@ -22,9 +22,11 @@ function NeedsCode() {
   );
 }
 
-test("its step-up sends a code and takes only 123456", async () => {
+test("its step-up lists one email, sends its code and takes only 123456; confirmItsMe goes through it", async () => {
   renderAccountScreen(<NeedsCode />);
   await act(async () => fireEvent.click(screen.getByText("go")));
+  expect(screen.getByText("ana@example.com")).toBeTruthy();
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send Code" })));
   const paste = (text: string) =>
     act(
       async () => void fireEvent.paste(screen.getAllByRole("textbox")[0]!, { clipboardData: { getData: () => text } }),
@@ -32,5 +34,12 @@ test("its step-up sends a code and takes only 123456", async () => {
   await paste("000000");
   expect(screen.getAllByRole("alert").some((alert) => alert.textContent === "That code isn't right.")).toBe(true);
   await paste("123456");
+  expect(screen.getByRole("status").textContent).toContain("Done.");
+});
+
+test("confirmItsMe sends the email's code and types it", async () => {
+  renderAccountScreen(<NeedsCode />);
+  await act(async () => fireEvent.click(screen.getByText("go")));
+  await confirmItsMe();
   expect(screen.getByRole("status").textContent).toContain("Done.");
 });

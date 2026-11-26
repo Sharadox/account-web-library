@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { AccountLocale } from "@sharadox/account-web-library/account-words/type";
+import type { MethodChoice } from "@sharadox/account-web-library/authentication-method/type";
 
 /** What every account action answers. */
 export type AccountAnswer<Done extends object = object> =
@@ -7,16 +8,31 @@ export type AccountAnswer<Done extends object = object> =
   | { status: "step-up" }
   | { status: "refused"; reason: string; retryAfterSeconds?: number };
 
-/** Confirming it's you: a fresh code to one of the account's emails. */
+/** One way of confirming it's you, as typed. */
+export type StepUpStepInput =
+  | { kind: "email"; requestId: string; code: string }
+  | { kind: "authenticator"; id: string; code: string }
+  | { kind: "recovery-code"; code: string };
+
+/**
+ * Confirming it's you, with any of the account's methods (all the required ones, when it has some): the server's
+ * `stepUpMethods`, `startStepUp` and `finishStepUp`, as actions.
+ */
 export interface StepUp {
-  /** The email the code goes to, as shown ("ana@example.com"). */
-  email: string;
-  start: () => Promise<AccountAnswer<{ requestId: string }>>;
-  finish: (requestId: string, code: string) => Promise<AccountAnswer>;
+  /** The ways to confirm: every required one (`all`), or any one of them (`one`). */
+  methods: () => Promise<
+    AccountAnswer<{ ticket: string; mode: "all" | "one"; methods: MethodChoice[]; recoveryCode: boolean }>
+  >;
+  /** Sends a code to one of the account's emails. */
+  send: (contactId: string) => Promise<AccountAnswer<{ requestId: string }>>;
+  /** Checks one step: done, or done with required methods `left` and the ticket for the next. */
+  finish: (ticket: string, step: StepUpStepInput) => Promise<AccountAnswer<{ ticket?: string; left?: string[] }>>;
 }
 
 export interface AccountActionsProperties {
   locale: AccountLocale;
+  /** The company's name, in the authenticator's code pop-up ("the code for Luis Pires Decor"). */
+  company: string;
   stepUp: StepUp;
   children: ReactNode;
 }
@@ -34,8 +50,9 @@ export interface AccountActionRunner {
   /** Whether an action is running. */
   pending: boolean;
   /**
-   * Runs an action: a loader meanwhile, a notification when done or refused (explained), and, when it needs a fresh
-   * code, the code pop-up, then the action again. Resolves to the answer, or null when refused.
+   * Runs an action: a loader meanwhile, a notification when done or refused (explained), and, when it needs
+   * confirming it's you, the list of ways to confirm, then the action again. Resolves to the answer, or null when
+   * refused.
    */
   run: <Done extends object>(
     action: () => Promise<AccountAnswer<Done>>,

@@ -33,6 +33,9 @@ test("creates the account with the proved contact and signs it in", async () => 
     language: "pt-PT",
     now: 1_000,
   });
+  // A new account's activity starts with its creation alone: being signed in by it isn't a sign-in of its own.
+  const actions = await memory.database.selectFrom("audit_event").select("action").execute();
+  expect(actions.map(({ action }) => action)).toEqual(["account.created"]);
   const browser = await memory.database.selectFrom("browser_session").select("user_agent").executeTakeFirst();
   expect(browser?.user_agent).toBe("Laptop");
   expect(await memory.database.selectFrom("account").select("language").execute()).toEqual([{ language: "pt-PT" }]);

@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { Activity } from "react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, expect, test, vi } from "vitest";
 import { readWho, SignInScreen } from "@sharadox/account-web-library/sign-in-screen";
 import type { SignInActions, SignInAnswer } from "@sharadox/account-web-library/sign-in-screen/type";
@@ -7,7 +8,9 @@ import { ToastProvider } from "@sharadox/interface-web-library/toast";
 
 const replace = vi.fn();
 const refresh = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, refresh }) }));
+const prefetch = vi.fn();
+const router = { replace, refresh, prefetch };
+vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("@sharadox/protection-web-library/proof-of-work-solver", () => ({ solveChallenge: async () => "nonce" }));
 
 beforeAll(() => {
@@ -23,6 +26,10 @@ afterEach(() => {
   replace.mockClear();
   refresh.mockClear();
 });
+
+/** The button in the row of the method list that mentions `text`. */
+const rowButton = (text: string | RegExp) =>
+  within(screen.getAllByRole("listitem").find((row) => row.textContent!.match(text))!).getByRole("button");
 
 const challenge = { salt: "s", difficulty: 1, expiresAt: 0, signature: "x" } as never;
 const sent: SignInAnswer = { status: "sent", requestId: "r1" };
@@ -58,7 +65,7 @@ const setUp = (given: SignInActions, locale: "en" | "pt" = "en") =>
   );
 
 const typeWho = async (value: string) => {
-  fireEvent.change(screen.getByLabelText(/Email or identifier|Email ou identificador/), { target: { value } });
+  fireEvent.change(screen.getByLabelText(/Email or Identifier|Email ou Identificador/), { target: { value } });
   await act(async () => fireEvent.click(screen.getByRole("button", { name: /Continue|Continuar/ })));
 };
 const paste = async (text: string) =>
@@ -85,7 +92,7 @@ test("an email gets a code in the pop-up; the right code signs in and goes on", 
   expect(screen.getByText("ana@example.com")).toBeTruthy();
   await paste("000000");
   expect(screen.getByRole("alert").textContent).toBe("That code isn't right.");
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send a new code" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send a New Code" })));
   expect(given.startWithEmail).toHaveBeenCalledTimes(2);
   await paste("123456");
   expect(replace).toHaveBeenCalledWith("/en");
@@ -117,23 +124,23 @@ test("an identifier lists the ways in; each method, then the required ones, sign
     solution: { challenge, nonce: "nonce" },
   });
   expect(screen.getByRole("heading", { name: "How Do You Want to Sign In?" })).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: /Authenticator app: Phone/ }));
+  fireEvent.click(rowButton(/Phone/));
   expect(screen.getByRole("heading", { name: "Authenticator Code" })).toBeTruthy();
-  expect(screen.queryByRole("button", { name: "Send a new code" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Send a New Code" })).toBeNull();
   await paste("123456");
   expect(given.finishStep).toHaveBeenCalledWith({
     ticket: "t2",
     step: { kind: "authenticator", id: "phone", code: "123456" },
   });
-  expect(screen.getByRole("heading", { name: "One More Step" })).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: /Recovery code/ }));
-  fireEvent.change(screen.getByRole("textbox", { name: "Recovery code" }), { target: { value: "AAAA-BBBB" } });
+  expect(screen.getByRole("heading", { name: "Confirm Every Required Method" })).toBeTruthy();
+  fireEvent.click(rowButton(/^Recovery Code/));
+  fireEvent.change(screen.getByRole("textbox", { name: "Recovery Code" }), { target: { value: "AAAA-BBBB" } });
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Confirm" })));
   expect(screen.getByRole("alert").textContent).toBe("That code isn't right.");
   fireEvent.click(screen.getByRole("button", { name: "Close" }));
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: /Code to w•••@example.com/ })));
+  await act(async () => fireEvent.click(rowButton(/w•••@example.com/)));
   expect(given.sendStepCode).toHaveBeenCalledWith({ ticket: "t2", contactId: "c2" });
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send a new code" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send a New Code" })));
   expect(given.sendStepCode).toHaveBeenCalledTimes(2);
   await paste("654321");
   expect(given.finishStep).toHaveBeenLastCalledWith({
@@ -160,10 +167,10 @@ test("an email with no account asks for a name and identifier; nothing before th
   expect(identifier.parentElement!.firstElementChild!.textContent).toBe("@");
   fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ana" } });
   fireEvent.change(identifier, { target: { value: "taken" } });
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Create account" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Create Account" })));
   expect(screen.getByRole("alert").textContent).toBe("That identifier is taken. Try another.");
   fireEvent.change(identifier, { target: { value: "@ana" } });
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Create account" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Create Account" })));
   expect(given.signUp).toHaveBeenLastCalledWith({ ticket: "t1", name: "Ana", identifier: "ana" });
   expect(replace).toHaveBeenCalledWith("/en");
 });
@@ -171,7 +178,7 @@ test("an email with no account asks for a name and identifier; nothing before th
 test("a browser already signed in to that account goes on; an expired ticket starts again", async () => {
   setUp(actions({ startWithEmail: vi.fn(async () => ({ status: "already" as const })) }));
   await typeWho("ana@example.com");
-  expect(screen.getByRole("status").textContent).toContain("already signed in");
+  expect(screen.getAllByRole("status").some((status) => status.textContent!.includes("already signed in"))).toBe(true);
   expect(replace).toHaveBeenCalledWith("/en");
   cleanup();
   const given = actions({
@@ -182,9 +189,9 @@ test("a browser already signed in to that account goes on; an expired ticket sta
   await typeWho("new@example.com");
   await paste("123456");
   fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ana" } });
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Create account" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Create Account" })));
   expect(screen.getByRole("alert").textContent).toContain("That took too long.");
-  expect(screen.getByLabelText("Email or identifier")).toBeTruthy();
+  expect(screen.getByLabelText("Email or Identifier")).toBeTruthy();
 });
 
 test("a step's ticket that expired starts again; failed sends are notified", async () => {
@@ -195,12 +202,12 @@ test("a step's ticket that expired starts again; failed sends are notified", asy
     }),
   );
   await typeWho("ana");
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: /Code to/ })));
+  await act(async () => fireEvent.click(rowButton(/Code to/)));
   expect(screen.getByRole("alert").textContent).toContain("Wait 2 minutes.");
-  expect(screen.getByRole("button", { name: /Authenticator app: Added 4 Mar 2026/ })).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: /Authenticator app: Phone/ }));
+  expect(rowButton(/Added 4 Mar 2026/)).toBeTruthy();
+  fireEvent.click(rowButton(/Phone/));
   await paste("123456");
-  expect(screen.getByLabelText("Email or identifier")).toBeTruthy();
+  expect(screen.getByLabelText("Email or Identifier")).toBeTruthy();
   fireEvent.click(screen.getAllByRole("button", { name: "Dismiss" })[0]!);
 });
 
@@ -215,12 +222,12 @@ test("going back from the methods or the sign-up; a resend that fails is notifie
     "pt",
   );
   await typeWho("ana@example.com");
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Enviar novo código" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Enviar Novo Código" })));
   expect(screen.getAllByRole("alert").some((alert) => alert.textContent?.includes("O envio está em pausa"))).toBe(true);
   fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
   await typeWho("ana");
-  fireEvent.click(screen.getByRole("button", { name: "Usar outro email ou identificador" }));
-  expect(screen.getByLabelText("Email ou identificador")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Usar Outro Email ou Identificador" }));
+  expect(screen.getByLabelText("Email ou Identificador")).toBeTruthy();
 });
 
 test("a proof-of-work refusal or an odd answer is explained", async () => {
@@ -238,8 +245,8 @@ test("sign-up from the methods screen and its way back", async () => {
   setUp(actions({ finishEmail: vi.fn(async () => ({ status: "sign-up" as const, ticket: "t" })) }));
   await typeWho("x@example.com");
   await paste("123456");
-  fireEvent.click(screen.getByRole("button", { name: "Use another email or identifier" }));
-  expect(screen.getByLabelText("Email or identifier")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Use Another Email or Identifier" }));
+  expect(screen.getByLabelText("Email or Identifier")).toBeTruthy();
 });
 
 test("it can sit in the site's own card", () => {
@@ -259,4 +266,51 @@ test("it can sit in the site's own card", () => {
   const card = container.querySelector(".mine")!;
   expect(card).toBeTruthy();
   expect(card.className).not.toContain("framed");
+});
+
+test("required methods stay listed together, each checked off once it passes, until the last one signs in", async () => {
+  const both: SignInAnswer = { ...more, methods: more.status === "more" ? more.methods.slice(0, 2) : [] };
+  const tabletLeft: SignInAnswer = { ...both, ticket: "t3", methods: [{ ...more.methods[1]! }] } as SignInAnswer;
+  const given = actions({
+    finishEmail: vi.fn(async () => both),
+    finishStep: vi.fn(async ({ step }) =>
+      step.kind === "authenticator" && step.id === "phone" ? tabletLeft : { status: "signed-in" as const },
+    ),
+  });
+  setUp(given);
+  await typeWho("ana@example.com");
+  await paste("123456");
+  expect(screen.getByRole("heading", { name: "Confirm Every Required Method" })).toBeTruthy();
+  fireEvent.click(rowButton(/Phone/));
+  await paste("111111");
+  const rows = screen.getAllByRole("listitem");
+  expect(rows[0]!.textContent).toContain("Confirmed");
+  expect(rows).toHaveLength(3);
+  fireEvent.click(rowButton(/Added 4 Mar 2026/));
+  await paste("222222");
+  expect(given.finishStep).toHaveBeenLastCalledWith({
+    ticket: "t3",
+    step: { kind: "authenticator", id: "tablet", code: "222222" },
+  });
+  expect(screen.getByText("Signed in. Opening your account…")).toBeTruthy();
+  expect(replace).toHaveBeenCalledWith("/en");
+});
+
+test("signed in and left, it starts afresh when shown again (Next.js keeps visited pages hidden, not gone)", async () => {
+  const given = actions();
+  const screenIn = (mode: "visible" | "hidden") => (
+    <ToastProvider label="Notifications" dismissLabel="Dismiss">
+      <Activity mode={mode}>
+        <SignInScreen locale="en" company="Acme" actions={given} next="/en" rulesHref="/en/rules" />
+      </Activity>
+    </ToastProvider>
+  );
+  const { rerender } = render(screenIn("visible"));
+  await typeWho("ana@example.com");
+  await paste("123456");
+  expect(screen.getByText("Signed in. Opening your account…")).toBeTruthy();
+  await act(async () => rerender(screenIn("hidden")));
+  await act(async () => rerender(screenIn("visible")));
+  expect(screen.getByLabelText("Email or Identifier")).toBeTruthy();
+  expect(screen.queryByText("Signed in. Opening your account…")).toBeNull();
 });

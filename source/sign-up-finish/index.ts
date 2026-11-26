@@ -37,6 +37,6 @@ export async function finishSignUp(
     now,
   });
   if (!created.created) return { status: "refused", reason: created.reason };
-  const session = await signIn(server.database, { accountId: created.accountId, token, userAgent, now });
+  const session = await signIn(server.database, { accountId: created.accountId, token, userAgent, record: false, now });
   return { status: "signed-in", accountId: created.accountId, token: session.token };
 }

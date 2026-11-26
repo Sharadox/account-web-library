@@ -20,38 +20,51 @@
 }
 .areas {
   border-bottom: 1px solid $line;
-  /* Across only: the line under the open area stays inside, so nothing scrolls up and down. */
+  /* Across only, with room inside for the focus ring, so nothing is cut and nothing scrolls up and down. */
   overflow-x: auto;
   overflow-y: hidden;
   @include scrollbar;
   ul {
     display: flex;
+    align-items: center;
     gap: 4px;
     min-width: max-content;
+    padding: 4px 4px 0;
   }
   a {
     position: relative;
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 12px 14px;
+    border-radius: $small-radius $small-radius 0 0;
     color: $soft;
-    font-size: 14.5px;
+    font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
-    transition: color 0.2s;
+    transition: color 0.3s $ease;
+    &:focus-visible {
+      outline-offset: -2px;
+    }
     &:hover {
       color: $text;
+    }
+    &::after {
+      content: "";
+      position: absolute;
+      right: 10px;
+      bottom: 0;
+      left: 10px;
+      height: 2px;
+      border-radius: 2px;
+      background: $accent;
+      transform: scaleX(0);
+      transition: transform 0.35s $ease;
     }
     &[aria-current="page"] {
       color: $text;
       &::after {
-        content: "";
-        position: absolute;
-        right: 10px;
-        bottom: 0;
-        left: 10px;
-        height: 2px;
-        border-radius: 2px;
-        background: $accent;
+        transform: scaleX(1);
       }
     }
   }
@@ -69,29 +82,39 @@
   }
 }
 .sections {
+  /* Phones: across, scrolling sideways, with room for the focus ring. */
   overflow-x: auto;
   @include scrollbar;
   ul {
     display: flex;
+    align-items: center;
     gap: 6px;
     min-width: max-content;
-    @media (min-width: 860px) {
-      position: sticky;
-      top: calc(#{$bar} + 24px);
+    padding: 4px;
+  }
+  /* Wide screens: down the side, staying in view while the page scrolls. */
+  @media (min-width: 860px) {
+    position: sticky;
+    top: calc(#{$bar} + 24px);
+    overflow: visible;
+    ul {
       flex-direction: column;
+      align-items: stretch;
       min-width: 0;
     }
   }
   a {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
     padding: 8px 12px;
     border-radius: $small-radius;
     color: $soft;
     font-size: 14px;
     white-space: nowrap;
     transition:
-      background-color 0.2s,
-      color 0.2s;
+      background-color 0.3s $ease,
+      color 0.3s $ease;
     &:hover {
       background: $surface;
       color: $text;
@@ -107,11 +130,23 @@
   display: grid;
   gap: 40px;
   min-width: 0;
+  animation: enter 0.35s $ease;
 }
 .title {
   margin: 0;
   font-family: $display;
-  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-size: 32px;
   font-weight: 600;
-  line-height: 1.2;
+  text-align: start;
+}
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .content {
+    animation: none;
+  }
 }

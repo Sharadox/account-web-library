@@ -18,7 +18,7 @@ test("the rules with their penalties, or none yet, and the public page", () => {
   );
   expect(screen.getByText("spam · Everywhere · 7 days → 30 days → Permanent")).toBeTruthy();
   expect(screen.getByText("fraud · platform · Permanent")).toBeTruthy();
-  expect(screen.getByRole("link", { name: "See the public rules" }).getAttribute("href")).toBe("/en/rules");
+  expect(screen.getByRole("link", { name: "See the Public Rules" }).getAttribute("href")).toBe("/en/rules");
   rerender(<RuleAdministration locale="en" rulesHref="/en/rules" rules={[]} />);
   expect(screen.getByText("No rules yet: until there are, nobody can be banned.")).toBeTruthy();
 });

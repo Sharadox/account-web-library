@@ -48,11 +48,21 @@ const setUp = (action: () => Promise<AccountAnswer<{ value?: number }>>, stepUp:
     <ToastProvider label="Notifications" dismissLabel="Dismiss">
       <AccountActions
         locale="en"
+        company="Luis Pires Decor"
         stepUp={{
-          email: "ana@example.com",
-          start: async () => ({ status: "done", requestId: "r" }),
-          finish: async (_request, code) =>
-            code === "123456" ? { status: "done" } : { status: "refused", reason: "wrong" },
+          methods: async () => ({
+            status: "done",
+            ticket: "t0",
+            mode: "one",
+            methods: [
+              { kind: "email", id: "e", hint: "ana@example.com" },
+              { kind: "authenticator", id: "a", name: "Proton Pass", createdAt: "2026-11-25T10:00:00Z" },
+            ],
+            recoveryCode: true,
+          }),
+          send: async () => ({ status: "done", requestId: "r" }),
+          finish: async (_ticket, step) =>
+            step.code === "123456" ? { status: "done" } : { status: "refused", reason: "wrong" },
           ...stepUp,
         }}
       >
@@ -82,39 +92,115 @@ test("refused: the reason explained as an error; a thrown action is a general er
   expect(screen.getByRole("alert").textContent).toContain("Something went wrong.");
 });
 
-test("a change that needs a fresh code asks for it in the pop-up, then runs again", async () => {
+test("a change that needs confirming lists every way, equally; the one picked asks for its code, then it runs again", async () => {
   let calls = 0;
-  setUp(async () => (++calls === 1 ? { status: "step-up" } : { status: "done" }));
+  const send = vi.fn(async () => ({ status: "done" as const, requestId: "r" }));
+  setUp(async () => (++calls === 1 ? { status: "step-up" } : { status: "done" }), { send });
   await act(async () => fireEvent.click(screen.getByText("go")));
   expect(screen.getByRole("heading", { name: "Confirm It's You" })).toBeTruthy();
   expect(screen.getByText("ana@example.com")).toBeTruthy();
+  expect(screen.getByText("Proton Pass")).toBeTruthy();
+  // Nothing is sent until asked.
+  expect(send).not.toHaveBeenCalled();
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send Code" })));
+  expect(send).toHaveBeenCalledWith("e");
+  expect(screen.getByRole("heading", { name: "Check Your Email" })).toBeTruthy();
   await act(async () => paste("000000"));
   expect(screen.getAllByRole("alert").some((alert) => alert.textContent === "That code isn't right.")).toBe(true);
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send a new code" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send a New Code" })));
+  expect(send).toHaveBeenCalledTimes(2);
   await act(async () => paste("123456"));
   expect(calls).toBe(2);
   expect(screen.getByRole("status").textContent).toContain("Done.");
 });
 
-test("giving up the code changes nothing; a code that can't be sent says why", async () => {
+test("with required methods, each one is checked off until all have passed; an authenticator or a recovery code too", async () => {
+  const finish = vi.fn(async (ticket: string, step: { kind: string; code: string }) =>
+    step.kind === "authenticator" && ticket === "t0"
+      ? { status: "done" as const, ticket: "t1", left: ["e"] }
+      : { status: "done" as const },
+  );
+  let calls = 0;
+  setUp(async () => (++calls === 1 ? { status: "step-up" } : { status: "done" }), {
+    methods: async () => ({
+      status: "done",
+      ticket: "t0",
+      mode: "all",
+      methods: [
+        { kind: "email", id: "e", hint: "ana@example.com" },
+        { kind: "authenticator", id: "a", name: "Proton Pass", createdAt: "2026-11-25T10:00:00Z" },
+      ],
+      recoveryCode: false,
+    }),
+    finish,
+  });
+  await act(async () => fireEvent.click(screen.getByText("go")));
+  expect(screen.getByText(/every method you marked required/)).toBeTruthy();
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Enter Code" })));
+  expect(screen.getByRole("heading", { name: "Authenticator Code" })).toBeTruthy();
+  await act(async () => paste("123456"));
+  expect(finish).toHaveBeenLastCalledWith("t0", { kind: "authenticator", id: "a", code: "123456" });
+  expect(screen.getByText("Confirmed")).toBeTruthy();
+  expect(calls).toBe(1);
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send Code" })));
+  await act(async () => paste("123456"));
+  expect(finish).toHaveBeenLastCalledWith("t1", { kind: "email", requestId: "r", code: "123456" });
+  expect(calls).toBe(2);
+  cleanup();
+  calls = 0;
+  setUp(async () => (++calls === 1 ? { status: "step-up" } : { status: "done" }), { finish });
+  await act(async () => fireEvent.click(screen.getByText("go")));
+  await act(async () => fireEvent.click(screen.getAllByRole("button", { name: "Enter Code" })[1]!));
+  expect(screen.getByRole("heading", { name: "Recovery Code" })).toBeTruthy();
+  await act(async () => fireEvent.change(screen.getByRole("textbox"), { target: { value: "abcd-efgh" } }));
+  await act(async () => fireEvent.submit(screen.getByRole("textbox").closest("form")!));
+  expect(finish).toHaveBeenLastCalledWith("t0", { kind: "recovery-code", code: "abcd-efgh" });
+  expect(calls).toBe(2);
+});
+
+test("closing the code goes back to the list; Cancel changes nothing; a code or list that can't come says why", async () => {
   setUp(async () => ({ status: "step-up" }), {}, true);
   await act(async () => fireEvent.click(screen.getByText("go")));
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Close" })));
+  await act(async () => fireEvent.click(screen.getAllByRole("button", { name: "Enter Code" })[0]!));
+  await act(async () => fireEvent.click(screen.getAllByRole("button", { name: "Close" }).at(-1)!));
+  expect(screen.getByRole("heading", { name: "Confirm It's You" })).toBeTruthy();
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Cancel" })));
+  expect(document.body.dataset.answer).toBe(JSON.stringify("Not confirmed, so nothing changed."));
+  // Its close button gives up too.
+  await act(async () => fireEvent.click(screen.getByText("go")));
+  await act(async () => fireEvent.click(screen.getAllByRole("button", { name: "Close" })[0]!));
   expect(document.body.dataset.answer).toBe(JSON.stringify("Not confirmed, so nothing changed."));
   cleanup();
   setUp(async () => ({ status: "step-up" }), {
-    start: async () => ({ status: "refused", reason: "rate-limit", retryAfterSeconds: 60 }),
+    send: async () => ({ status: "refused", reason: "rate-limit", retryAfterSeconds: 60 }),
   });
   await act(async () => fireEvent.click(screen.getByText("go")));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send Code" })));
   expect(screen.getByRole("alert").textContent).toContain("Too many tries.");
-  expect(document.body.dataset.answer).toBe("null");
+  expect(screen.getByRole("heading", { name: "Confirm It's You" })).toBeTruthy();
   cleanup();
-  setUp(async () => ({ status: "step-up" }), {
-    start: async () => ({ status: "step-up" }),
-    finish: async () => ({ status: "step-up" }),
-  });
+  setUp(async () => ({ status: "step-up" }), { methods: async () => ({ status: "step-up" }) });
   await act(async () => fireEvent.click(screen.getByText("go")));
   expect(screen.getByRole("alert").textContent).toContain("Something went wrong.");
+  expect(document.body.dataset.answer).toBe("null");
+  cleanup();
+  setUp(async () => ({ status: "step-up" }), { send: async () => ({ status: "step-up" }) });
+  await act(async () => fireEvent.click(screen.getByText("go")));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send Code" })));
+  expect(screen.getByRole("alert").textContent).toContain("Something went wrong.");
+  cleanup();
+  // A new code that can't be sent says why.
+  let sends = 0;
+  setUp(async () => ({ status: "step-up" }), {
+    send: async () =>
+      ++sends === 1
+        ? { status: "done", requestId: "r" }
+        : { status: "refused", reason: "rate-limit", retryAfterSeconds: 9 },
+  });
+  await act(async () => fireEvent.click(screen.getByText("go")));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send Code" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send a New Code" })));
+  expect(screen.getAllByRole("alert").some((alert) => alert.textContent!.includes("Too many tries."))).toBe(true);
 });
 
 test("forms get the refusal to show, or null when done; outside AccountActions it throws", async () => {
@@ -130,21 +216,21 @@ test("forms get the refusal to show, or null when done; outside AccountActions i
   expect(() => render(<Runner action={async () => ({ status: "done" })} />)).toThrow("needs AccountActions");
 });
 
-test("a step-up that finishes oddly is explained", async () => {
+test("a step-up that finishes oddly is explained; a change still asking after it is a general error", async () => {
   let calls = 0;
   setUp(async () => (++calls === 1 ? { status: "step-up" } : { status: "done" }), {
     finish: async () => ({ status: "step-up" }),
   });
   await act(async () => fireEvent.click(screen.getByText("go")));
+  await act(async () => fireEvent.click(screen.getAllByRole("button", { name: "Enter Code" })[0]!));
   await act(async () => paste("123456"));
   expect(
     screen.getAllByRole("alert").some((alert) => alert.textContent === "Something went wrong. Please try again."),
   ).toBe(true);
-});
-
-test("a change still asking for a code after it was given is a general error", async () => {
+  cleanup();
   setUp(async () => ({ status: "step-up" }));
   await act(async () => fireEvent.click(screen.getByText("go")));
+  await act(async () => fireEvent.click(screen.getAllByRole("button", { name: "Enter Code" })[0]!));
   await act(async () => paste("123456"));
   expect(screen.getAllByRole("alert").some((alert) => alert.textContent?.includes("Something went wrong."))).toBe(true);
 });

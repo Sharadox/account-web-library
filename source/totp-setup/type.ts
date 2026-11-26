@@ -6,14 +6,16 @@ export type TotpSetupStart =
 
 export type TotpSetupConfirmation =
   /** The authenticator is on: offer recovery codes (recommended), never make them unasked. */
-  { confirmed: true } | { confirmed: false; reason: "wrong" | "none" | "name" };
+  | { confirmed: true }
+  /** `name`: none given, or over 50 characters once trimmed. */
+  | { confirmed: false; reason: "wrong" | "none" | "name" };
 
 export type TotpRename = { renamed: true } | { renamed: false; reason: "name" | "none" };
 
 /** One authenticator app that is on. */
 export interface Authenticator {
   id: string;
-  /** Null when its owner gave it no name. */
+  /** Null only for authenticators added before names were required. */
   name: string | null;
   /** Whether every sign-in asks for its code. */
   required: boolean;

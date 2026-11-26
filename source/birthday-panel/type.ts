@@ -3,7 +3,8 @@ import type { AccountLocale } from "@sharadox/account-web-library/account-words/
 
 export interface BirthdayPanelProperties {
   locale: AccountLocale;
-  birthday: { day: number; month: number; year: number | null } | null;
+  /** Null when none was given; while on its way, a skeleton. */
+  birthday?: { day: number; month: number; year: number | null } | null;
   /** Null clears it. */
   save: (birthday: { day: number; month: number; year: number | null } | null) => Promise<AccountAnswer>;
 }

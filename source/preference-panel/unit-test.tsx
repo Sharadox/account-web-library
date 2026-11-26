@@ -23,7 +23,7 @@ const preferences = [
 test("shows each kind's channels; Edit turns them into checkboxes, locked ones fixed; Save sends every choice", async () => {
   const save = vi.fn(async () => ({ status: "done" as const }));
   renderAccountScreen(<PreferencePanel locale="en" preferences={preferences} save={save} />);
-  expect(screen.getByText("Always on")).toBeTruthy();
+  expect(screen.getByText("Always On")).toBeTruthy();
   expect(screen.getAllByText("No")).toHaveLength(1);
   fireEvent.click(screen.getByRole("button", { name: "Edit" }));
   const locked = screen.getByRole("checkbox", {

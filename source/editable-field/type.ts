@@ -12,8 +12,15 @@ export interface EditablePanelProperties {
    * arrives. Without it, the form waits with a loader.
    */
   preview?: (form: FormData) => ReactNode;
-  /** The form's fields while editing (named inputs). */
-  fields: ReactNode;
+  /**
+   * The form's fields while editing (named inputs). As a function, it gets what was last saved (until the page has
+   * the new value), so editing again starts from it: `defaultValue={saved?.get("name") ?? name}`.
+   */
+  fields: ReactNode | ((saved: FormData | null) => ReactNode);
+  /** False while the value is still on its way: Edit waits (true by default). */
+  ready?: boolean;
+  /** A line under the value in read mode (what it's for). */
+  note?: ReactNode;
   /**
    * Saves the form: an error to show, or null when saved (then a notification says so and the panel shows the new
    * value).

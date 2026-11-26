@@ -4,6 +4,9 @@ import type { Words } from "@sharadox/account-web-library/account-words/type";
 
 const S = ACCOUNT_WORDS.section;
 
+/** The end of an address that opens the account menu on the browser's accounts, to pick one (after a deletion). */
+export const CHOOSE_ACCOUNT = "#choose-account";
+
 /** Every area, one page (`/<locale>/<area>`; the overview is `/<locale>`), and its sections, one under another. */
 export const ACCOUNT_AREAS: readonly {
   key: AccountAreaKey;
@@ -16,8 +19,9 @@ export const ACCOUNT_AREAS: readonly {
     key: "profile",
     path: "profile",
     sections: [
-      ["identity", S.identity],
       ["picture", S.picture],
+      ["name", S.name],
+      ["identifier", S.identifier],
       ["birthday", S.birthday],
     ],
   },

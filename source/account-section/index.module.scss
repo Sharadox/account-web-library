@@ -9,20 +9,20 @@
 .header {
   display: grid;
   gap: 6px;
+  text-align: start;
 }
 .title {
   margin: 0;
   font-family: $display;
-  font-size: clamp(1.25rem, 2.4vw, 1.5rem);
+  font-size: 24px;
   font-weight: 600;
-  line-height: 1.25;
 }
+/* As wide as the section: a line breaks only at its end. */
 .description {
-  max-width: 68ch;
+  width: 100%;
   margin: 0;
   color: $soft;
-  font-size: 14.5px;
-  line-height: 1.6;
+  font-size: 14px;
   p {
     margin: 0;
   }

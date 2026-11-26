@@ -26,40 +26,40 @@ const menu = (overrides: Partial<AccountMenuProperties> = {}) =>
     </div>,
   );
 
-const open = () => fireEvent.click(screen.getByRole("button", { name: "Account menu: Ana Silva" }));
+const open = () => fireEvent.click(screen.getByRole("button", { name: "Account Menu: Ana Silva" }));
 
 test("one account: who it is with its role chips, settings, add another, sign out; no switching", () => {
   menu();
   open();
   expect(screen.getByText("@ana")).toBeTruthy();
   expect(screen.getByRole("list", { name: "Roles" }).textContent).toBe("Administrator");
-  expect(screen.getByRole("link", { name: "Account settings" }).getAttribute("href")).toBe("/en");
-  expect(screen.getByRole("link", { name: "Add another account" })).toBeTruthy();
-  expect(screen.getByRole("button", { name: "Sign out" })).toBeTruthy();
-  expect(screen.queryByRole("button", { name: "Switch account" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "Sign out of all accounts" })).toBeNull();
+  expect(screen.getByRole("link", { name: "Account Settings" }).getAttribute("href")).toBe("/en");
+  expect(screen.getByRole("link", { name: "Add Another Account" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Sign Out" })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Switch Account" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Sign Out of All Accounts" })).toBeNull();
   expect(screen.queryByRole("link", { name: "Administration" })).toBeNull();
-  fireEvent.click(screen.getByRole("link", { name: "Account settings" }));
-  expect(screen.queryByRole("link", { name: "Account settings" })).toBeNull();
+  fireEvent.click(screen.getByRole("link", { name: "Account Settings" }));
+  expect(screen.queryByRole("link", { name: "Account Settings" })).toBeNull();
 });
 
-test("several accounts: Switch account turns the menu into the list, Back returns; sign out of all", () => {
+test("several accounts: Switch Account turns the menu into the list, Back returns; sign out of all", () => {
   menu({ others: [bea], administrationHref: "/en/administration/accounts", current: { ...ana, roles: [] } });
   open();
   expect(screen.queryByRole("list", { name: "Roles" })).toBeNull();
   expect(screen.getByRole("link", { name: "Administration" })).toBeTruthy();
-  expect(screen.queryByRole("link", { name: "Add another account" })).toBeNull();
-  expect(screen.getByRole("button", { name: "Sign out of all accounts" })).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Switch account" }));
-  expect(screen.queryByRole("link", { name: "Account settings" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Add Another Account" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Sign Out of All Accounts" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Switch Account" }));
+  expect(screen.queryByRole("link", { name: "Account Settings" })).toBeNull();
   expect(document.querySelector('[aria-current="true"]')!.textContent).toContain("Ana Silva");
   const switchTo = screen.getByRole("button", { name: /Bea/ });
   expect((switchTo.closest("form")!.querySelector("input") as HTMLInputElement).value).toBe("b");
-  expect(screen.getByRole("link", { name: "Add another account" })).toBeTruthy();
+  expect(screen.getByRole("link", { name: "Add Another Account" })).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Back" }));
-  expect(screen.getByRole("link", { name: "Account settings" })).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Switch account" }));
-  fireEvent.click(screen.getByRole("link", { name: "Add another account" }));
+  expect(screen.getByRole("link", { name: "Account Settings" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Switch Account" }));
+  fireEvent.click(screen.getByRole("link", { name: "Add Another Account" }));
   expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
 });
 
@@ -82,9 +82,9 @@ test("Escape, a click outside or the picture again closes it", () => {
 test("signing out posts the account, or nothing for all", async () => {
   menu({ others: [bea] });
   open();
-  const one = screen.getByRole("button", { name: "Sign out" }).closest("form")!;
+  const one = screen.getByRole("button", { name: "Sign Out" }).closest("form")!;
   expect((one.querySelector("input") as HTMLInputElement).value).toBe("a");
-  const all = screen.getByRole("button", { name: "Sign out of all accounts" }).closest("form")!;
+  const all = screen.getByRole("button", { name: "Sign Out of All Accounts" }).closest("form")!;
   expect((all.querySelector("input") as HTMLInputElement).value).toBe("");
   await act(async () => fireEvent.submit(all));
   expect(screen.queryByText("@ana")).toBeNull();
@@ -95,7 +95,7 @@ test("switching keeps the menu open with a loader on the chosen account, then cl
   const switchAccount = vi.fn(() => new Promise<void>((resolve) => (finish = resolve)));
   menu({ others: [bea], switchAccount });
   open();
-  fireEvent.click(screen.getByRole("button", { name: "Switch account" }));
+  fireEvent.click(screen.getByRole("button", { name: "Switch Account" }));
   await act(async () => fireEvent.click(screen.getByRole("button", { name: /Bea/ })));
   expect(switchAccount).toHaveBeenCalledOnce();
   expect(screen.getByRole("button", { name: /Bea/ }).getAttribute("aria-busy")).toBe("true");
@@ -108,8 +108,22 @@ test("signing out shows a loader on its button", async () => {
   const signOut = vi.fn(() => new Promise<void>((resolve) => (finish = resolve)));
   menu({ signOut });
   open();
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Sign out" })));
-  expect(screen.getByRole("button", { name: "Sign out" }).getAttribute("aria-busy")).toBe("true");
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Sign Out" })));
+  expect(screen.getByRole("button", { name: "Sign Out" }).getAttribute("aria-busy")).toBe("true");
   await act(async () => finish());
   expect(screen.queryByText("@ana")).toBeNull();
+});
+
+test("opened at #choose-account (after an account is deleted), it shows the other accounts to pick from", async () => {
+  history.replaceState(null, "", "/en#choose-account");
+  await act(async () => void menu({ others: [bea] }));
+  expect(screen.getByText("@bea")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Back" })).toBeTruthy();
+  expect(location.hash).toBe("");
+  cleanup();
+  // With no other account there is nothing to choose.
+  history.replaceState(null, "", "/en#choose-account");
+  await act(async () => void menu());
+  expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+  history.replaceState(null, "", "/en");
 });

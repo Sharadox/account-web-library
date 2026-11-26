@@ -3,7 +3,7 @@
 .who,
 .muted {
   margin: 0;
-  font-size: 14.5px;
+  font-size: 14px;
 }
 .muted {
   color: $soft;
@@ -13,8 +13,7 @@
   padding: 12px 16px;
   border-left: 3px solid $accent;
   background: $surface;
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 16px;
   white-space: pre-wrap;
 }
 .form {

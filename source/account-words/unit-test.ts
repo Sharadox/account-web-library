@@ -16,6 +16,9 @@ test("every phrase is in both languages, never empty", () => {
 
 test("explains refusals, waits and anything unknown", () => {
   expect(explainRefusal({ reason: "identifier-taken" }, "en")).toBe("That identifier is taken. Try another.");
+  expect(explainRefusal({ reason: "banned" }, "en")).toBe(
+    "While your account is banned, you can only download your data, appeal, change your notification preferences or delete your account.",
+  );
   expect(explainRefusal({ reason: "rate-limit", retryAfterSeconds: 30 }, "en")).toBe("Too many tries. Wait 1 minute.");
   expect(explainRefusal({ reason: "rate-limit", retryAfterSeconds: 150 }, "pt")).toBe(
     "Demasiadas tentativas. Aguarde 3 minutos.",

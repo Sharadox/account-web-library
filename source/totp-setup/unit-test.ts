@@ -53,7 +53,7 @@ test("sets up a named authenticator app: a secret to scan or type, turned on by 
   expect(
     await confirmTotpSetup(server, { accountId, id: setup.id, code: totpCode(secret, 60_000), now: 60_000 }),
   ).toEqual({ confirmed: true });
-  // Recovery codes are offered, never made on their own.
+  // Recovery Codes are offered, never made on their own.
   expect(await totpStatus(server.database, { accountId })).toEqual({
     authenticators: [{ id: setup.id, name: "My phone", required: false, createdAt: expect.any(Date) }],
     recoveryCodesLeft: 0,
@@ -118,30 +118,27 @@ test("removes one authenticator; the recovery codes go with the last one", async
   expect(actions.map(({ action }) => action)).toContain("authenticator.removed");
 });
 
-test("a name is optional: given when it's confirmed, or never (then the date it was added tells it apart)", async () => {
+test("a name is required, given at the start or when confirmed; it can be required at sign-in from the start", async () => {
   const unnamed = await startTotpSetup(server, { accountId, issuer: "Company" });
   if (unnamed.status !== "started") throw new Error(unnamed.status);
   const secret = decodeBase32(unnamed.secret);
-  expect(
-    await confirmTotpSetup(server, {
-      accountId,
-      id: unnamed.id,
-      code: totpCode(secret, 0),
-      name: "x".repeat(51),
-      now: 0,
-    }),
-  ).toEqual({ confirmed: false, reason: "name" });
-  expect(
-    await confirmTotpSetup(server, { accountId, id: unnamed.id, code: totpCode(secret, 0), name: "  ", now: 0 }),
-  ).toEqual({
-    confirmed: true,
-  });
-  const named = await startTotpSetup(server, { accountId, issuer: "Company", name: "" });
+  const confirm = (name?: string) =>
+    confirmTotpSetup(server, { accountId, id: unnamed.id, code: totpCode(secret, 0), name, required: true, now: 0 });
+  expect(await confirm("x".repeat(51))).toEqual({ confirmed: false, reason: "name" });
+  expect(await confirm("  ")).toEqual({ confirmed: false, reason: "name" });
+  expect(await confirm()).toEqual({ confirmed: false, reason: "name" });
+  expect(await confirm(" Proton Pass ")).toEqual({ confirmed: true });
+  const named = await startTotpSetup(server, { accountId, issuer: "Company", name: "Tablet" });
   if (named.status !== "started") throw new Error(named.status);
   const other = decodeBase32(named.secret);
-  await confirmTotpSetup(server, { accountId, id: named.id, code: totpCode(other, 0), name: " Tablet ", now: 0 });
+  await confirmTotpSetup(server, { accountId, id: named.id, code: totpCode(other, 0), now: 0 });
   const { authenticators } = await totpStatus(server.database, { accountId });
-  expect(authenticators.map(({ name }) => name)).toEqual([null, "Tablet"]);
-  expect(await renameTotp(server.database, { accountId, id: named.id, name: " " })).toEqual({ renamed: true });
-  expect((await totpStatus(server.database, { accountId })).authenticators[1]!.name).toBeNull();
+  expect(authenticators.map(({ name, required }) => [name, required])).toEqual([
+    ["Proton Pass", true],
+    ["Tablet", false],
+  ]);
+  expect(await renameTotp(server.database, { accountId, id: named.id, name: " " })).toEqual({
+    renamed: false,
+    reason: "name",
+  });
 });

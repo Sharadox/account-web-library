@@ -17,7 +17,7 @@ test("six areas for administrators, five for everyone else, each one page with i
     "Administration",
   ]);
   expect(all[2]!.sections).toEqual([
-    { key: "methods", label: "Sign-In Methods", href: "/en/security#methods" },
+    { key: "methods", label: "Authentication Methods", href: "/en/security#methods" },
     { key: "devices", label: "Devices", href: "/en/security#devices" },
     { key: "activity", label: "Activity", href: "/en/security#activity" },
   ]);

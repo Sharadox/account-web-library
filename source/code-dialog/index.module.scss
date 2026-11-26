@@ -2,8 +2,7 @@
 
 .text {
   color: $soft;
-  font-size: 14.5px;
-  line-height: 1.6;
+  font-size: 14px;
   p {
     margin: 0 0 8px;
   }
@@ -19,7 +18,7 @@
   min-height: 20px;
   margin: 0;
   color: $soft;
-  font-size: 13px;
+  font-size: 12px;
   text-align: center;
 }
 .error {
@@ -31,7 +30,7 @@
 .countdown {
   margin: 0;
   color: $soft;
-  font-size: 13px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
@@ -42,7 +41,7 @@
   p {
     margin: 0;
     color: $danger;
-    font-size: 14.5px;
+    font-size: 14px;
     font-weight: 600;
   }
 }

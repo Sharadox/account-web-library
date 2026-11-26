@@ -25,12 +25,17 @@ export function EditablePanel({
   onSave,
   editLabel,
   extra,
+  note,
+  ready = true,
 }: EditablePanelProperties) {
   const [editing, setEditing] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // The new value shown before the page has it: kept while the view it replaced is still the one given.
   const [shown, setShown] = useState<{ value: ReactNode; over: ReactNode } | null>(null);
+  // What was last saved, for editing again before the page has it.
+  const [saved, setSaved] = useState<{ form: FormData; over: ReactNode } | null>(null);
+  const latest = saved && Object.is(saved.over, view) ? saved.form : null;
   const { notify } = useToast();
   const common = ACCOUNT_WORDS.common;
   const previewing = shown !== null && (pending || Object.is(shown.over, view));
@@ -57,22 +62,32 @@ export function EditablePanel({
       return setError(refusal);
     }
     setEditing(false);
+    setSaved({ form, over: view });
     notify(say(common.saved, locale));
   };
 
   return (
     <div className={styles.panel}>
-      <div className={styles.head}>
-        <h3 className={styles.label}>{label}</h3>
-        {!editing && !pending && (
-          <div className={styles.actions}>
-            {extra}
-            <Button look="quiet" icon="pencil" onClick={() => setEditing(true)}>
-              {editLabel ?? say(common.edit, locale)}
-            </Button>
+      {!editing && (
+        <div className={styles.summary} data-part="summary">
+          <div className={styles.text}>
+            <h3 className={styles.label}>{label}</h3>
+            <div className={styles.view}>
+              {previewing ? shown.value : view}
+              {pending && <PendingMark label={say(common.saving, locale)} />}
+            </div>
+            {note && <div className={styles.note}>{note}</div>}
           </div>
-        )}
-      </div>
+          {!pending && (
+            <div className={styles.actions}>
+              {extra}
+              <Button look="quiet" icon="pencil" disabled={!ready} onClick={() => setEditing(true)}>
+                {editLabel ?? say(common.edit, locale)}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
       {/* The form stays mounted while a preview shows, so a refusal brings back what was typed. */}
       {(editing || (pending && previewing)) && (
         <form
@@ -83,7 +98,8 @@ export function EditablePanel({
             if (event.key === "Escape") cancel();
           }}
         >
-          {fields}
+          {editing && <h3 className={styles.label}>{label}</h3>}
+          {typeof fields === "function" ? fields(latest) : fields}
           {error && (
             <p className={styles.error} role="alert">
               {error}
@@ -98,12 +114,6 @@ export function EditablePanel({
             </Button>
           </div>
         </form>
-      )}
-      {!editing && (
-        <div className={styles.view}>
-          {previewing ? shown.value : view}
-          {pending && <PendingMark label={say(common.saving, locale)} />}
-        </div>
       )}
     </div>
   );

@@ -7,8 +7,8 @@ export type SignInProgress =
   /** `notify`, after a recovery code or on a browser new to the account system: call it after answering. */
   | { status: "signed-in"; accountId: string; token: string; notify?: () => Promise<void> }
   /**
-   * Required methods are left: ask for one of `methods` (all of them, one after another), then `finishSignInStep`
-   * with the ticket. `recoveryCode`: a recovery code may stand in for an authenticator.
+   * Required methods are left: ask for every one of `methods` (shown together, passed in any order), each through
+   * `finishSignInStep` with the ticket. `recoveryCode`: the account has a recovery code, which signs in at once.
    */
   | { status: "more"; ticket: string; methods: MethodChoice[]; recoveryCode: boolean };
 
@@ -16,7 +16,7 @@ type Refusal = Extract<CodeVerificationResult, { valid: false }>["reason"];
 
 export type SignInStepResult =
   | SignInProgress
-  /** Signing in with an identifier: the account's ways in; any one starts (then the required ones). */
+  /** Signing in with an identifier and nothing required: the account's ways in; any one is enough. */
   | { status: "choose"; ticket: string; methods: MethodChoice[]; recoveryCode: boolean }
   /** `method`: not one of the account's methods left to pass. */
   | { status: "refused"; reason: "ticket" | "wrong" | "method" | "proof" | "unknown" | Refusal }

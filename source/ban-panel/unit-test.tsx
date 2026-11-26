@@ -55,6 +55,6 @@ test("an appeal waiting, or decided with its reasons; a permanent ended ban", ()
   );
   expect(screen.getByText("Your appeal was sent. You'll hear back here.")).toBeTruthy();
   expect(screen.getByText("Ended").parentElement!.textContent).toContain("Permanent");
-  expect(screen.getByText("Ban lifted").parentElement!.textContent).toBe("Ban lifted: Our mistake.");
-  expect(screen.getByText("Ban upheld").parentElement!.textContent).toBe("Ban upheld");
+  expect(screen.getByText("Ban Lifted").parentElement!.textContent).toBe("Ban Lifted: Our mistake.");
+  expect(screen.getByText("Ban Upheld").parentElement!.textContent).toBe("Ban Upheld");
 });

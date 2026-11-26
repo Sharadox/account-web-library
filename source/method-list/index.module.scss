@@ -1,0 +1,48 @@
+@use "style/account" as *;
+
+.list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.method {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 64px;
+  padding: 12px 14px;
+  border: 1px solid $line;
+  border-radius: $small-radius;
+  font-size: 14px;
+  text-align: start;
+  transition:
+    border-color 0.3s $ease,
+    background-color 0.3s $ease;
+  &[data-done] {
+    border-color: color-mix(in srgb, #{$success} 40%, #{$line});
+    background: color-mix(in srgb, #{$success} 6%, transparent);
+  }
+}
+.icon {
+  flex: none;
+  color: $soft;
+  font-size: 16px;
+}
+.what {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.done {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: $success;
+  font-size: 14px;
+  font-weight: 600;
+}

@@ -6,8 +6,7 @@
 .rules,
 .appeal {
   margin: 0;
-  font-size: 14.5px;
-  line-height: 1.6;
+  font-size: 14px;
 }
 .none,
 .rules {
@@ -21,7 +20,7 @@
   gap: 6px;
   span {
     color: $soft;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
   }
   textarea {
