@@ -57,7 +57,7 @@
     "@sharadox/database-web-library": "0.1.0-development.14",
     "@sharadox/email-web-library": "0.8.1-account-polish.62",
     "@sharadox/icon-web-library": "0.7.0-development.36",
-    "@sharadox/interface-web-library": "0.2.0-account-polish.5",
+    "@sharadox/interface-web-library": "0.2.1-account-polish.6",
     "@sharadox/internationalization-web-library": "0.4.1-development.39",
     "@sharadox/protection-web-library": "0.1.0-development.12",
     "@sharadox/scroll-web-library": "0.7.4-account-polish.54",
