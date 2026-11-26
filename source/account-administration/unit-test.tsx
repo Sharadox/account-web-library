@@ -93,6 +93,9 @@ test("gives a role with its options, takes one away, and bans citing rules", asy
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Take Away" })));
   expect(actions.revoke).toHaveBeenCalledWith("g1");
   fireEvent.click(screen.getByRole("button", { name: "Give Role" }));
+  // The interface's own select, not the browser's.
+  expect(screen.getByRole("combobox", { name: "Role" }).tagName).not.toBe("SELECT");
+  expect(screen.getByRole("combobox", { name: "Role" }).textContent).toContain("Manager (platform)");
   fireEvent.change(screen.getByLabelText("Reason (Optional)"), { target: { value: "Runs it" } });
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
   expect(actions.grant).toHaveBeenCalledWith({
@@ -102,6 +105,8 @@ test("gives a role with its options, takes one away, and bans citing rules", asy
     reason: "Runs it",
   });
   fireEvent.click(screen.getByRole("button", { name: "Ban" }));
+  expect(screen.getByRole("combobox", { name: "Where" }).tagName).not.toBe("SELECT");
+  expect(screen.getByRole("combobox", { name: "Where" }).textContent).toContain("platform");
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
   expect(screen.getByRole("alert").textContent).toBe("Pick at least one rule.");
   fireEvent.click(screen.getByRole("checkbox"));

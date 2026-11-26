@@ -17,9 +17,9 @@ test("each event in words with its time, in a list that scrolls; or nothing yet"
   );
   const list = screen.getByRole("list", { name: "Activity" });
   expect(list.getAttribute("tabindex")).toBe("0");
-  expect(screen.getByText("Authenticator app added")).toBeTruthy();
+  expect(screen.getByText("Authenticator App Added")).toBeTruthy();
   expect(screen.getByText("something.new")).toBeTruthy();
   rerender(<ActivityPanel locale="pt" activity={[]} />);
   expect(screen.getByText("Ainda nada.")).toBeTruthy();
-  expect(activityText("contact.added", "pt")).toBe("Email adicionado");
+  expect(activityText("contact.added", "pt")).toBe("Email Adicionado");
 });

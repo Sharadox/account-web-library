@@ -21,7 +21,7 @@ test("decides an appeal with its reasons; shortening takes a date", async () => 
   expect(screen.getByText("Not spam.")).toBeTruthy();
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Lift" })));
   expect(screen.getByRole("alert").textContent).toContain("Something went wrong.");
-  fireEvent.change(screen.getByLabelText("Reasons for the decision (the account sees them)"), {
+  fireEvent.change(screen.getByLabelText("Reasons for the Decision (the Account Sees Them)"), {
     target: { value: "Fair." },
   });
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Lift" })));
