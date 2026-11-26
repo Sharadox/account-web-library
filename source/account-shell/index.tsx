@@ -77,21 +77,24 @@ export function AccountShell({ locale, areas, children }: AccountShellProperties
   const jump = (event: MouseEvent<HTMLAnchorElement>, id: string) => {
     if (ownClick(event)) return;
     event.preventDefault();
+    // Through the page's smooth scrolling: a glide under way is taken over, never fought. A section not there yet (the
+    // area's page still on its way) is glided to once it shows.
     const element = document.getElementById(id);
-    if (!element) return;
-    // Through the page's smooth scrolling: a glide under way is taken over, never fought.
-    glideTo(topOf(element));
+    if (element) glideTo(topOf(element));
     window.history.replaceState(null, "", `#${id}`);
     setCurrent(id);
-    hold(element);
+    hold(id);
   };
 
   // Sections above may still be loading: as they fill in, the glide is aimed again at the jumped-to section, until
   // the reader scrolls or a moment passes.
-  const hold = (element: HTMLElement) => {
+  const hold = (id: string) => {
     release.current();
     holding.current = true;
-    const observer = new ResizeObserver(() => glideTo(topOf(element)));
+    const observer = new ResizeObserver(() => {
+      const element = document.getElementById(id);
+      if (element) glideTo(topOf(element));
+    });
     observer.observe(content.current!);
     const stop = () => {
       holding.current = false;

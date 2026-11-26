@@ -85,6 +85,14 @@ export function SignInScreen({
   useEffect(prepare, [prepare]);
   // Where signing in leads is ready before it happens, so it opens at once.
   useEffect(() => router.prefetch(next), [router, next]);
+  // Next.js keeps a page it leaves hidden rather than gone: once signed in, coming back (to add another account)
+  // starts afresh instead of showing "Signed in" again.
+  useEffect(
+    () => () => {
+      setStage((current) => (current === "signed-in" ? "who" : current));
+    },
+    [],
+  );
 
   // Anything but a refusal reaching here is unexpected: it reads as a general error.
   const explain = (answer: SignInAnswer) => explainRefusal(answer as { reason: string }, locale);

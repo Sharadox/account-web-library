@@ -97,13 +97,11 @@ test("a jump glides to its section (under the bar) and marks it; reading further
   Object.defineProperty(document.documentElement, "scrollHeight", { value: 1_000, configurable: true });
   scroll(1_000 - window.innerHeight + 5);
   expect(within(sections).getByRole("link", { name: "Activity" }).getAttribute("aria-current")).toBe("true");
-  // A click that opens a new tab is left to the browser; a section that isn't there does nothing.
+  // A click that opens a new tab is left to the browser.
   fireEvent.click(within(sections).getByRole("link", { name: "Activity" }), { metaKey: true });
   expect(glideTo).toHaveBeenCalledOnce();
-  document.getElementById("devices")!.id = "gone";
-  fireEvent.click(within(sections).getByRole("link", { name: "Devices" }));
-  expect(glideTo).toHaveBeenCalledOnce();
   // Many scroll events wait for one frame; with no sections on the page, the mark stays.
+  document.getElementById("devices")!.id = "gone";
   document.getElementById("methods")!.id = "gone-too";
   document.getElementById("activity")!.id = "gone-also";
   fireEvent.wheel(window);
@@ -140,6 +138,32 @@ test("after a jump, the glide is aimed again while what is above fills in, until
   act(() => vi.advanceTimersByTime(3_000));
   act(() => resized());
   expect(glideTo).toHaveBeenCalledTimes(3);
+});
+
+test("a jump while the area's page is still on its way: marked and in the address at once, glided to once it shows", () => {
+  path = "/en/security";
+  let resized: () => void = () => {};
+  globalThis.ResizeObserver = class {
+    constructor(callback: () => void) {
+      resized = callback;
+    }
+    observe() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+  render(security());
+  document.getElementById("devices")!.id = "not-yet";
+  const sections = screen.getByRole("navigation", { name: "Sections" });
+  fireEvent.click(within(sections).getByRole("link", { name: "Devices" }));
+  expect(window.location.hash).toBe("#devices");
+  expect(within(sections).getByRole("link", { name: "Devices" }).getAttribute("aria-current")).toBe("true");
+  expect(glideTo).not.toHaveBeenCalled();
+  act(() => resized());
+  expect(glideTo).not.toHaveBeenCalled();
+  document.getElementById("not-yet")!.id = "devices";
+  place({ devices: 900 });
+  act(() => resized());
+  expect(glideTo).toHaveBeenLastCalledWith(900);
+  window.location.hash = "";
 });
 
 test("an address with a section opens there", () => {

@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { Activity } from "react";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, expect, test, vi } from "vitest";
 import { readWho, SignInScreen } from "@sharadox/account-web-library/sign-in-screen";
@@ -293,4 +294,23 @@ test("required methods stay listed together, each checked off once it passes, un
   });
   expect(screen.getByText("Signed in. Opening your account…")).toBeTruthy();
   expect(replace).toHaveBeenCalledWith("/en");
+});
+
+test("signed in and left, it starts afresh when shown again (Next.js keeps visited pages hidden, not gone)", async () => {
+  const given = actions();
+  const screenIn = (mode: "visible" | "hidden") => (
+    <ToastProvider label="Notifications" dismissLabel="Dismiss">
+      <Activity mode={mode}>
+        <SignInScreen locale="en" company="Acme" actions={given} next="/en" rulesHref="/en/rules" />
+      </Activity>
+    </ToastProvider>
+  );
+  const { rerender } = render(screenIn("visible"));
+  await typeWho("ana@example.com");
+  await paste("123456");
+  expect(screen.getByText("Signed in. Opening your account…")).toBeTruthy();
+  await act(async () => rerender(screenIn("hidden")));
+  await act(async () => rerender(screenIn("visible")));
+  expect(screen.getByLabelText("Email or Identifier")).toBeTruthy();
+  expect(screen.queryByText("Signed in. Opening your account…")).toBeNull();
 });
