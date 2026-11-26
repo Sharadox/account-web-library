@@ -17,13 +17,13 @@
   gap: 4px 16px;
   padding: 10px 0;
   border-bottom: 1px solid $line;
-  font-size: 14.5px;
+  font-size: 14px;
   &:last-child {
     border-bottom: 0;
   }
   time {
     color: $soft;
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 .empty {

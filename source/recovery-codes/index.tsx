@@ -40,7 +40,7 @@ export function RecoveryCodeList({ locale, codes }: RecoveryCodeListProperties) 
 
 /**
  * The account's recovery codes: how many are left, and making a set (new ones void the old), recommended but never
- * made unasked. Only with an authenticator on, as they stand in for one.
+ * made unasked. Only with an authenticator on. A recovery code signs in once, past every other method.
  *
  * @example
  * <RecoveryCodes locale="en" authenticators left={10} make={make} />
@@ -51,19 +51,23 @@ export function RecoveryCodes({ locale, authenticators, left, make }: RecoveryCo
   const words = ACCOUNT_WORDS.security;
   if (!authenticators) return null;
   return (
-    <Card title={say(words.recoveryCodes, locale)} description={say(words.recoveryText, locale)}>
+    <Card
+      title={say(words.recoveryCodes, locale)}
+      description={say(words.recoveryText, locale)}
+      action={
+        <Button
+          look={left > 0 ? "quiet" : "primary"}
+          pending={pending}
+          onClick={() => void run(make, { onDone: (answer) => setCodes(answer.recoveryCodes) })}
+        >
+          {say(left > 0 ? words.remakeCodes : words.makeCodes, locale)}
+        </Button>
+      }
+    >
       <p className={styles.left}>
         <strong>{left}</strong> {say(words.codesLeft, locale)}
       </p>
       {codes && <RecoveryCodeList locale={locale} codes={codes} />}
-      <Button
-        look={left > 0 ? "quiet" : "primary"}
-        pending={pending}
-        onClick={() => void run(make, { onDone: (answer) => setCodes(answer.recoveryCodes) })}
-        className={styles.make}
-      >
-        {say(left > 0 ? words.remakeCodes : words.makeCodes, locale)}
-      </Button>
     </Card>
   );
 }

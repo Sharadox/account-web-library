@@ -3,6 +3,8 @@ import { useState, type FormEvent } from "react";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
 import { Button } from "@sharadox/interface-web-library/button";
 import { Card } from "@sharadox/interface-web-library/card";
+import { Checkbox } from "@sharadox/interface-web-library/checkbox";
+import { Skeleton } from "@sharadox/interface-web-library/skeleton";
 import { ACCOUNT_WORDS, explainRefusal, say } from "@sharadox/account-web-library/account-words";
 import { CodeDialog } from "@sharadox/account-web-library/code-dialog";
 import { CODE_LIFETIME_SECONDS } from "@sharadox/account-web-library/code-lifetime";
@@ -15,7 +17,7 @@ import type { EmailMethodsProperties } from "@sharadox/account-web-library/email
 
 /**
  * The account's emails as ways to sign in: each verified one can be required at every sign-in (the switch flips at
- * once) or removed (with a loader; the last can't). "Add an email" shows its field, whether it should be required
+ * once) or removed (with a loader; the last can't). While they are on their way, a skeleton. "Add an email" shows its field, whether it should be required
  * from the start, and Save and Cancel; saving sends the address a code, typed in a pop-up, which verifies it.
  *
  * @example
@@ -54,8 +56,9 @@ export function EmailMethods({ locale, emails, add, verify, remove, setRequired 
 
   return (
     <Card title={say(words.security.emails, locale)}>
+      {emails === undefined && <Skeleton label={say(words.common.loading, locale)} shape="lines" lines={2} />}
       <ul className={styles.list}>
-        {emails.map((email) => (
+        {emails?.map((email) => (
           <li key={email.id} className={styles.item} aria-busy={removing === email.id || undefined}>
             <span className={styles.value}>{email.value}</span>
             {email.verified && (
@@ -97,10 +100,7 @@ export function EmailMethods({ locale, emails, add, verify, remove, setRequired 
             required
             autoFocus
           />
-          <label className={styles.choice}>
-            <input type="checkbox" name="required" />
-            <span>{say(words.security.requiredToggle, locale)}</span>
-          </label>
+          <Checkbox name="required" label={say(words.security.requiredToggle, locale)} />
           <div className={styles.buttons}>
             <Button type="submit" pending={saving.pending} pendingLabel={say(words.signIn.sending, locale)}>
               {say(words.common.save, locale)}
@@ -117,7 +117,13 @@ export function EmailMethods({ locale, emails, add, verify, remove, setRequired 
           </div>
         </form>
       ) : (
-        <Button look="quiet" icon="plus" onClick={() => setAdding(true)} className={styles.add}>
+        <Button
+          look="quiet"
+          icon="plus"
+          disabled={emails === undefined}
+          onClick={() => setAdding(true)}
+          className={styles.add}
+        >
           {say(words.security.addEmail, locale)}
         </Button>
       )}

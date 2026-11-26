@@ -36,7 +36,7 @@ test("sends the code once the boxes are full, shows a refusal, and starts the bo
   expect(submit).toHaveBeenCalledWith("111111");
   expect(screen.getByRole("alert").textContent).toBe("That code isn't right.");
   expect((screen.getAllByRole("textbox")[0] as HTMLInputElement).value).toBe("");
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send a new code" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send a New Code" })));
   expect(resend).toHaveBeenCalledOnce();
   expect(screen.getByText("A new code is on its way.")).toBeTruthy();
   await act(async () => paste("123456"));
@@ -56,10 +56,10 @@ test("a recovery code goes in one field, in Portuguese too", async () => {
       onSubmit={submit}
     />,
   );
-  fireEvent.change(screen.getByLabelText("Código de recuperação"), { target: { value: "ABCD-EFGH" } });
+  fireEvent.change(screen.getByLabelText("Código de Recuperação"), { target: { value: "ABCD-EFGH" } });
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Confirmar" })));
   expect(submit).toHaveBeenCalledWith("ABCD-EFGH");
-  expect(screen.queryByRole("button", { name: "Enviar novo código" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Enviar Novo Código" })).toBeNull();
   const form = screen.getByRole("button", { name: "Confirmar" }).closest("form")!;
   (form.querySelector("input[name=code]") as HTMLInputElement).removeAttribute("name");
   await act(async () => fireEvent.submit(form));
@@ -89,7 +89,7 @@ test("an emailed code counts down to its expiry, then offers a new code or cance
     await act(async () => vi.advanceTimersByTime(60_000));
     expect(screen.queryAllByRole("textbox")).toHaveLength(0);
     expect(screen.getByText("This code expired.")).toBeTruthy();
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send a new code" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Send a New Code" })));
     expect(resend).toHaveBeenCalledOnce();
     expect(screen.getAllByRole("textbox")).toHaveLength(6);
     expect(screen.getByText("Expires in 1:05")).toBeTruthy();
@@ -118,7 +118,7 @@ test("without a way to send a new one, an expired code can only be cancelled; cl
     expect(screen.getByText("Expira em 0:01")).toBeTruthy();
     await act(async () => vi.advanceTimersByTime(1_000));
     expect(screen.getByText("Este código expirou.")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Enviar novo código" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Enviar Novo Código" })).toBeNull();
     expect(screen.getByRole("button", { name: "Cancelar" })).toBeTruthy();
     rerender(
       <CodeDialog
@@ -131,6 +131,8 @@ test("without a way to send a new one, an expired code can only be cancelled; cl
         onSubmit={async () => null}
       />,
     );
+    // It leaves with its animation (or after it, at the latest), then the count is gone.
+    await act(async () => vi.advanceTimersByTime(400));
     expect(screen.queryByText("Este código expirou.")).toBeNull();
   } finally {
     vi.useRealTimers();

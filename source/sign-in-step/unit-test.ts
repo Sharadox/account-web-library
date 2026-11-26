@@ -118,11 +118,14 @@ test("an identifier starts with any of the account's methods; one is enough when
   expect(session!.accounts[0]!.secondFactorAt).toBeNull();
 });
 
-test("every required method is asked for, whichever comes first, emailed codes included", async () => {
+test("with required methods, an identifier asks for every one of them at once, emailed codes included", async () => {
   const phone = await authenticator("Phone", true);
+  await authenticator("Tablet", false);
   await setMethodRequired(memory.database, { accountId, kind: "email", id: contactId, required: true });
   const started = await byIdentifier();
-  if (started.status !== "choose") throw new Error(started.status);
+  if (started.status !== "more") throw new Error(started.status);
+  // Only the required ones: any other method would not be enough anyway.
+  expect(started.methods.map(({ id }) => id)).toEqual([contactId, phone.id]);
   const afterPhone = await step(started.ticket, {
     kind: "authenticator",
     id: phone.id,
@@ -162,11 +165,13 @@ test("two required authenticators are both asked for", async () => {
   expect(done.status).toBe("signed-in");
 });
 
-test("a recovery code stands in for a required authenticator, once, and tells every email", async () => {
+test("a recovery code signs in at once, past every required method, once, and tells every email", async () => {
   await authenticator("Phone", true);
+  await authenticator("Tablet", true);
+  await setMethodRequired(memory.database, { accountId, kind: "email", id: contactId, required: true });
   const made = await regenerateRecoveryCodes(server, { accountId });
   if (made.status !== "made") throw new Error(made.status);
-  const first = await afterEmail();
+  const first = await byIdentifier();
   if (first.status !== "more") throw new Error(first.status);
   expect(first.recoveryCode).toBe(true);
   const typed = made.recoveryCodes[0]!.toLowerCase().replace(/-/g, " ");
@@ -192,14 +197,14 @@ test("a recovery code is also one way in when no authenticator is required", asy
   expect(await step(started.ticket, { kind: "recovery-code", code: made.recoveryCodes[1]! })).toMatchObject({
     status: "signed-in",
   });
-  // Without authenticators, there are no recovery codes to use.
+  // Without recovery codes of its own, an account has none to use: another's are wrong.
   const { accountId: other } = await createTestPerson(memory.database, "bea");
   const bea = await byIdentifier("bea");
   if (bea.status !== "choose") throw new Error(bea.status);
   expect(bea.recoveryCode).toBe(false);
   expect(await step(bea.ticket, { kind: "recovery-code", code: made.recoveryCodes[2]! })).toEqual({
     status: "refused",
-    reason: "method",
+    reason: "wrong",
   });
   expect(other).toBeTruthy();
 });

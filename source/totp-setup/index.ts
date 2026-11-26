@@ -23,7 +23,7 @@ function authenticatorName(name: string | undefined): string | null | undefined 
 }
 
 /**
- * Starts setting up an authenticator app, named by its owner ("Phone") or not (it can be named once confirmed): a new
+ * Starts setting up an authenticator app, named by its owner now ("Proton Pass") or when it is confirmed: a new
  * secret, stored encrypted and not yet on, to show as a QR code (`uri`) or to type in (`secret`). An account can have any number of authenticators;
  * starting again replaces only an unfinished setup. Ask for a fresh code first (step-up).
  *
@@ -72,11 +72,12 @@ export async function startTotpSetup(
 }
 
 /**
- * Turns an authenticator on once it shows a right code, with the name its owner gave it then (if any). Recovery codes are then offered, never made on their own
- * (`regenerateRecoveryCodes`).
+ * Turns an authenticator on once it shows a right code. It needs a name ("Proton Pass"), given now or when it was
+ * started; `required` makes it required at every sign-in from the start. Recovery codes are then offered, never made
+ * on their own (`regenerateRecoveryCodes`).
  *
  * @example
- * const result = await confirmTotpSetup(server, { accountId, id: setup.id, code });
+ * const result = await confirmTotpSetup(server, { accountId, id: setup.id, code, name: "Proton Pass", required: true });
  */
 export async function confirmTotpSetup(
   server: AccountServer,
@@ -85,8 +86,9 @@ export async function confirmTotpSetup(
     id,
     code,
     name,
+    required = false,
     now = Date.now(),
-  }: { accountId: string; id: string; code: string; name?: string; now?: number },
+  }: { accountId: string; id: string; code: string; name?: string; required?: boolean; now?: number },
 ): Promise<TotpSetupConfirmation> {
   const kept = authenticatorName(name);
   if (kept === undefined) return { confirmed: false, reason: "name" };
@@ -102,6 +104,8 @@ export async function confirmTotpSetup(
         .forUpdate()
         .executeTakeFirst();
       if (!pending) return { confirmed: false, reason: "none" };
+      const named = kept ?? pending.name;
+      if (!named) return { confirmed: false, reason: "name" };
       const secret = decryptSecret(pending.secret_ciphertext, deriveSecret(server.secret, "totp-encryption"));
       const verification = verifyTotp(secret, code.replace(/\s/g, ""), now);
       if (!verification.valid) return { confirmed: false, reason: "wrong" };
@@ -110,7 +114,8 @@ export async function confirmTotpSetup(
         .set({
           confirmed_at: new Date(now),
           last_used_step: verification.step,
-          ...(name === undefined ? {} : { name: kept }),
+          name: named,
+          required,
         })
         .where("id", "=", pending.id)
         .execute();
@@ -125,7 +130,7 @@ export async function confirmTotpSetup(
 }
 
 /**
- * Renames one of the account's authenticators (an empty name takes its name away).
+ * Renames one of the account's authenticators (1 to 50 characters).
  *
  * @example
  * await renameTotp(database, { accountId, id, name: "Old phone" }); // { renamed: true }
@@ -135,7 +140,7 @@ export async function renameTotp(
   { accountId, id, name }: { accountId: string; id: string; name: string },
 ): Promise<TotpRename> {
   const kept = authenticatorName(name);
-  if (kept === undefined) return { renamed: false, reason: "name" };
+  if (!kept) return { renamed: false, reason: "name" };
   const result = await database
     .updateTable("totp_credential")
     .set({ name: kept })

@@ -4,83 +4,187 @@ import { createContext, useCallback, useContext, useRef, useState } from "react"
 import { ACCOUNT_WORDS, explainRefusal, say } from "@sharadox/account-web-library/account-words";
 import { CodeDialog } from "@sharadox/account-web-library/code-dialog";
 import { CODE_LIFETIME_SECONDS } from "@sharadox/account-web-library/code-lifetime";
+import { Button } from "@sharadox/interface-web-library/button";
+import { Dialog } from "@sharadox/interface-web-library/dialog";
 import { useToast } from "@sharadox/interface-web-library/toast";
+import type { MethodChoice } from "@sharadox/account-web-library/authentication-method/type";
+import { authenticatorLabel } from "@sharadox/account-web-library/authenticator-label";
+import { MethodList } from "@sharadox/account-web-library/method-list";
+import type { PickedMethod } from "@sharadox/account-web-library/method-list/type";
+import styles from "./index.module.scss";
 import type {
   AccountActionRunner,
   AccountActionsProperties,
   AccountAnswer,
   RunOptions,
+  StepUpStepInput,
 } from "@sharadox/account-web-library/account-action/type";
 
 interface Context {
   locale: AccountActionsProperties["locale"];
-  /** Asks for a fresh code; resolves true once confirmed, false when given up. */
+  /** Asks to confirm it's you; resolves true once confirmed, false when given up. */
   confirm: () => Promise<boolean>;
 }
 
 const ActionContext = createContext<Context | null>(null);
 
+/** The ways to confirm, once loaded: the ticket for the next step and the methods passed. */
+interface Choosing {
+  ticket: string;
+  mode: "all" | "one";
+  methods: MethodChoice[];
+  recoveryCode: boolean;
+  done: string[];
+}
+
+/** What the code pop-up is asking for. */
+type Asking =
+  | { kind: "email"; id: string; to: string; requestId: string }
+  | { kind: "authenticator"; id: string; name: string }
+  | { kind: "recovery-code" };
+
 /**
- * Where account actions run: confirms it's you when a change needs it (a code sent to the account's email, typed in
- * the code pop-up), for every `useAccountAction` below it. Put it inside `ToastProvider`.
+ * Where account actions run: when a change needs confirming it's you, a pop-up lists the account's ways in, all
+ * equally valid (every required one, when it has some; otherwise any one, picked by the person). Each email sends
+ * its code only when asked; each code goes in the code pop-up. Put it inside `ToastProvider`.
  *
  * @example
- * <AccountActions locale="en" stepUp={{ email, start: startStepUp, finish: finishStepUp }}>…</AccountActions>
+ * <AccountActions locale="en" company="Luis Pires Decor" stepUp={{ methods, send, finish }}>…</AccountActions>
  */
-export function AccountActions({ locale, stepUp, children }: AccountActionsProperties) {
-  const [asking, setAsking] = useState(false);
-  const request = useRef<string | null>(null);
+export function AccountActions({ locale, company, stepUp, children }: AccountActionsProperties) {
+  const [choosing, setChoosing] = useState<Choosing | null>(null);
+  const [asking, setAsking] = useState<Asking | null>(null);
+  const [pending, setPending] = useState<string | null>(null);
   const settle = useRef<((confirmed: boolean) => void) | null>(null);
   const { notify } = useToast();
-
-  const send = useCallback(async () => {
-    const answer = await stepUp.start();
-    if (answer.status !== "done") {
-      notify(explainRefusal(answer.status === "refused" ? answer : { reason: "generic" }, locale), "error");
-      return false;
-    }
-    request.current = answer.requestId;
-    return true;
-  }, [stepUp, notify, locale]);
+  const refusal = (answer: AccountAnswer<object>) =>
+    explainRefusal(answer.status === "refused" ? answer : { reason: "generic" }, locale);
 
   const confirm = useCallback(
     () =>
       new Promise<boolean>((resolve) => {
         settle.current = resolve;
-        void send().then((sent) => (sent ? setAsking(true) : resolve(false)));
+        void stepUp.methods().then((answer) => {
+          if (answer.status !== "done") {
+            notify(refusal(answer), "error");
+            return resolve(false);
+          }
+          setChoosing({ ...answer, done: [] });
+        });
       }),
-    [send],
+    [stepUp, notify, locale],
   );
 
-  const close = (confirmed: boolean) => {
-    setAsking(false);
+  const finish = (confirmed: boolean) => {
+    setAsking(null);
+    setChoosing(null);
     settle.current!(confirmed);
   };
 
+  const send = async (id: string, to: string) => {
+    setPending(id);
+    const answer = await stepUp.send(id);
+    setPending(null);
+    if (answer.status !== "done") return notify(refusal(answer), "error");
+    setAsking({ kind: "email", id, to, requestId: answer.requestId });
+  };
+
+  const pick = (method: PickedMethod) => {
+    if (method.kind === "email") void send(method.id, method.hint);
+    else if (method.kind === "authenticator")
+      setAsking({ kind: "authenticator", id: method.id, name: authenticatorLabel(method, locale) });
+    else setAsking({ kind: "recovery-code" });
+  };
+
+  const check = async (code: string): Promise<string | null> => {
+    const current = asking!;
+    const step: StepUpStepInput =
+      current.kind === "email"
+        ? { kind: "email", requestId: current.requestId, code }
+        : current.kind === "authenticator"
+          ? { kind: "authenticator", id: current.id, code }
+          : { kind: "recovery-code", code };
+    const answer = await stepUp.finish(choosing!.ticket, step);
+    if (answer.status !== "done") return refusal(answer);
+    if (!answer.left?.length) {
+      finish(true);
+      return null;
+    }
+    const passed = (current as { id: string }).id;
+    setChoosing({ ...choosing!, ticket: answer.ticket!, done: [...choosing!.done, passed] });
+    setAsking(null);
+    return null;
+  };
+
+  const code = ACCOUNT_WORDS.code;
   return (
     <ActionContext.Provider value={{ locale, confirm }}>
       {children}
-      <CodeDialog
-        lifetimeSeconds={CODE_LIFETIME_SECONDS}
-        locale={locale}
-        open={asking}
-        onClose={() => close(false)}
+      <Dialog
+        open={choosing !== null}
+        onClose={() => finish(false)}
         title={say(ACCOUNT_WORDS.step.title, locale)}
+        closeLabel={say(ACCOUNT_WORDS.common.close, locale)}
+      >
+        {choosing && (
+          <>
+            <p className={styles.text}>
+              {say(choosing.mode === "all" ? ACCOUNT_WORDS.step.textAll : ACCOUNT_WORDS.step.textOne, locale)}
+            </p>
+            <MethodList
+              locale={locale}
+              methods={choosing.methods}
+              done={choosing.done}
+              recoveryCode={choosing.recoveryCode}
+              pending={pending}
+              onPick={pick}
+            />
+            <div className={styles.actions}>
+              <Button look="quiet" onClick={() => finish(false)}>
+                {say(ACCOUNT_WORDS.common.cancel, locale)}
+              </Button>
+            </div>
+          </>
+        )}
+      </Dialog>
+      <CodeDialog
+        locale={locale}
+        open={asking !== null}
+        onClose={() => setAsking(null)}
+        title={say(
+          asking?.kind === "authenticator"
+            ? code.authenticatorTitle
+            : asking?.kind === "recovery-code"
+              ? code.recoveryTitle
+              : code.title,
+          locale,
+        )}
+        kind={asking?.kind === "recovery-code" ? "recovery" : "digits"}
         text={
-          <p>
-            {say(ACCOUNT_WORDS.code.sentTo, locale)} <strong>{stepUp.email}</strong>.{" "}
-            {say(ACCOUNT_WORDS.code.lasts, locale)}
-          </p>
+          asking?.kind === "authenticator" ? (
+            <p>
+              {say(code.authenticatorText, locale)} <strong>{company}</strong> ({asking.name}).
+            </p>
+          ) : asking?.kind === "recovery-code" ? (
+            <p>{say(code.recoveryText, locale)}</p>
+          ) : (
+            <p>
+              {say(code.sentTo, locale)} <strong>{asking?.kind === "email" ? asking.to : ""}</strong>.{" "}
+              {say(code.lasts, locale)}
+            </p>
+          )
         }
-        onSubmit={async (code) => {
-          const answer = await stepUp.finish(request.current!, code);
-          if (answer.status === "done") {
-            close(true);
-            return null;
-          }
-          return explainRefusal(answer.status === "refused" ? answer : { reason: "generic" }, locale);
-        }}
-        onResend={async () => void (await send())}
+        onSubmit={check}
+        {...(asking?.kind === "email"
+          ? {
+              lifetimeSeconds: CODE_LIFETIME_SECONDS,
+              onResend: async () => {
+                const answer = await stepUp.send(asking.id);
+                if (answer.status === "done") setAsking({ ...asking, requestId: answer.requestId });
+                else notify(refusal(answer), "error");
+              },
+            }
+          : {})}
       />
     </ActionContext.Provider>
   );

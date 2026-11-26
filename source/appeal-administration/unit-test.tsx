@@ -26,7 +26,7 @@ test("decides an appeal with its reasons; shortening takes a date", async () => 
   });
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Lift" })));
   expect(decide).toHaveBeenLastCalledWith({ appealId: "p1", decision: "lifted", reasons: "Fair." });
-  fireEvent.change(screen.getByLabelText("New end (to shorten)"), { target: { value: "2026-12-01" } });
+  fireEvent.change(screen.getByLabelText("New End (To Shorten)"), { target: { value: "2026-12-01" } });
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Shorten" })));
   expect(decide).toHaveBeenLastCalledWith({
     appealId: "p1",
@@ -34,7 +34,7 @@ test("decides an appeal with its reasons; shortening takes a date", async () => 
     reasons: "Fair.",
     endsAt: "2026-12-01",
   });
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Keep the ban" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Keep the Ban" })));
   expect(decide).toHaveBeenLastCalledWith({ appealId: "p1", decision: "upheld", reasons: "Fair." });
 });
 

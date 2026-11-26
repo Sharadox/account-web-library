@@ -5,6 +5,8 @@ import { Card } from "@sharadox/interface-web-library/card";
 import { checkBirthday } from "@sharadox/account-web-library/account-birthday";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import { EditablePanel } from "@sharadox/account-web-library/editable-field";
+import { Select } from "@sharadox/interface-web-library/select";
+import { SkeletonValue } from "@sharadox/interface-web-library/skeleton-value";
 import { TextField } from "@sharadox/interface-web-library/text-field";
 import styles from "./index.module.scss";
 import type { BirthdayPanelProperties } from "@sharadox/account-web-library/birthday-panel/type";
@@ -17,7 +19,8 @@ const monthName = (month: number, locale: string) =>
 
 /**
  * The account's birthday, optional, for a birthday present: day and month (the year if the owner wants), read-only
- * until Edit, checked here first (a day that exists; 16 or older with a year), and removable.
+ * until Edit (day and month chosen from the interface's own selects), checked here first (a day that exists; 16 or
+ * older with a year), and removable. While on its way, a skeleton.
  *
  * @example
  * <BirthdayPanel locale="en" birthday={{ day: 3, month: 7, year: null }} save={save} />
@@ -27,13 +30,22 @@ export function BirthdayPanel({ locale, birthday, save }: BirthdayPanelPropertie
   const words = ACCOUNT_WORDS.profile;
   const written = (day: number, month: number, year: number | null) =>
     `${day} ${monthName(month, locale)}${year ? ` ${year}` : ""}`;
-  const shown = birthday ? written(birthday.day, birthday.month, birthday.year) : say(words.noBirthday, locale);
+  const shown =
+    birthday === undefined ? (
+      <SkeletonValue width="9ch" label={say(ACCOUNT_WORDS.common.loading, locale)} />
+    ) : birthday ? (
+      written(birthday.day, birthday.month, birthday.year)
+    ) : (
+      say(words.noBirthday, locale)
+    );
   return (
-    <Card description={say(words.birthdayText, locale)}>
+    <Card>
       <EditablePanel
         locale={locale}
         label={say(ACCOUNT_WORDS.section.birthday, locale)}
         view={shown}
+        ready={birthday !== undefined}
+        note={<p>{say(words.birthdayText, locale)}</p>}
         preview={(form) =>
           written(Number(form.get("day")), Number(form.get("month")), Number(String(form.get("year")).trim()) || null)
         }
@@ -50,39 +62,38 @@ export function BirthdayPanel({ locale, birthday, save }: BirthdayPanelPropertie
             </Button>
           )
         }
-        fields={
+        fields={(saved) => (
           <div className={styles.fields}>
-            <TextField
+            <Select
               label={say(words.day, locale)}
               name="day"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={31}
-              defaultValue={birthday?.day}
-              required
-              autoFocus
+              placeholder={say(words.day, locale)}
+              defaultValue={String(saved?.get("day") ?? birthday?.day ?? "")}
+              options={Array.from({ length: 31 }, (_, index) => ({
+                value: String(index + 1),
+                label: String(index + 1),
+              }))}
             />
-            <span className={styles.month}>
-              <label htmlFor="birthday-month">{say(words.month, locale)}</label>
-              <select id="birthday-month" name="month" defaultValue={birthday?.month ?? 1}>
-                {Array.from({ length: 12 }, (_, index) => (
-                  <option key={index} value={index + 1}>
-                    {monthName(index + 1, locale)}
-                  </option>
-                ))}
-              </select>
-            </span>
+            <Select
+              label={say(words.month, locale)}
+              name="month"
+              placeholder={say(words.month, locale)}
+              defaultValue={String(saved?.get("month") ?? birthday?.month ?? "")}
+              options={Array.from({ length: 12 }, (_, index) => ({
+                value: String(index + 1),
+                label: monthName(index + 1, locale),
+              }))}
+            />
             <TextField
               label={say(words.year, locale)}
               name="year"
               type="number"
               inputMode="numeric"
               min={1900}
-              defaultValue={birthday?.year ?? undefined}
+              defaultValue={String(saved?.get("year") ?? birthday?.year ?? "")}
             />
           </div>
-        }
+        )}
         onSave={async (form) => {
           const year = String(form.get("year")).trim();
           const chosen = {

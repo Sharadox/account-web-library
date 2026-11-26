@@ -8,29 +8,35 @@ import { AccountShell } from "@sharadox/account-web-library/account-shell";
 let path = "/en/security";
 vi.mock("next/navigation", () => ({ usePathname: () => path }));
 
-/** The sections the observer was told to watch, and a way to say one came into view. */
-let watched: Element[] = [];
-let callbacks: ((entries: Partial<IntersectionObserverEntry>[]) => void)[] = [];
-const seen = (entries: Partial<IntersectionObserverEntry>[]) => callbacks.forEach((callback) => callback(entries));
+const glideTo = vi.fn();
+vi.mock("@sharadox/scroll-web-library/glide", () => ({ glideTo: (top: number) => glideTo(top) }));
+
+/** Puts each section's top at `tops[id]` pixels from the top of the screen. */
+const place = (tops: Record<string, number>) => {
+  for (const [id, top] of Object.entries(tops))
+    document.getElementById(id)!.getBoundingClientRect = () => ({ top }) as DOMRect;
+};
+/** Scrolls the page to `y` and lets the next frame run. */
+const scroll = (y: number) =>
+  act(() => {
+    Object.defineProperty(window, "scrollY", { value: y, configurable: true });
+    fireEvent.scroll(window);
+    vi.advanceTimersToNextFrame();
+  });
 beforeEach(() => {
-  watched = [];
-  callbacks = [];
-  globalThis.IntersectionObserver = class {
-    constructor(callback: (entries: Partial<IntersectionObserverEntry>[]) => void) {
-      callbacks.push(callback);
-    }
-    observe(element: Element) {
-      watched.push(element);
-    }
-    unobserve() {}
-    disconnect() {}
-  } as unknown as typeof IntersectionObserver;
+  glideTo.mockClear();
+  vi.useFakeTimers({ toFake: ["requestAnimationFrame", "cancelAnimationFrame", "setTimeout", "clearTimeout"] });
+  Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
+  Object.defineProperty(document.documentElement, "scrollHeight", { value: 10_000, configurable: true });
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 const security = () => (
   <AccountShell locale="en" areas={accountAreas({ locale: "en", administrator: false })}>
-    <AccountSection id="methods" title="Sign-In Methods" description="Every way you can sign in.">
+    <AccountSection id="methods" title="Authentication Methods" description="Every way you can sign in.">
       <p>Methods</p>
     </AccountSection>
     <AccountSection id="devices" title="Devices">
@@ -45,41 +51,71 @@ const security = () => (
 test("the areas across the top, the area's heading, and its sections to jump to", () => {
   path = "/en/security";
   render(security());
-  const areas = screen.getByRole("navigation", { name: "Account areas" });
+  const areas = screen.getByRole("navigation", { name: "Account Areas" });
   expect(within(areas).getAllByRole("link")).toHaveLength(5);
   expect(within(areas).getByRole("link", { name: "Security" }).getAttribute("aria-current")).toBe("page");
   expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Security");
   const sections = screen.getByRole("navigation", { name: "Sections" });
   const devices = within(sections).getByRole("link", { name: "Devices" });
   expect(devices.getAttribute("href")).toBe("/en/security#devices");
-  expect(within(sections).getByRole("link", { name: "Sign-In Methods" }).getAttribute("aria-current")).toBe("true");
+  expect(within(sections).getByRole("link", { name: "Authentication Methods" }).getAttribute("aria-current")).toBe(
+    "true",
+  );
   expect(screen.getByRole("region", { name: "Devices" }).textContent).toContain("Devices list");
   expect(screen.getByText("Every way you can sign in.")).toBeTruthy();
   expect(screen.getByRole("heading", { level: 1 }).closest("[data-sections]")).toBeTruthy();
-  expect(watched.map(({ id }) => id).filter(Boolean)).toEqual(["methods", "devices", "activity"]);
 });
 
-test("a jump scrolls to its section and marks it; reading further down moves the mark", () => {
+test("a jump glides to its section (under the bar) and marks it; reading further down moves the mark", () => {
   path = "/en/security";
   render(security());
-  const scrolled = vi.fn();
-  const target = document.getElementById("activity")!;
-  target.scrollIntoView = scrolled;
   const sections = screen.getByRole("navigation", { name: "Sections" });
+  place({ methods: 100, devices: 900, activity: 1_600 });
   fireEvent.click(within(sections).getByRole("link", { name: "Activity" }));
-  expect(scrolled).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+  expect(glideTo).toHaveBeenCalledWith(1_600);
   expect(window.location.hash).toBe("#activity");
   expect(within(sections).getByRole("link", { name: "Activity" }).getAttribute("aria-current")).toBe("true");
-  act(() => seen([{ isIntersecting: true, target: document.getElementById("devices")! }, { isIntersecting: false }]));
+  // While the jump holds, scrolling doesn't move the mark; once the reader scrolls themselves, it follows.
+  scroll(10);
+  expect(within(sections).getByRole("link", { name: "Activity" }).getAttribute("aria-current")).toBe("true");
+  fireEvent.wheel(window);
+  place({ methods: -800, devices: 100, activity: 700 });
+  scroll(900);
   expect(within(sections).getByRole("link", { name: "Devices" }).getAttribute("aria-current")).toBe("true");
-  act(() => seen([{ isIntersecting: false, target: document.getElementById("methods")! }]));
-  expect(within(sections).getByRole("link", { name: "Devices" }).getAttribute("aria-current")).toBe("true");
-  // A click that opens a new tab is left to the browser.
+  place({ methods: 100, devices: 900, activity: 1_600 });
+  scroll(0);
+  expect(within(sections).getByRole("link", { name: "Authentication Methods" }).getAttribute("aria-current")).toBe(
+    "true",
+  );
+  // Above the first section, the first is the one read.
+  place({ methods: 400, devices: 900, activity: 1_600 });
+  scroll(5);
+  expect(within(sections).getByRole("link", { name: "Authentication Methods" }).getAttribute("aria-current")).toBe(
+    "true",
+  );
+  // At the very bottom, the last section is the one read, however short.
+  Object.defineProperty(document.documentElement, "scrollHeight", { value: 1_000, configurable: true });
+  scroll(1_000 - window.innerHeight + 5);
+  expect(within(sections).getByRole("link", { name: "Activity" }).getAttribute("aria-current")).toBe("true");
+  // A click that opens a new tab is left to the browser; a section that isn't there does nothing.
   fireEvent.click(within(sections).getByRole("link", { name: "Activity" }), { metaKey: true });
-  expect(scrolled).toHaveBeenCalledOnce();
+  expect(glideTo).toHaveBeenCalledOnce();
+  document.getElementById("devices")!.id = "gone";
+  fireEvent.click(within(sections).getByRole("link", { name: "Devices" }));
+  expect(glideTo).toHaveBeenCalledOnce();
+  // Many scroll events wait for one frame; with no sections on the page, the mark stays.
+  document.getElementById("methods")!.id = "gone-too";
+  document.getElementById("activity")!.id = "gone-also";
+  fireEvent.wheel(window);
+  act(() => {
+    fireEvent.scroll(window);
+    fireEvent.scroll(window);
+    vi.advanceTimersToNextFrame();
+  });
+  expect(within(sections).getByRole("link", { name: "Activity" }).getAttribute("aria-current")).toBe("true");
 });
 
-test("after a jump, the section stays in place while what is above it fills in, until the reader scrolls", () => {
+test("after a jump, the glide is aimed again while what is above fills in, until the reader scrolls or time passes", () => {
   path = "/en/security";
   let resized: () => void = () => {};
   globalThis.ResizeObserver = class {
@@ -92,43 +128,18 @@ test("after a jump, the section stays in place while what is above it fills in, 
     disconnect() {}
   } as unknown as typeof ResizeObserver;
   render(security());
-  const scrolled = vi.fn();
-  document.getElementById("activity")!.scrollIntoView = scrolled;
+  place({ activity: 1_000 });
   fireEvent.click(within(screen.getByRole("navigation", { name: "Sections" })).getByRole("link", { name: "Activity" }));
+  place({ activity: 1_400 });
   act(() => resized());
-  expect(scrolled).toHaveBeenLastCalledWith({ block: "start" });
-  expect(scrolled).toHaveBeenCalledTimes(2);
-  fireEvent.wheel(window);
+  expect(glideTo).toHaveBeenLastCalledWith(1_400);
+  fireEvent.keyDown(window);
   act(() => resized());
-  expect(scrolled).toHaveBeenCalledTimes(2);
-});
-
-test("a held jump lets go by itself after a while", () => {
-  vi.useFakeTimers();
-  try {
-    path = "/en/security";
-    let resized: () => void = () => {};
-    globalThis.ResizeObserver = class {
-      constructor(callback: () => void) {
-        let on = true;
-        resized = () => on && callback();
-        this.disconnect = () => void (on = false);
-      }
-      observe() {}
-      disconnect() {}
-    } as unknown as typeof ResizeObserver;
-    render(security());
-    const scrolled = vi.fn();
-    document.getElementById("devices")!.scrollIntoView = scrolled;
-    fireEvent.click(
-      within(screen.getByRole("navigation", { name: "Sections" })).getByRole("link", { name: "Devices" }),
-    );
-    act(() => vi.advanceTimersByTime(3_000));
-    act(() => resized());
-    expect(scrolled).toHaveBeenCalledOnce();
-  } finally {
-    vi.useRealTimers();
-  }
+  expect(glideTo).toHaveBeenCalledTimes(2);
+  fireEvent.click(within(screen.getByRole("navigation", { name: "Sections" })).getByRole("link", { name: "Activity" }));
+  act(() => vi.advanceTimersByTime(3_000));
+  act(() => resized());
+  expect(glideTo).toHaveBeenCalledTimes(3);
 });
 
 test("an address with a section opens there", () => {

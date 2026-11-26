@@ -6,6 +6,7 @@ import { Button } from "@sharadox/interface-web-library/button";
 import { Card } from "@sharadox/interface-web-library/card";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import { PendingMark } from "@sharadox/interface-web-library/pending-mark";
+import { SkeletonValue } from "@sharadox/interface-web-library/skeleton-value";
 import { useToast } from "@sharadox/interface-web-library/toast";
 import styles from "./index.module.scss";
 import type { PicturePanelProperties } from "@sharadox/account-web-library/picture-panel/type";
@@ -14,14 +15,15 @@ import type { PicturePanelProperties } from "@sharadox/account-web-library/pictu
 const PICTURE_BYTES = 5 * 1024 * 1024;
 
 /**
- * The account's picture: a chosen file shows at once and uploads (with a loader; files over 5 MB are refused here
+ * The account's picture in its own card: a chosen file shows at once and uploads (a loader on the picture; files over 5 MB are refused here
  * first), and removing it hides it at once; either goes back if the server refuses. The old picture is deleted from
  * storage by the server.
  *
  * @example
  * <PicturePanel locale="en" name="Ana" pictureUrl={url} upload={upload} remove={remove} />
  */
-export function PicturePanel({ locale, name, pictureUrl, upload, remove }: PicturePanelProperties) {
+export function PicturePanel({ locale, name, pictureUrl: given, upload, remove }: PicturePanelProperties) {
+  const pictureUrl = given ?? null;
   const uploading = useAccountAction();
   const removing = useAccountAction();
   const { notify } = useToast();
@@ -55,10 +57,14 @@ export function PicturePanel({ locale, name, pictureUrl, upload, remove }: Pictu
   };
 
   return (
-    <Card description={say(words.pictureText, locale)}>
+    <Card>
       <div className={styles.picture}>
         <span className={styles.preview}>
-          <AccountAvatar name={name} pictureUrl={picture} size={96} />
+          {name === undefined ? (
+            <SkeletonValue circle={96} label={say(ACCOUNT_WORDS.common.loading, locale)} />
+          ) : (
+            <AccountAvatar name={name} pictureUrl={picture ?? null} size={96} />
+          )}
           {uploading.pending && <PendingMark label={say(words.uploading, locale)} />}
         </span>
         <div className={styles.buttons}>
@@ -72,12 +78,8 @@ export function PicturePanel({ locale, name, pictureUrl, upload, remove }: Pictu
             className={styles.file}
             aria-label={say(words.choosePicture, locale)}
           />
-          <Button
-            icon="plus"
-            pending={uploading.pending}
-            pendingLabel={say(words.uploading, locale)}
-            onClick={() => file.current!.click()}
-          >
+          {/* The picture itself shows the upload's loader: one loader for one thing. */}
+          <Button icon="plus" disabled={uploading.pending || name === undefined} onClick={() => file.current!.click()}>
             {say(words.choosePicture, locale)}
           </Button>
           {picture && (

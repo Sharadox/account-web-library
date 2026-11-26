@@ -35,8 +35,7 @@
   p {
     margin: 0;
     color: $soft;
-    font-size: 14.5px;
-    line-height: 1.6;
+    font-size: 14px;
   }
 }
 .qr {
@@ -51,12 +50,12 @@
   gap: 8px 12px;
   span {
     color: $soft;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
   }
   code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 15px;
+    font-size: 16px;
     letter-spacing: 0.04em;
     overflow-wrap: anywhere;
   }
@@ -64,8 +63,7 @@
 .offer {
   margin: 0;
   color: $soft;
-  font-size: 14.5px;
-  line-height: 1.6;
+  font-size: 14px;
 }
 .name {
   width: min(100%, 22rem);

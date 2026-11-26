@@ -81,7 +81,7 @@ $ease: cubic-bezier(0.22, 1, 0.36, 1);
   min-width: 0;
   > span {
     color: $soft;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
   }
   select,
@@ -94,7 +94,7 @@ $ease: cubic-bezier(0.22, 1, 0.36, 1);
     background: $raised;
     color: $text;
     font: inherit;
-    font-size: 15px;
+    font-size: 16px;
     &:focus {
       border-color: $accent;
       outline: 0;

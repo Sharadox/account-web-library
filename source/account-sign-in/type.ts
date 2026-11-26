@@ -10,6 +10,8 @@ export interface SignInOptions {
   accountSessionSeconds?: number;
   /** 400 days by default (the longest a browser keeps a cookie). */
   browserSessionSeconds?: number;
+  /** Whether the sign-in goes in the audit log (true by default; a sign-up records the account's creation instead). */
+  record?: boolean;
   /** Milliseconds since 1970 (now by default). */
   now?: number;
 }

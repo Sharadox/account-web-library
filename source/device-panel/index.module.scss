@@ -18,7 +18,7 @@
   }
   > svg {
     color: $soft;
-    font-size: 22px;
+    font-size: 24px;
   }
   @media (max-width: 480px) {
     grid-template-columns: auto minmax(0, 1fr);
@@ -40,8 +40,7 @@
   }
   span {
     color: $soft;
-    font-size: 13.5px;
-    line-height: 1.5;
+    font-size: 12px;
   }
 }
 .device[aria-busy] {

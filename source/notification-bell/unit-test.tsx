@@ -43,7 +43,7 @@ test("a badge with the unread count; opening loads the latest behind a skeleton"
   await act(async () => finish(page()));
   expect(screen.getAllByRole("listitem")).toHaveLength(3);
   expect(screen.getByText("New Sign-In on a Browser Not Used Before")).toBeTruthy();
-  expect(screen.getByRole("link", { name: "See all notifications" }).getAttribute("href")).toBe(
+  expect(screen.getByRole("link", { name: "See All Notifications" }).getAttribute("href")).toBe(
     "/en/notifications/inbox",
   );
 });
@@ -51,7 +51,7 @@ test("a badge with the unread count; opening loads the latest behind a skeleton"
 test("marks one or all as read and deletes one, updating the badge", async () => {
   const { markRead, remove } = setUp();
   await act(async () => fireEvent.click(screen.getByRole("button", { name: /Notifications/ })));
-  await act(async () => fireEvent.click(screen.getAllByRole("button", { name: "Mark as read" })[0]!));
+  await act(async () => fireEvent.click(screen.getAllByRole("button", { name: "Mark as Read" })[0]!));
   expect(markRead).toHaveBeenCalledWith(["1"]);
   expect(screen.getByRole("button", { name: "Notifications, 1 unread" })).toBeTruthy();
   await act(async () => fireEvent.click(screen.getAllByRole("button", { name: "Delete" })[1]!));
@@ -62,12 +62,12 @@ test("marks one or all as read and deletes one, updating the badge", async () =>
   expect(screen.getAllByRole("listitem")).toHaveLength(1);
 });
 
-test("Mark all as read, then the empty inbox; Escape and a click outside close it", async () => {
+test("Mark All as Read, then the empty inbox; Escape and a click outside close it", async () => {
   const { markRead } = setUp(vi.fn(async () => page()));
   await act(async () => fireEvent.click(screen.getByRole("button", { name: /Notifications/ })));
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Mark all as read" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Mark All as Read" })));
   expect(markRead).toHaveBeenCalledWith(undefined);
-  expect(screen.queryByRole("button", { name: "Mark as read" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Mark as Read" })).toBeNull();
   fireEvent.keyDown(document, { key: "a" });
   fireEvent.pointerDown(screen.getByText("Notifications", { selector: "p" }));
   fireEvent.keyDown(document, { key: "Escape" });
@@ -80,7 +80,7 @@ test("Mark all as read, then the empty inbox; Escape and a click outside close i
   await act(async () => fireEvent.click(screen.getByRole("button", { name: /Notifications/ })));
   expect(screen.getByRole("button", { name: "Notifications" })).toBeTruthy();
   expect(screen.getByText("Nothing new.")).toBeTruthy();
-  fireEvent.click(screen.getByRole("link", { name: "See all notifications" }));
+  fireEvent.click(screen.getByRole("link", { name: "See All Notifications" }));
   expect(screen.queryByText("Nothing new.")).toBeNull();
 });
 

@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { Icon } from "@sharadox/icon-web-library/icon";
 import { classNames } from "@sharadox/web-library/class-name";
 import { solveChallenge } from "@sharadox/protection-web-library/proof-of-work-solver";
 import type { Solution } from "@sharadox/protection-web-library/proof-of-work/type";
@@ -12,6 +11,7 @@ import type { MethodChoice } from "@sharadox/account-web-library/authentication-
 import { authenticatorLabel } from "@sharadox/account-web-library/authenticator-label";
 import { CodeDialog } from "@sharadox/account-web-library/code-dialog";
 import { CODE_LIFETIME_SECONDS } from "@sharadox/account-web-library/code-lifetime";
+import { MethodList } from "@sharadox/account-web-library/method-list";
 import { normalizeEmail } from "@sharadox/account-web-library/email-contact";
 import { TextField } from "@sharadox/interface-web-library/text-field";
 import { useToast } from "@sharadox/interface-web-library/toast";
@@ -40,7 +40,8 @@ export function readWho(typed: string): { kind: "email" | "identifier"; value: s
  * Signing in and signing up in one place, with no password:
  * 1. an email or an identifier (a proof of work is solved meanwhile, invisibly);
  * 2. an email gets a code, typed in a pop-up of 6 boxes; an identifier lists the account's ways in;
- * 3. every method the account marks required is asked for next, one after another;
+ * 3. every method the account marks required is asked for next, all listed together, checked off as they pass; a
+ *    recovery code signs in at once;
  * 4. an email with no account asks for a name and an identifier: nothing is saved until then.
  * Every step shows a loader while it's checked. It sits in its own card, or (`framed={false}`) in the site's.
  *
@@ -58,16 +59,18 @@ export function SignInScreen({
 }: SignInScreenProperties) {
   const router = useRouter();
   const { notify } = useToast();
-  const [stage, setStage] = useState<"who" | "methods" | "sign-up">("who");
+  const [stage, setStage] = useState<"who" | "methods" | "sign-up" | "signed-in">("who");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [asking, setAsking] = useState<Asking | null>(null);
   const [ticket, setTicket] = useState("");
-  const [methods, setMethods] = useState<{ list: MethodChoice[]; recoveryCode: boolean; more: boolean }>({
-    list: [],
-    recoveryCode: false,
-    more: false,
-  });
+  const [methods, setMethods] = useState<{
+    list: MethodChoice[];
+    recoveryCode: boolean;
+    more: boolean;
+    done: string[];
+  }>({ list: [], recoveryCode: false, more: false, done: [] });
+  const [sending, setSending] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const solution = useRef<Promise<Solution>>(null);
   const words = ACCOUNT_WORDS.signIn;
@@ -80,6 +83,8 @@ export function SignInScreen({
       .then(async (challenge) => ({ challenge, nonce: await solveChallenge(challenge) }));
   }, [actions]);
   useEffect(prepare, [prepare]);
+  // Where signing in leads is ready before it happens, so it opens at once.
+  useEffect(() => router.prefetch(next), [router, next]);
 
   // Anything but a refusal reaching here is unexpected: it reads as a general error.
   const explain = (answer: SignInAnswer) => explainRefusal(answer as { reason: string }, locale);
@@ -90,6 +95,7 @@ export function SignInScreen({
       case "signed-in":
       case "already":
         setAsking(null);
+        setStage("signed-in");
         notify(
           say(answer.status === "already" ? words.already : words.signedIn, locale),
           answer.status === "already" ? "info" : "success",
@@ -103,12 +109,21 @@ export function SignInScreen({
         setStage("sign-up");
         return null;
       case "choose":
-      case "more":
+      case "more": {
         setAsking(null);
         setTicket(answer.ticket);
-        setMethods({ list: answer.methods, recoveryCode: answer.recoveryCode, more: answer.status === "more" });
+        // Still on the list: every method shown at first stays, those passed checked.
+        const left = answer.methods.map(({ id }) => id);
+        const list = stage === "methods" && methods.more ? methods.list : answer.methods;
+        setMethods({
+          list,
+          recoveryCode: answer.recoveryCode,
+          more: answer.status === "more",
+          done: list.filter(({ id }) => !left.includes(id)).map(({ id }) => id),
+        });
         setStage("methods");
         return null;
+      }
       case "sent":
         return null;
       default:
@@ -149,9 +164,9 @@ export function SignInScreen({
   };
 
   const chooseEmail = async (contactId: string, hint: string) => {
-    setPending(true);
+    setSending(contactId);
     const answer = await actions.sendStepCode({ ticket, contactId });
-    setPending(false);
+    setSending(null);
     if (answer.status === "sent")
       return setAsking({ kind: "email", requestId: answer.requestId, to: hint, ticket, contactId });
     notify(explain(answer), "error");
@@ -240,48 +255,29 @@ export function SignInScreen({
         <div className={styles.step}>
           <h1 className={styles.title}>{say(methods.more ? words.next : words.choose, locale)}</h1>
           {methods.more && <p className={styles.lead}>{say(words.nextText, locale)}</p>}
-          <ul className={styles.methods}>
-            {methods.list.map((method) => (
-              <li key={method.id}>
-                <button
-                  type="button"
-                  className={styles.method}
-                  disabled={pending}
-                  onClick={() =>
-                    method.kind === "email"
-                      ? void chooseEmail(method.id, method.hint)
-                      : setAsking({ kind: "authenticator", id: method.id, name: authenticatorLabel(method, locale) })
-                  }
-                >
-                  <Icon name={method.kind === "email" ? "email" : "key"} />
-                  <span>
-                    {method.kind === "email" ? (
-                      <>
-                        {say(words.byEmail, locale)} <strong>{method.hint}</strong>
-                      </>
-                    ) : (
-                      <>
-                        {say(words.byAuthenticator, locale)}: <strong>{authenticatorLabel(method, locale)}</strong>
-                      </>
-                    )}
-                  </span>
-                  <Icon name="chevron-right" />
-                </button>
-              </li>
-            ))}
-            {methods.recoveryCode && (
-              <li>
-                <button type="button" className={styles.method} onClick={() => setAsking({ kind: "recovery-code" })}>
-                  <Icon name="lock" />
-                  <span>{say(words.byRecovery, locale)}</span>
-                  <Icon name="chevron-right" />
-                </button>
-              </li>
-            )}
-          </ul>
+          <MethodList
+            locale={locale}
+            methods={methods.list}
+            done={methods.done}
+            recoveryCode={methods.recoveryCode}
+            pending={sending}
+            onPick={(method) =>
+              method.kind === "email"
+                ? void chooseEmail(method.id, method.hint)
+                : method.kind === "authenticator"
+                  ? setAsking({ kind: "authenticator", id: method.id, name: authenticatorLabel(method, locale) })
+                  : setAsking({ kind: "recovery-code" })
+            }
+          />
           <Button look="plain" onClick={restart}>
             {say(words.useAnother, locale)}
           </Button>
+        </div>
+      )}
+      {stage === "signed-in" && (
+        <div className={styles.opening} role="status">
+          <span className={styles.spinner} aria-hidden="true" />
+          {say(words.opening, locale)}
         </div>
       )}
       {stage === "sign-up" && (

@@ -1,5 +1,6 @@
 "use client";
 import { useMemo } from "react";
+import { Checkbox } from "@sharadox/interface-web-library/checkbox";
 import { useAccountAction } from "@sharadox/account-web-library/account-action";
 import { Card } from "@sharadox/interface-web-library/card";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
@@ -44,8 +45,8 @@ export function PreferencePanel({ locale, preferences, save }: PreferencePanelPr
               return (
                 <td key={channel}>
                   {editing ? (
-                    <input
-                      type="checkbox"
+                    <Checkbox
+                      label=""
                       name={`${preference.kind}:${channel}`}
                       defaultChecked={enabled}
                       disabled={locked}

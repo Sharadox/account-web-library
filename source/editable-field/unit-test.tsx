@@ -101,3 +101,26 @@ test("the Edit button can say something else", () => {
   );
   expect(screen.getByRole("button", { name: "Adicionar" })).toBeTruthy();
 });
+
+test("Edit straight after a save starts from the saved value, not the page's old one, until the page has its own", async () => {
+  const fields = (saved: FormData | null) => (
+    <input name="name" aria-label="New name" defaultValue={String(saved?.get("name") ?? "Ana")} />
+  );
+  const { rerender } = render(panel({ onSave: async () => null, preview: (form) => String(form.get("name")), fields }));
+  fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+  fireEvent.change(screen.getByLabelText("New name"), { target: { value: "Bea" } });
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
+  fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+  expect((screen.getByLabelText("New name") as HTMLInputElement).value).toBe("Bea");
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  rerender(panel({ onSave: async () => null, preview: (form) => String(form.get("name")), fields, view: "Cid" }));
+  fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+  expect((screen.getByLabelText("New name") as HTMLInputElement).value).toBe("Ana");
+});
+
+test("a note under the value, and the action beside it", () => {
+  const { container } = render(panel({ onSave: async () => null, note: <p>Optional.</p> }));
+  expect(screen.getByText("Optional.")).toBeTruthy();
+  const summary = container.querySelector("[data-part=summary]")!;
+  expect(summary.lastElementChild!.textContent).toBe("OtherEdit");
+});

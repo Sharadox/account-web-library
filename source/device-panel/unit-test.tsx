@@ -36,10 +36,10 @@ test("each browser by name, this one marked; the others can be signed out", asyn
       ]}
     />,
   );
-  expect(screen.getByText(/Safari on iPhone/).textContent).toContain("This device");
+  expect(screen.getByText(/Safari on iPhone/).textContent).toContain("This Device");
   expect(screen.getByText(/more than one method/)).toBeTruthy();
   expect(screen.getByText("An unknown browser")).toBeTruthy();
-  const buttons = screen.getAllByRole("button", { name: "Sign out there" });
+  const buttons = screen.getAllByRole("button", { name: "Sign Out There" });
   expect(buttons).toHaveLength(1);
   let finish: () => void = () => {};
   end.mockImplementationOnce(() => new Promise((resolve) => (finish = () => resolve({ status: "done" as const }))));

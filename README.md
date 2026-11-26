@@ -265,10 +265,16 @@ Pass the transaction of the change it describes. `detail` holds ids and kinds, n
 Everything a person can do with their own account. Ask for a fresh code first (step-up) before changing contacts,
 two-factor or recovery codes, and before deleting the account.
 
-### `step-up`: `startStepUp(server, { accountId, contactId, address, language })`, `finishStepUp(server, { accountId, requestId, code, token })`, `hasFreshStepUp(database, { accountId, token })`
+### `step-up`: `stepUpMethods(server, { accountId })`, `startStepUp(server, { accountId, contactId, address, language })`, `finishStepUp(server, { accountId, ticket, step, token })`, `hasFreshStepUp(database, { accountId, token })`
 
-A code to one of the account's own verified contacts. Once it comes back, this browser's session of the account is
-confirmed for 10 minutes (`STEP_UP_SECONDS`): check `hasFreshStepUp` before every sensitive change.
+Every method is as good as another. `stepUpMethods` gives a ticket and the ways to confirm: with required methods,
+every one of them (`mode: "all"`); otherwise any one (`"one"`), the person picks; `recoveryCode` when the account
+has one. `startStepUp` sends a code to one of the account's emails. `finishStepUp` checks one step (an emailed code, an
+authenticator's code or a recovery code, which confirms at once and gives `notify` to tell every contact) and answers
+`confirmed`, or `more` with the required ids `left` and a new ticket. Once confirmed, this browser's session of the
+account is confirmed for 10 minutes (`STEP_UP_SECONDS`): check `hasFreshStepUp` before every sensitive change.
+`method-verification` has the checks both sign-in and step-up use: `verifyAuthenticatorCode`, `useRecoveryCode`,
+`hasRecoveryCode`.
 
 ### `code-sending`: `sendCode(server, { purpose, contact, channel, accountId?, address, language })`
 
@@ -301,14 +307,14 @@ Removing one is `removeContact` (the last sign-in contact can't go).
 ### Authenticators: `totp-setup`, `recovery-code-regeneration`, `secret-encryption`
 
 - `startTotpSetup(server, { accountId, issuer, name? })` → `{ status: "started", id, uri, secret }` (or `name` when
-  over 50 characters, `no-account`): show `uri` as a QR code and `secret` for typing in. The name is optional (null
-  without one: `authenticatorLabel` then calls it by the day it was added). An account can have any number; a new setup
+  over 50 characters, `no-account`): show `uri` as a QR code and `secret` for typing in. A name is required, given
+  here or when confirming. An account can have any number; a new setup
   replaces only an unfinished one. The secret is stored encrypted (AES-256-GCM, key derived from `ACCOUNT_SECRET`).
-- `confirmTotpSetup(server, { accountId, id, code, name? })` turns it on with the app's first right code, named then
-  if its owner wants. Recovery codes
+- `confirmTotpSetup(server, { accountId, id, code, name?, required? })` turns it on with the app's first right code,
+  with its name (`reason: "name"` without one) and, with `required`, asked for at every sign-in from the start. Recovery codes
   are then **offered**, never made unasked: `regenerateRecoveryCodes(server, { accountId })` makes 10 to show once
   (only their HMACs are stored; old ones stop working).
-- `renameTotp(database, { accountId, id, name })` (an empty name takes it away), `removeTotp(database, { accountId, id })` (the recovery codes go
+- `renameTotp(database, { accountId, id, name })` (1 to 50 characters), `removeTotp(database, { accountId, id })` (the recovery codes go
   with the last authenticator), `totpStatus(database, { accountId })` → `{ authenticators: [{ id, name, required,
 createdAt }], recoveryCodesLeft }`.
 
@@ -421,28 +427,35 @@ European Portuguese (`ACCOUNT_WORDS`, `say`, `explainRefusal`).
   textSoft, line, accent, accentText, danger, success, radius, smallRadius, font, fontDisplay, barHeight, shadow, and
   for fields fieldBackground, fieldBorder, fieldHeight, fieldFocus, labelSize, labelSpacing, labelCase), so a company's
   account forms can look like its own.
-- **Frame:** `ToastProvider` (from the interface library: notifications under the bar), `AccountActions({ locale, stepUp })` and
-  `useAccountAction()` → `{ run, submit, pending }` (loader, notification, the code pop-up when a change needs a fresh
-  code, then the action again). Actions answer `AccountAnswer`: `done`, `step-up` or `refused` with a reason.
+- **Frame:** `ToastProvider` (from the interface library: notifications under the bar), `AccountActions({ locale,
+company, stepUp: { methods, send, finish } })` and `useAccountAction()` → `{ run, submit, pending }` (loader,
+  notification; when a change needs confirming, the "Confirm It's You" pop-up lists every way (`MethodList`), each
+  sending or asking for its code, then the action again). Actions answer `AccountAnswer`: `done`, `step-up` or `refused` with a reason.
 - **Layout:** each area is one page (`/<locale>/<area>`, the overview `/<locale>`) with its sections one under
   another: `accountAreas({ locale, administrator })`, `accountSectionPath(locale, area, section?)`
   (`/<locale>/<area>#<section>`; the privacy area is `/<locale>/data`, leaving `/privacy` to the policy),
   `accountAreaOfPath(path)`, `isAccountSection(area, section)` (for old
   `/<area>/<section>` addresses). `AccountShell({ locale, areas })`, put in a layout so it stays between areas: the
-  areas across the top, the area's heading, and a side menu that jumps to each `AccountSection({ id, title,
-description?, hideTitle? })` and marks the one being read.
+  areas across the top, the area's heading, and a sticky side menu that glides to each (through
+  `@sharadox/scroll-web-library`'s `glideTo`, even mid-glide) `AccountSection({ id, title,
+description?, hideTitle? })` and marks the one being read as the page scrolls.
 - **Bar:** `AccountMenu` (picture → menu: role chips, settings, administration, switch account page with Back, add
-  another, sign out, sign out of all), `NotificationBell`, `AccountAvatar`.
+  another, sign out, sign out of all; an address ending in `CHOOSE_ACCOUNT`, `#choose-account`, opens it on the
+  accounts, to pick one), `NotificationBell`, `AccountAvatar`.
 - **Sign-in:** `SignInScreen({ locale, company, actions, next, rulesHref, framed?, className? })` (email or identifier,
-  the methods, required steps, sign-up with name and identifier; `framed={false}` when the site puts it in its own
+  the methods side by side (`MethodList`), every required one at once, a recovery code past all, sign-up with name and
+  identifier, then straight on to `next`; `framed={false}` when the site puts it in its own
   card).
-- **Panels:** `OverviewPanel`, `IdentityPanel`, `PicturePanel`, `BirthdayPanel`, `EmailMethods`,
+- **Panels**, one card per thing, each drawn at once with skeletons only where its data is awaited (leave the data
+  out while it loads): `OverviewPanel` (greeting by the visitor's time: `TimeGreeting`), `PicturePanel`,
+  `NamePanel`, `IdentifierPanel`, `BirthdayPanel` (the interface's `Select`s), `EmailMethods`,
   `AuthenticatorMethods`, `RecoveryCodes`, `DevicePanel`, `ActivityPanel`, `InboxPanel`, `PreferencePanel`,
   `DownloadPanel`, `BanPanel`, `DeletionPanel`, and for administrators `AccountAdministration`, `RoleAdministration`,
   `BanAdministration`, `AppealAdministration`, `RuleAdministration`.
 - **Pieces:** the generic ones come from `@sharadox/interface-web-library` (`Button`, `Card`, `TextField`, `Tip`,
   `CopyButton`, `Skeleton`, `Dialog`, `CodeBoxes`, `Switch`, `PendingMark`, `ToastProvider`/`useToast`), dressed by
   `AccountTheme` too. The account's own: `CodeDialog` (`lifetimeSeconds`: a countdown, then Send a new code or Cancel;
-  `CODE_LIFETIME_SECONDS`), `EditablePanel` (`preview`: the new value shown at once), `authenticatorLabel`.
+  `CODE_LIFETIME_SECONDS`), `EditablePanel` (`preview`: the new value shown at once; `fields(saved)` edits again from what was saved; `note`;
+  `ready`), `authenticatorLabel`.
 - **Emails:** every code, whatever it is for, comes in one email: "Account · Authentication Code" ("Conta · Código de
   Autenticação").

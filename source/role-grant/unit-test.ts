@@ -29,7 +29,7 @@ beforeEach(async () => {
   await syncApplication(memory.database, {
     key: "account",
     name: "Account",
-    permissions: [{ key: "account.role.assign", description: "Give roles" }],
+    permissions: [{ key: "account.role.assign", description: "Give Roles" }],
     roles: [{ key: "administrator", name: "Administrator", permissions: ["account.role.assign"] }],
   });
   ({ accountId: ana } = await createTestPerson(memory.database, "ana"));

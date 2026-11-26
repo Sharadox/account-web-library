@@ -1,92 +1,105 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Icon } from "@sharadox/icon-web-library/icon";
 import type { IconName } from "@sharadox/icon-web-library/icon/type";
+import { SkeletonValue } from "@sharadox/interface-web-library/skeleton-value";
 import { accountSectionPath } from "@sharadox/account-web-library/account-area";
 import { AccountAvatar } from "@sharadox/account-web-library/account-avatar";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
-import type { Words } from "@sharadox/account-web-library/account-words/type";
+import { TimeGreeting } from "@sharadox/account-web-library/time-greeting";
 import styles from "./index.module.scss";
 import type { OverviewPanelProperties } from "@sharadox/account-web-library/overview-panel/type";
 
 /**
- * The account at a glance: who it is (with a way to edit the profile), then a card per area with its key number
- * (ways to sign in and how many are required, devices signed in, unread notifications, the data download), each
- * leading to its section. Two cards a row on wide screens, one on phones.
+ * The account at a glance: who it is, greeted by the visitor's time of day (with a way to edit the profile), then a
+ * card per area with its key numbers (ways in and how many are required, devices signed in, unread notifications, the
+ * data download), each leading to its section. The cards and their words show at once; only what is still on its way
+ * (the picture, the name, the numbers) shows as a skeleton.
  *
  * @example
- * <OverviewPanel locale="en" name="Ana" identifier="ana" pictureUrl={null} methods={2} required={1} devices={3} unread={0} />
+ * <OverviewPanel locale="en" who={{ name: "Ana", identifier: "ana", pictureUrl: null }} counts={counts} />
  */
-export function OverviewPanel({
-  locale,
-  name,
-  identifier,
-  pictureUrl,
-  methods,
-  required,
-  devices,
-  unread,
-}: OverviewPanelProperties) {
+export function OverviewPanel({ locale, who, counts }: OverviewPanelProperties) {
   const words = ACCOUNT_WORDS;
-  const counted = (count: number, one: Words, many: Words) => say(count === 1 ? one : many, locale);
-  const cards: { icon: IconName; title: string; value?: number; detail: string; href: string }[] = [
+  const loading = say(words.common.loading, locale);
+  const number = (value: number | undefined) =>
+    value === undefined ? (
+      <SkeletonValue width="1.5ch" label={loading} />
+    ) : (
+      <strong className={styles.value}>{value}</strong>
+    );
+  const cards: { icon: IconName; title: string; detail: ReactNode; href: string }[] = [
     {
       icon: "key",
       title: say(words.section.methods, locale),
-      value: methods,
-      detail: `${counted(methods, words.overview.method, words.overview.methods)} · ${required} ${say(words.overview.required, locale)}`,
+      detail: (
+        <>
+          <span className={styles.figure}>
+            {number(counts?.methods)}{" "}
+            {say(counts?.methods === 1 ? words.overview.method : words.overview.methods, locale)}
+          </span>
+          <span className={styles.figure}>
+            {number(counts?.required)} {say(words.overview.required, locale)}
+          </span>
+        </>
+      ),
       href: accountSectionPath(locale, "security", "methods"),
     },
     {
       icon: "device",
       title: say(words.section.devices, locale),
-      value: devices,
-      detail: say(words.overview.devices, locale),
+      detail: (
+        <span className={styles.figure}>
+          {number(counts?.devices)} {say(words.overview.devices, locale)}
+        </span>
+      ),
       href: accountSectionPath(locale, "security", "devices"),
     },
     {
       icon: "bell",
       title: say(words.section.inbox, locale),
-      value: unread,
-      detail: say(words.overview.unread, locale),
+      detail: (
+        <span className={styles.figure}>
+          {number(counts?.unread)} {say(words.overview.unread, locale)}
+        </span>
+      ),
       href: accountSectionPath(locale, "notifications", "inbox"),
     },
     {
       icon: "download",
       title: say(words.section.download, locale),
-      detail: say(words.privacy.downloadText, locale),
+      detail: <span className={styles.text}>{say(words.privacy.downloadText, locale)}</span>,
       href: accountSectionPath(locale, "privacy", "download"),
     },
   ];
   return (
     <div className={styles.overview}>
       <div className={styles.who}>
-        <AccountAvatar name={name} pictureUrl={pictureUrl} size={72} />
+        {who ? <AccountAvatar name={who.name} pictureUrl={who.pictureUrl} size={72} /> : <SkeletonValue circle={72} />}
         <div className={styles.names}>
-          <span className={styles.hello}>{say(words.overview.hello, locale)}</span>
-          <h2 className={styles.name}>{name}</h2>
-          <span className={styles.identifier}>@{identifier}</span>
+          <TimeGreeting locale={locale} className={styles.hello} />
+          <h2 className={styles.name}>{who ? who.name : <SkeletonValue width="10ch" label={loading} />}</h2>
+          <span className={styles.identifier}>{who ? `@${who.identifier}` : <SkeletonValue width="8ch" />}</span>
         </div>
-        <Link href={accountSectionPath(locale, "profile", "identity")} className={styles.edit}>
+        <Link href={accountSectionPath(locale, "profile", "name")} className={styles.edit}>
           <Icon name="pencil" />
           <span>{say(words.overview.editProfile, locale)}</span>
         </Link>
       </div>
-      <ul className={styles.cards}>
+      <div className={styles.cards}>
         {cards.map((card) => (
-          <li key={card.href}>
-            <Link href={card.href} className={styles.card}>
-              <span className={styles.icon} aria-hidden="true">
-                <Icon name={card.icon} />
-              </span>
+          <Link key={card.href} href={card.href} className={styles.card}>
+            <span className={styles.icon} aria-hidden="true">
+              <Icon name={card.icon} />
+            </span>
+            <span className={styles.body}>
               <span className={styles.title}>{card.title}</span>
-              <span className={styles.detail}>
-                {card.value !== undefined && <strong className={styles.value}>{card.value}</strong>} {card.detail}
-              </span>
-              <Icon name="chevron-right" className={styles.arrow} />
-            </Link>
-          </li>
+              <span className={styles.detail}>{card.detail}</span>
+            </span>
+            <Icon name="chevron-right" className={styles.arrow} />
+          </Link>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }

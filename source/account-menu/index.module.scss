@@ -86,12 +86,15 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* The name in the site's display (serif) font. */
   strong {
+    font-family: $display;
+    font-size: 16px;
     font-weight: 600;
   }
   span {
     color: $soft;
-    font-size: 13.5px;
+    font-size: 14px;
   }
 }
 .chips {
@@ -123,7 +126,7 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 14.5px;
+  font-size: 14px;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -134,7 +137,7 @@
   svg {
     flex: none;
     color: $soft;
-    font-size: 18px;
+    font-size: 16px;
   }
 }
 .after {
@@ -142,12 +145,12 @@
 }
 .back {
   color: $soft;
-  font-size: 13.5px;
+  font-size: 14px;
 }
 .heading {
   margin: 4px 10px 6px;
   color: $soft;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;

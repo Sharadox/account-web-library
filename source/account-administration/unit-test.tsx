@@ -72,7 +72,7 @@ const setUp = (rules = [{ application: null, code: "spam", title: "No spam" }]) 
 };
 
 const search = async (query: string) => {
-  fireEvent.change(screen.getByLabelText("Find an account"), { target: { value: query } });
+  fireEvent.change(screen.getByLabelText("Find an Account"), { target: { value: query } });
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Search" })));
 };
 
@@ -84,16 +84,16 @@ test("finds an account, or says nobody has that identifier", async () => {
   expect(actions.find).toHaveBeenLastCalledWith("ana");
   expect(screen.getByText("@ana")).toBeTruthy();
   expect(screen.getByText(/project:4/)).toBeTruthy();
-  expect(screen.getAllByRole("button", { name: "Take away" })).toHaveLength(1);
+  expect(screen.getAllByRole("button", { name: "Take Away" })).toHaveLength(1);
 });
 
 test("gives a role with its options, takes one away, and bans citing rules", async () => {
   const actions = setUp();
   await search("ana");
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Take away" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Take Away" })));
   expect(actions.revoke).toHaveBeenCalledWith("g1");
-  fireEvent.click(screen.getByRole("button", { name: "Give role" }));
-  fireEvent.change(screen.getByLabelText("Reason (optional)"), { target: { value: "Runs it" } });
+  fireEvent.click(screen.getByRole("button", { name: "Give Role" }));
+  fireEvent.change(screen.getByLabelText("Reason (Optional)"), { target: { value: "Runs it" } });
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
   expect(actions.grant).toHaveBeenCalledWith({
     accountId: "a1",
@@ -105,7 +105,7 @@ test("gives a role with its options, takes one away, and bans citing rules", asy
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
   expect(screen.getByRole("alert").textContent).toBe("Pick at least one rule.");
   fireEvent.click(screen.getByRole("checkbox"));
-  fireEvent.change(screen.getByLabelText("Statement of reasons (the account sees it)"), {
+  fireEvent.change(screen.getByLabelText("Statement of Reasons (the Account Sees It)"), {
     target: { value: " Spam again. " },
   });
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));

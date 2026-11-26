@@ -38,10 +38,10 @@
 .text {
   display: grid;
   gap: 2px;
-  font-size: 15px;
+  font-size: 16px;
   time {
     color: $soft;
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 .action {
@@ -54,7 +54,7 @@
   border-radius: 50%;
   background: none;
   color: $soft;
-  font-size: 18px;
+  font-size: 16px;
   cursor: pointer;
   @include focus;
   &:hover {

@@ -11,56 +11,58 @@
   }
 }
 .who {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-start;
   gap: 20px;
   width: 100%;
-  padding: clamp(20px, 3vw, 28px);
+  padding: 24px;
   @include card;
-  @media (max-width: 560px) {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
 }
 .names {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
   min-width: 0;
+  text-align: start;
 }
 .hello {
+  min-height: 1em;
   color: $soft;
-  font-size: 13px;
+  font-size: 14px;
 }
 .name {
   margin: 0;
   font-family: $display;
-  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  font-size: 32px;
   font-weight: 600;
-  line-height: 1.2;
   overflow-wrap: anywhere;
 }
 .identifier {
   color: $soft;
-  font-size: 14.5px;
+  font-size: 14px;
   overflow-wrap: anywhere;
 }
 .edit {
   display: inline-flex;
+  flex: none;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 9px 14px;
+  min-height: 40px;
+  padding: 0 16px;
   border: 1px solid $line;
-  border-radius: 999px;
+  border-radius: $small-radius;
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
-  transition: border-color 0.2s;
+  transition: border-color 0.3s $ease;
   &:hover {
-    border-color: $accent;
-  }
-  @media (max-width: 560px) {
-    grid-column: 1 / -1;
-    justify-self: start;
+    border-color: $soft;
   }
 }
 .cards {
@@ -68,29 +70,20 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   width: 100%;
-  margin: 0;
-  padding: 0;
-  list-style: none;
   @media (min-width: 640px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  li {
-    display: flex;
-    min-width: 0;
-  }
 }
 .card {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: auto 1fr;
+  display: flex;
   align-items: center;
-  gap: 6px 14px;
-  width: 100%;
-  padding: 18px 44px 18px 18px;
+  justify-content: flex-start;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px;
   transition:
-    border-color 0.2s,
-    transform 0.2s;
+    border-color 0.3s $ease,
+    transform 0.3s $ease;
   @include card;
   &:hover {
     border-color: $accent;
@@ -100,38 +93,58 @@
   }
 }
 .icon {
-  display: grid;
-  grid-row: span 2;
-  place-items: center;
-  align-self: start;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
   width: 40px;
   height: 40px;
   border-radius: 50%;
   background: $surface;
   color: $accent;
-  font-size: 20px;
+  font-size: 16px;
+}
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  text-align: start;
 }
 .title {
+  font-size: 16px;
   font-weight: 600;
 }
 .detail {
-  align-self: start;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px 16px;
   color: $soft;
   font-size: 14px;
-  line-height: 1.5;
 }
+.figure {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.text {
+  text-align: start;
+}
+/* Numbers in the site's sans font: easier to read than the display font. */
 .value {
   color: $text;
-  font-family: $display;
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 1;
+  font-family: $font;
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 .arrow {
-  position: absolute;
-  top: 50%;
-  right: 16px;
-  margin-top: -8px;
+  flex: none;
   color: $soft;
-  transition: transform 0.2s;
+  transition: transform 0.3s $ease;
 }

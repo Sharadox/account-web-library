@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 import { Icon } from "@sharadox/icon-web-library/icon";
 import { AccountAvatar } from "@sharadox/account-web-library/account-avatar";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
+import { CHOOSE_ACCOUNT } from "@sharadox/account-web-library/account-area";
 import styles from "./index.module.scss";
 import type { AccountMenuProperties, MenuAccount } from "@sharadox/account-web-library/account-menu/type";
 
@@ -39,7 +40,8 @@ function SendButton({ className, children }: { className: string | undefined; ch
  * - with more, "Switch account", which turns the menu into the list of every account (a Back button returns), and
  *   "Sign out of all accounts" too.
  * Switching and signing out are forms posting to server actions: the menu stays open with a loader on the choice
- * until it's done, and the page stays where it was. Escape, a click outside or a choice closes it.
+ * until it's done, and the page stays where it was. Escape, a click outside or a choice closes it. An address ending
+ * in `#choose-account` (`CHOOSE_ACCOUNT`) opens it on the list of accounts, to pick one (after one was deleted).
  *
  * @example
  * <AccountMenu locale={locale} {...signedIn} />
@@ -70,6 +72,17 @@ export function AccountMenu({
     close();
   };
 
+  // Sent to #choose-account (an account was just deleted): open on the list of the others, to pick one.
+  const several = others.length > 0;
+  useEffect(() => {
+    if (location.hash !== CHOOSE_ACCOUNT || !several) return;
+    history.replaceState(null, "", location.pathname + location.search);
+    queueMicrotask(() => {
+      setOpen(true);
+      setSwitching(true);
+    });
+  }, [several]);
+
   useEffect(() => {
     if (!open) return;
     const outside = (event: PointerEvent) => {
@@ -88,7 +101,6 @@ export function AccountMenu({
     };
   }, [open]);
 
-  const several = others.length > 0;
   return (
     <div ref={root} className={styles.root}>
       <button

@@ -26,6 +26,7 @@ export async function signIn(
     userAgent = null,
     accountSessionSeconds = 30 * DAY,
     browserSessionSeconds = 400 * DAY,
+    record = true,
     now = Date.now(),
   }: SignInOptions,
 ): Promise<SignInResult> {
@@ -81,12 +82,13 @@ export async function signIn(
       })
       .execute();
     await transaction.updateTable("account").set({ last_active_at: at }).where("id", "=", accountId).execute();
-    await recordAuditEvent(transaction, {
-      accountId,
-      action: "session.signed-in",
-      detail: { accountSessionId, secondFactor },
-      now,
-    });
+    if (record)
+      await recordAuditEvent(transaction, {
+        accountId,
+        action: "session.signed-in",
+        detail: { accountSessionId, secondFactor },
+        now,
+      });
     return { token: fresh.token, browserSessionId, accountSessionId, newBrowser: !browser };
   });
 }
