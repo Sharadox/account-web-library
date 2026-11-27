@@ -5,6 +5,7 @@ import { Button } from "@sharadox/interface-web-library/button";
 import { Card } from "@sharadox/interface-web-library/card";
 import { formatAccountTime } from "@sharadox/account-web-library/account-time";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
+import { SkeletonValue } from "@sharadox/interface-web-library/skeleton-value";
 import styles from "./index.module.scss";
 import type { AppealAdministrationProperties } from "@sharadox/account-web-library/appeal-administration/type";
 
@@ -34,6 +35,17 @@ export function AppealAdministration({ locale, appeals, decide }: AppealAdminist
     });
   };
 
+  if (!appeals)
+    return (
+      <Card>
+        <p className={styles.who}>
+          <SkeletonValue width="20ch" label={say(ACCOUNT_WORDS.common.loading, locale)} />
+        </p>
+        <p className={styles.muted}>
+          <SkeletonValue width="36ch" />
+        </p>
+      </Card>
+    );
   if (appeals.length === 0)
     return (
       <Card>

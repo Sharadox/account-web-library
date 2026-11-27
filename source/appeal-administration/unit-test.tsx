@@ -42,3 +42,10 @@ test("none waiting", () => {
   renderAccountScreen(<AppealAdministration locale="en" appeals={[]} decide={vi.fn()} />);
   expect(screen.getByText("No appeals waiting.")).toBeTruthy();
 });
+
+test("while the appeals are on their way, one card of value skeletons, not the empty line", () => {
+  renderAccountScreen(<AppealAdministration locale="en" decide={vi.fn()} />);
+  expect(screen.getAllByRole("status", { name: "Loading…" })).toHaveLength(1);
+  expect(screen.queryByText("No appeals waiting.")).toBeNull();
+  expect(screen.queryByRole("button")).toBeNull();
+});

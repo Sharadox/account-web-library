@@ -58,3 +58,10 @@ test("an appeal waiting, or decided with its reasons; a permanent ended ban", ()
   expect(screen.getByText("Ban Lifted").parentElement!.textContent).toBe("Ban Lifted: Our mistake.");
   expect(screen.getByText("Ban Upheld").parentElement!.textContent).toBe("Ban Upheld");
 });
+
+test("while the bans are on their way, one card of value skeletons, not the no-bans line", () => {
+  renderAccountScreen(<BanPanel locale="en" rulesHref="/en/rules" appeal={vi.fn()} />);
+  expect(screen.getAllByRole("status", { name: "Loading…" })).toHaveLength(1);
+  expect(screen.queryByText(/never been banned|No bans/i)).toBeNull();
+  expect(screen.queryByRole("button")).toBeNull();
+});

@@ -451,11 +451,13 @@ description?, hideTitle? })` and marks the one being read as the page scrolls.
   `NamePanel`, `IdentifierPanel`, `BirthdayPanel` (the interface's `Select`s), `EmailMethods`,
   `AuthenticatorMethods`, `RecoveryCodes`, `DevicePanel`, `ActivityPanel`, `InboxPanel`, `PreferencePanel`,
   `DownloadPanel`, `BanPanel`, `DeletionPanel`, and for administrators `AccountAdministration`, `RoleAdministration`,
-  `BanAdministration`, `AppealAdministration`, `RuleAdministration`.
+  `BanAdministration`, `AppealAdministration`, `RuleAdministration`. A list still on its way shows its card with
+  `PendingRows` in place of its rows: the same list and row classes, a value skeleton where each value will be, said
+  once to be loading, and nothing to press until the data is there.
 - **Pieces:** the generic ones come from `@sharadox/interface-web-library` (`Button`, `Card`, `TextField`, `Tip`,
   `CopyButton`, `Skeleton`, `Dialog`, `CodeBoxes`, `Switch`, `PendingMark`, `ToastProvider`/`useToast`), dressed by
   `AccountTheme` too. The account's own: `CodeDialog` (`lifetimeSeconds`: a countdown, then Send a new code or Cancel;
   `CODE_LIFETIME_SECONDS`), `EditablePanel` (`preview`: the new value shown at once; `fields(saved)` edits again from what was saved; `note`;
-  `ready`), `authenticatorLabel`.
+  `ready`), `PendingRows` (`{ locale, rows, values, icon?, ordered?, className?, rowClassName? }`), `authenticatorLabel`.
 - **Emails:** every code, whatever it is for, comes in one email: "Account · Authentication Code" ("Conta · Código de
   Autenticação").

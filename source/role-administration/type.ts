@@ -14,6 +14,7 @@ export interface RoleRow {
 
 export interface RoleAdministrationProperties {
   locale: AccountLocale;
-  roles: readonly RoleRow[];
+  /** Undefined while on its way: the panel shows at once, with skeletons where these will be. */
+  roles?: readonly RoleRow[];
   remove: (application: string, role: string) => Promise<AccountAnswer>;
 }

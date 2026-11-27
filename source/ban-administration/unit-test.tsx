@@ -28,3 +28,10 @@ test("everyone banned now, or nobody", () => {
   rerender(<BanAdministration locale="en" bans={[]} />);
   expect(screen.getByText("Nobody is banned.")).toBeTruthy();
 });
+
+test("while the bans are on their way, rows of value skeletons, not the empty line", () => {
+  const { container } = render(<BanAdministration locale="en" />);
+  expect(container.querySelector("ul[aria-busy=true]")!.querySelectorAll("li")).toHaveLength(2);
+  expect(screen.getAllByRole("status", { name: "Loading…" })).toHaveLength(1);
+  expect(screen.queryByText("Nobody is banned.")).toBeNull();
+});

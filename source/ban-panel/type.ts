@@ -14,7 +14,8 @@ export interface BanRow {
 
 export interface BanPanelProperties {
   locale: AccountLocale;
-  bans: readonly BanRow[];
+  /** Undefined while on its way: the panel shows at once, with skeletons where these will be. */
+  bans?: readonly BanRow[];
   /** The public rules page, which bans link to. */
   rulesHref: string;
   appeal: (banId: string, text: string) => Promise<AccountAnswer>;

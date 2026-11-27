@@ -2,6 +2,10 @@
 
 What changed in each version of `@sharadox/account-web-library`, newest first.
 
+## 0.3.0
+
+Every list panel (devices, activity, inbox, notification preferences, bans, and the administration's roles, bans, appeals and rules) draws its card at once while its data is on its way, with value skeletons in place of its rows (the new PendingRows) and nothing to press until the data is there. Greetings are in sentence case ("Good morning,", "Bom dia,").
+
 ## 0.2.0
 
 Every authentication method is as good as another: confirming it's you lists them all (every required one at once, or any one, picked) with their own Send Code or Enter Code, and a recovery code confirms or signs in past everything (`stepUpMethods`, `finishStepUp` with a ticket and a step, `method-verification`, `MethodList`). An identifier with required methods asks for all of them together. Authenticators need a name and can be required from the start. One card per thing (`NamePanel`, `IdentifierPanel` replace `IdentityPanel`), skeletons only where data is awaited (panels take their data optionally), a greeting by the visitor's time, the interface's `Select` and `Checkbox`, a sticky side menu that glides to sections and follows the scroll, a loader on the data download, `#choose-account` after a deletion, Title Case words, a sign-up that records only the account's creation, and the account screens on the 12/14/16/24/32/48 font sizes. A jump made while the area's page is still on its way is marked and glided to once its section shows; the sign-in screen starts afresh when shown again after signing in. The administration picks roles and applications with the interface's `Select` and rules with its `Checkbox`; activity entries, the greeting and the remaining labels are in Title Case.

@@ -4,10 +4,11 @@ import type { BellNotification } from "@sharadox/account-web-library/notificatio
 
 export interface InboxPanelProperties {
   locale: AccountLocale;
-  notifications: readonly BellNotification[];
-  unread: number;
+  /** Undefined while on its way: the panel shows at once, with skeletons where these will be. */
+  notifications?: readonly BellNotification[];
+  unread?: number;
   /** Whether older ones are left. */
-  more: boolean;
+  more?: boolean;
   /** The page after `before` (the last id shown). */
   loadMore: (before: string) => Promise<{ notifications: BellNotification[]; more: boolean }>;
   markRead: (ids?: string[]) => Promise<AccountAnswer>;

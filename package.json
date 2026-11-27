@@ -1,6 +1,6 @@
 {
   "name": "@sharadox/account-web-library",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Passwordless accounts for web applications: one-time codes, two-factor, roles, bans and OpenID Connect for people and agents.",
   "private": false,
   "license": "SEE LICENSE IN LICENCA.md",

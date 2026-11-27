@@ -38,3 +38,11 @@ test("shows each kind's channels; Edit turns them into checkboxes, locked ones f
     { kind: "inactivity-warning", channel: "in-app", enabled: true },
   ]);
 });
+
+test("while the preferences are on their way, the card, its text and the table's head show, the rows are skeletons and Edit waits", () => {
+  const { container } = renderAccountScreen(<PreferencePanel locale="en" save={vi.fn()} />);
+  expect(screen.getByRole("columnheader", { name: "Email" })).toBeTruthy();
+  expect(container.querySelector("tbody[aria-busy=true]")!.querySelectorAll("tr")).toHaveLength(4);
+  expect(screen.getAllByRole("status", { name: "Loading…" })).toHaveLength(1);
+  expect((screen.getByRole("button", { name: /Edit/ }) as HTMLButtonElement).disabled).toBe(true);
+});

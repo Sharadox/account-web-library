@@ -23,3 +23,10 @@ test("each event in words with its time, in a list that scrolls; or nothing yet"
   expect(screen.getByText("Ainda nada.")).toBeTruthy();
   expect(activityText("contact.added", "pt")).toBe("Email Adicionado");
 });
+
+test("while the activity is on its way, rows of value skeletons, not the empty line", () => {
+  const { container } = render(<ActivityPanel locale="en" />);
+  expect(container.querySelector("ol[aria-busy=true]")!.querySelectorAll("li")).toHaveLength(5);
+  expect(screen.getAllByRole("status", { name: "Loading…" })).toHaveLength(1);
+  expect(screen.queryByText("Nothing yet.")).toBeNull();
+});

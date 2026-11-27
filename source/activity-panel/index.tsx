@@ -2,6 +2,7 @@ import { Card } from "@sharadox/interface-web-library/card";
 import { formatAccountTime } from "@sharadox/account-web-library/account-time";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import type { Words } from "@sharadox/account-web-library/account-words/type";
+import { PendingRows } from "@sharadox/account-web-library/pending-rows";
 import styles from "./index.module.scss";
 import type { ActivityPanelProperties } from "@sharadox/account-web-library/activity-panel/type";
 
@@ -21,7 +22,16 @@ export function activityText(action: string, locale: ActivityPanelProperties["lo
 export function ActivityPanel({ locale, activity }: ActivityPanelProperties) {
   return (
     <Card>
-      {activity.length === 0 ? (
+      {!activity ? (
+        <PendingRows
+          locale={locale}
+          rows={5}
+          values={["16ch", "12ch"]}
+          ordered
+          className={styles.list}
+          rowClassName={styles.item}
+        />
+      ) : activity.length === 0 ? (
         <p className={styles.empty}>{say(ACCOUNT_WORDS.activity.empty, locale)}</p>
       ) : (
         <ol className={styles.list} tabIndex={0} aria-label={say(ACCOUNT_WORDS.section.activity, locale)}>

@@ -74,3 +74,21 @@ test("an empty inbox says so", () => {
   expect(screen.getByText("Nothing new.")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Mark All as Read" })).toBeNull();
 });
+
+test("while the notifications are on their way, rows of value skeletons, without Mark All, More or the empty line", () => {
+  const { container } = renderAccountScreen(
+    <InboxPanel locale="en" loadMore={vi.fn()} markRead={vi.fn()} remove={vi.fn()} />,
+  );
+  expect(container.querySelector("ul[aria-busy=true]")!.querySelectorAll("li")).toHaveLength(3);
+  expect(screen.getAllByRole("status", { name: "Loading…" })).toHaveLength(1);
+  expect(screen.queryByRole("button")).toBeNull();
+  expect(screen.queryByText("Nothing new.")).toBeNull();
+});
+
+test("notifications given without their counts: none unread, no more to load", () => {
+  renderAccountScreen(
+    <InboxPanel locale="en" notifications={[]} loadMore={vi.fn()} markRead={vi.fn()} remove={vi.fn()} />,
+  );
+  expect(screen.getByText("Nothing new.")).toBeTruthy();
+  expect(screen.queryByRole("button")).toBeNull();
+});

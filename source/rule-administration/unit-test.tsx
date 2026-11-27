@@ -22,3 +22,10 @@ test("the rules with their penalties, or none yet, and the public page", () => {
   rerender(<RuleAdministration locale="en" rulesHref="/en/rules" rules={[]} />);
   expect(screen.getByText("No rules yet: until there are, nobody can be banned.")).toBeTruthy();
 });
+
+test("while the rules are on their way, the card, its text and the public rules link show; the rows are skeletons", () => {
+  const { container } = render(<RuleAdministration locale="en" rulesHref="/en/rules" />);
+  expect(container.querySelector("ul[aria-busy=true]")!.querySelectorAll("li")).toHaveLength(3);
+  expect(screen.getAllByRole("status", { name: "Loading…" })).toHaveLength(1);
+  expect(screen.getByRole("link").getAttribute("href")).toBe("/en/rules");
+});

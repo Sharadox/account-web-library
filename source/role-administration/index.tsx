@@ -5,6 +5,7 @@ import { Button } from "@sharadox/interface-web-library/button";
 import { Card } from "@sharadox/interface-web-library/card";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import { Dialog } from "@sharadox/interface-web-library/dialog";
+import { PendingRows } from "@sharadox/account-web-library/pending-rows";
 import styles from "./index.module.scss";
 import type { RoleAdministrationProperties, RoleRow } from "@sharadox/account-web-library/role-administration/type";
 
@@ -19,6 +20,18 @@ export function RoleAdministration({ locale, roles, remove }: RoleAdministration
   const [asking, setAsking] = useState<RoleRow | null>(null);
   const { run, pending } = useAccountAction();
   const words = ACCOUNT_WORDS.administration;
+  if (!roles)
+    return (
+      <Card>
+        <PendingRows
+          locale={locale}
+          rows={3}
+          values={["12ch", "10ch"]}
+          className={styles.list}
+          rowClassName={styles.row}
+        />
+      </Card>
+    );
   const applications = [...new Set(roles.map(({ application }) => application))];
   return (
     <>
