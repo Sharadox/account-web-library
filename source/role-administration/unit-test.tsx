@@ -35,3 +35,10 @@ test("roles per application with their holders; deleting asks first, with how ma
   act(endDialogAnimations);
   expect(screen.queryByText(/It will be taken/)).toBeNull();
 });
+
+test("while the roles are on their way, a card of value-skeleton rows and nothing to press", () => {
+  const { container } = renderAccountScreen(<RoleAdministration locale="en" remove={vi.fn()} />);
+  expect(container.querySelector("ul[aria-busy=true]")!.querySelectorAll("li")).toHaveLength(3);
+  expect(screen.getAllByRole("status", { name: "Loading…" })).toHaveLength(1);
+  expect(screen.queryByRole("button")).toBeNull();
+});

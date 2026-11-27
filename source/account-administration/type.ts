@@ -25,11 +25,12 @@ export interface AdministeredAccount {
 export interface AccountAdministrationProperties {
   locale: AccountLocale;
   /** The roles that can be given. */
-  roles: readonly { application: string; key: string; name: string }[];
+  /** Undefined while on its way (with `rules` and `banApplications`): the search shows at once and waits for them. */
+  roles?: readonly { application: string; key: string; name: string }[];
   /** The rules a ban can cite (application null: everywhere). */
-  rules: readonly { application: string | null; code: string; title: string }[];
+  rules?: readonly { application: string | null; code: string; title: string }[];
   /** The applications with a ban role. */
-  banApplications: readonly string[];
+  banApplications?: readonly string[];
   /** An identifier (without `@`) or an email. */
   find: (query: string) => Promise<AccountAnswer<AdministeredAccount>>;
   grant: (input: {

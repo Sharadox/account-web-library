@@ -15,6 +15,7 @@ export interface DeviceRow {
 
 export interface DevicePanelProperties {
   locale: AccountLocale;
-  devices: readonly DeviceRow[];
+  /** Undefined while on its way: the panel shows at once, with skeletons where these will be. */
+  devices?: readonly DeviceRow[];
   end: (accountSessionId: string) => Promise<AccountAnswer>;
 }

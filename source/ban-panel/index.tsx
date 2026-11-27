@@ -5,6 +5,7 @@ import { Card } from "@sharadox/interface-web-library/card";
 import { formatAccountTime } from "@sharadox/account-web-library/account-time";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import { EditablePanel } from "@sharadox/account-web-library/editable-field";
+import { SkeletonValue } from "@sharadox/interface-web-library/skeleton-value";
 import styles from "./index.module.scss";
 import type { BanPanelProperties } from "@sharadox/account-web-library/ban-panel/type";
 
@@ -19,6 +20,17 @@ import type { BanPanelProperties } from "@sharadox/account-web-library/ban-panel
 export function BanPanel({ locale, bans, rulesHref, appeal }: BanPanelProperties) {
   const { submit } = useAccountAction();
   const words = ACCOUNT_WORDS.privacy;
+  if (!bans)
+    return (
+      <Card>
+        <p className={styles.state}>
+          <SkeletonValue width="20ch" label={say(ACCOUNT_WORDS.common.loading, locale)} />
+        </p>
+        <p className={styles.statement}>
+          <SkeletonValue width="40ch" />
+        </p>
+      </Card>
+    );
   if (bans.length === 0)
     return (
       <Card>

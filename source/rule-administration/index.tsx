@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card } from "@sharadox/interface-web-library/card";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
+import { PendingRows } from "@sharadox/account-web-library/pending-rows";
 import styles from "./index.module.scss";
 import type { RuleAdministrationProperties } from "@sharadox/account-web-library/rule-administration/type";
 
@@ -15,7 +16,15 @@ export function RuleAdministration({ locale, rules, rulesHref }: RuleAdministrat
   const words = ACCOUNT_WORDS.administration;
   return (
     <Card description={say(words.rulesText, locale)}>
-      {rules.length === 0 ? (
+      {!rules ? (
+        <PendingRows
+          locale={locale}
+          rows={3}
+          values={["20ch", "24ch"]}
+          className={styles.list}
+          rowClassName={styles.row}
+        />
+      ) : rules.length === 0 ? (
         <p className={styles.muted}>{say(words.noRules, locale)}</p>
       ) : (
         <ul className={styles.list}>

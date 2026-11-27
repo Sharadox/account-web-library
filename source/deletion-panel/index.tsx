@@ -16,7 +16,7 @@ import type { DeletionPanelProperties } from "@sharadox/account-web-library/dele
  * @example
  * <DeletionPanel locale="en" identifier="ana" remove={deleteAccount} />
  */
-export function DeletionPanel({ locale, identifier, remove }: DeletionPanelProperties) {
+export function DeletionPanel({ locale, identifier = "", remove }: DeletionPanelProperties) {
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { submit, pending } = useAccountAction();
@@ -32,7 +32,13 @@ export function DeletionPanel({ locale, identifier, remove }: DeletionPanelPrope
 
   return (
     <Card tone="danger" description={say(words.deletionText, locale)}>
-      <Button look="danger" icon="trash" onClick={() => setAsking(true)} className={styles.button}>
+      <Button
+        look="danger"
+        icon="trash"
+        onClick={() => setAsking(true)}
+        className={styles.button}
+        disabled={!identifier}
+      >
         {say(words.deleteAccount, locale)}
       </Button>
       <Dialog

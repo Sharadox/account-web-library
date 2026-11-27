@@ -8,7 +8,9 @@ import { Card } from "@sharadox/interface-web-library/card";
 import { formatAccountTime } from "@sharadox/account-web-library/account-time";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import { noticeText } from "@sharadox/account-web-library/notification-bell";
+import { PendingRows } from "@sharadox/account-web-library/pending-rows";
 import styles from "./index.module.scss";
+import type { BellNotification } from "@sharadox/account-web-library/notification-bell/type";
 import type { InboxPanelProperties } from "@sharadox/account-web-library/inbox-panel/type";
 
 /**
@@ -18,7 +20,40 @@ import type { InboxPanelProperties } from "@sharadox/account-web-library/inbox-p
  * @example
  * <InboxPanel locale="en" {...page} loadMore={loadMore} markRead={markRead} remove={remove} />
  */
-export function InboxPanel({ locale, notifications, unread, more, loadMore, markRead, remove }: InboxPanelProperties) {
+export function InboxPanel(properties: InboxPanelProperties) {
+  const { locale, notifications } = properties;
+  if (!notifications)
+    return (
+      <Card>
+        <PendingRows
+          locale={locale}
+          rows={3}
+          values={["24ch", "12ch"]}
+          className={styles.list}
+          rowClassName={styles.item}
+        />
+      </Card>
+    );
+  return (
+    <LoadedInbox
+      {...properties}
+      notifications={notifications}
+      unread={properties.unread ?? 0}
+      more={properties.more ?? false}
+    />
+  );
+}
+
+/** The inbox once its notifications are here. */
+function LoadedInbox({
+  locale,
+  notifications,
+  unread,
+  more,
+  loadMore,
+  markRead,
+  remove,
+}: InboxPanelProperties & { notifications: readonly BellNotification[]; unread: number; more: boolean }) {
   const [shown, setShown] = useState(notifications);
   const [left, setLeft] = useState(more);
   const [loading, setLoading] = useState(false);

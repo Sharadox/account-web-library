@@ -1,6 +1,7 @@
 import { Card } from "@sharadox/interface-web-library/card";
 import { formatAccountTime } from "@sharadox/account-web-library/account-time";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
+import { PendingRows } from "@sharadox/account-web-library/pending-rows";
 import styles from "./index.module.scss";
 import type { BanAdministrationProperties } from "@sharadox/account-web-library/ban-administration/type";
 
@@ -14,7 +15,15 @@ export function BanAdministration({ locale, bans }: BanAdministrationProperties)
   const words = ACCOUNT_WORDS;
   return (
     <Card>
-      {bans.length === 0 ? (
+      {!bans ? (
+        <PendingRows
+          locale={locale}
+          rows={2}
+          values={["10ch", "28ch", "32ch"]}
+          className={styles.list}
+          rowClassName={styles.row}
+        />
+      ) : bans.length === 0 ? (
         <p className={styles.muted}>{say(words.administration.noActiveBans, locale)}</p>
       ) : (
         <ul className={styles.list}>

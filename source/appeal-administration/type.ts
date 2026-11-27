@@ -4,7 +4,8 @@ import type { AccountLocale } from "@sharadox/account-web-library/account-words/
 export interface AppealAdministrationProperties {
   locale: AccountLocale;
   /** Appeals waiting for a decision (dates as ISO strings). */
-  appeals: readonly { appealId: string; identifier: string; statement: string; text: string; createdAt: string }[];
+  /** Undefined while on its way: the panel shows at once, with skeletons where these will be. */
+  appeals?: readonly { appealId: string; identifier: string; statement: string; text: string; createdAt: string }[];
   decide: (input: {
     appealId: string;
     decision: "upheld" | "shortened" | "lifted";

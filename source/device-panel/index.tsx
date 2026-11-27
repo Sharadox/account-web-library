@@ -7,6 +7,7 @@ import { Card } from "@sharadox/interface-web-library/card";
 import { formatAccountTime } from "@sharadox/account-web-library/account-time";
 import { ACCOUNT_WORDS, say } from "@sharadox/account-web-library/account-words";
 import { describeBrowser } from "@sharadox/account-web-library/browser-description";
+import { PendingRows } from "@sharadox/account-web-library/pending-rows";
 import styles from "./index.module.scss";
 import type { DevicePanelProperties } from "@sharadox/account-web-library/device-panel/type";
 
@@ -22,6 +23,19 @@ export function DevicePanel({ locale, devices, end }: DevicePanelProperties) {
   const { run } = useAccountAction();
   const [ending, setEnding] = useState<string | null>(null);
   const words = ACCOUNT_WORDS;
+  if (!devices)
+    return (
+      <Card>
+        <PendingRows
+          locale={locale}
+          rows={2}
+          values={["18ch", "32ch"]}
+          icon="device"
+          className={styles.list}
+          rowClassName={styles.device}
+        />
+      </Card>
+    );
   return (
     <Card>
       <ul className={styles.list}>

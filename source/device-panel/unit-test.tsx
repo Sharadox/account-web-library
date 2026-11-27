@@ -51,3 +51,10 @@ test("each browser by name, this one marked; the others can be signed out", asyn
   await act(async () => finish());
   expect(screen.queryByRole("button", { name: "Signing out…" })).toBeNull();
 });
+
+test("while the devices are on their way, the card shows rows of value skeletons, and nothing to press", () => {
+  const { container } = renderAccountScreen(<DevicePanel locale="en" end={vi.fn()} />);
+  expect(container.querySelector("ul[aria-busy=true]")!.querySelectorAll("li")).toHaveLength(2);
+  expect(screen.getAllByRole("status", { name: "Loading…" })).toHaveLength(1);
+  expect(screen.queryByRole("button")).toBeNull();
+});

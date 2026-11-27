@@ -26,10 +26,10 @@ test("the part of the day by the hour", () => {
 test("greets by the visitor's clock, in their language; nothing from the server", () => {
   vi.useFakeTimers({ now: new Date(2026, 10, 26, 9, 0) });
   render(<TimeGreeting locale="en" className="x" />);
-  expect(screen.getByText("Good Morning,").className).toBe("x");
+  expect(screen.getByText("Good morning,").className).toBe("x");
   cleanup();
   vi.setSystemTime(new Date(2026, 10, 26, 23, 0));
   render(<TimeGreeting locale="pt" />);
-  expect(screen.getByText("Boa Noite,")).toBeTruthy();
+  expect(screen.getByText("Boa noite,")).toBeTruthy();
   expect(renderToString(<TimeGreeting locale="en" />)).not.toContain("Good");
 });
