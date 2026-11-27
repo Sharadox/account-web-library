@@ -42,7 +42,7 @@ export function MethodList({ locale, methods, done = [], recoveryCode, pending =
               </span>
             ) : (
               <Button
-                look="quiet"
+                look="secondary"
                 pending={pending === method.id}
                 pendingLabel={say(words.sending, locale)}
                 disabled={pending !== null && pending !== method.id}
@@ -58,7 +58,7 @@ export function MethodList({ locale, methods, done = [], recoveryCode, pending =
         <li className={styles.method}>
           <Icon name="lock" className={styles.icon} />
           <span className={styles.what}>{say(words.byRecovery, locale)}</span>
-          <Button look="quiet" disabled={pending !== null} onClick={() => onPick({ kind: "recovery-code" })}>
+          <Button look="secondary" disabled={pending !== null} onClick={() => onPick({ kind: "recovery-code" })}>
             {say(step.enterCode, locale)}
           </Button>
         </li>

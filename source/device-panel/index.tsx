@@ -59,7 +59,7 @@ export function DevicePanel({ locale, devices, end }: DevicePanelProperties) {
             </span>
             {!device.current && (
               <Button
-                look="quiet"
+                look="secondary"
                 icon="sign-out"
                 pending={ending === device.accountSessionId}
                 pendingLabel={say(words.security.signingOut, locale)}

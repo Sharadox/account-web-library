@@ -106,7 +106,7 @@ export function EmailMethods({ locale, emails, add, verify, remove, setRequired 
               {say(words.common.save, locale)}
             </Button>
             <Button
-              look="quiet"
+              look="secondary"
               onClick={() => {
                 setAdding(false);
                 setError(null);
@@ -118,7 +118,7 @@ export function EmailMethods({ locale, emails, add, verify, remove, setRequired 
         </form>
       ) : (
         <Button
-          look="quiet"
+          look="secondary"
           icon="plus"
           disabled={emails === undefined}
           onClick={() => setAdding(true)}

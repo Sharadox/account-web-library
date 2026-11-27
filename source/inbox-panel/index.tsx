@@ -87,7 +87,7 @@ function LoadedInbox({
   return (
     <Card>
       {unread > 0 && !allRead && (
-        <Button look="quiet" icon="check" onClick={() => void markAll()} className={styles.all}>
+        <Button look="secondary" icon="check" onClick={() => void markAll()} className={styles.all}>
           {say(words.bell.markAll, locale)}
         </Button>
       )}

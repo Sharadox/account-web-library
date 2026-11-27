@@ -140,7 +140,7 @@ export function AccountActions({ locale, company, stepUp, children }: AccountAct
               onPick={pick}
             />
             <div className={styles.actions}>
-              <Button look="quiet" onClick={() => finish(false)}>
+              <Button look="secondary" onClick={() => finish(false)}>
                 {say(ACCOUNT_WORDS.common.cancel, locale)}
               </Button>
             </div>

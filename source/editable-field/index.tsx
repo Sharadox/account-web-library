@@ -81,7 +81,7 @@ export function EditablePanel({
           {!pending && (
             <div className={styles.actions}>
               {extra}
-              <Button look="quiet" icon="pencil" disabled={!ready} onClick={() => setEditing(true)}>
+              <Button look="secondary" icon="pencil" disabled={!ready} onClick={() => setEditing(true)}>
                 {editLabel ?? say(common.edit, locale)}
               </Button>
             </div>
@@ -109,7 +109,7 @@ export function EditablePanel({
             <Button type="submit" pending={pending} pendingLabel={say(common.saving, locale)}>
               {say(common.save, locale)}
             </Button>
-            <Button look="quiet" onClick={cancel} disabled={pending}>
+            <Button look="secondary" onClick={cancel} disabled={pending}>
               {say(common.cancel, locale)}
             </Button>
           </div>

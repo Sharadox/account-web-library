@@ -53,7 +53,7 @@ export function BirthdayPanel({ locale, birthday, save }: BirthdayPanelPropertie
         extra={
           birthday && (
             <Button
-              look="quiet"
+              look="secondary"
               icon="trash"
               pending={pending}
               onClick={() => void run(() => save(null), { success: say(ACCOUNT_WORDS.common.done, locale) })}
