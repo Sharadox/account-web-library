@@ -81,7 +81,7 @@ export function AppealAdministration({ locale, appeals, decide }: AppealAdminist
                   key={decision}
                   type="submit"
                   value={decision}
-                  look={decision === "lifted" ? "primary" : "quiet"}
+                  look={decision === "lifted" ? "primary" : "secondary"}
                 >
                   {say(words[decision], locale)}
                 </Button>

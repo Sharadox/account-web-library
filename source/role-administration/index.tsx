@@ -79,7 +79,7 @@ export function RoleAdministration({ locale, roles, remove }: RoleAdministration
           >
             {say(ACCOUNT_WORDS.common.delete, locale)}
           </Button>
-          <Button look="quiet" onClick={() => setAsking(null)}>
+          <Button look="secondary" onClick={() => setAsking(null)}>
             {say(ACCOUNT_WORDS.common.cancel, locale)}
           </Button>
         </div>

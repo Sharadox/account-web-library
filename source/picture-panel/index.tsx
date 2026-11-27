@@ -83,7 +83,7 @@ export function PicturePanel({ locale, name, pictureUrl: given, upload, remove }
             {say(words.choosePicture, locale)}
           </Button>
           {picture && (
-            <Button look="quiet" icon="trash" pending={removing.pending} onClick={() => void drop()}>
+            <Button look="secondary" icon="trash" pending={removing.pending} onClick={() => void drop()}>
               {say(words.removePicture, locale)}
             </Button>
           )}

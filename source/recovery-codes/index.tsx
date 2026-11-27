@@ -56,7 +56,7 @@ export function RecoveryCodes({ locale, authenticators, left, make }: RecoveryCo
       description={say(words.recoveryText, locale)}
       action={
         <Button
-          look={left > 0 ? "quiet" : "primary"}
+          look={left > 0 ? "secondary" : "primary"}
           pending={pending}
           onClick={() => void run(make, { onDone: (answer) => setCodes(answer.recoveryCodes) })}
         >

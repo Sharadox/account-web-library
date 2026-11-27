@@ -71,7 +71,7 @@ function CodeBody({
           <p role="alert">{say(words.expired, locale)}</p>
           <div className={styles.buttons}>
             {onResend && <Button onClick={resend}>{say(words.resend, locale)}</Button>}
-            <Button look="quiet" onClick={onClose}>
+            <Button look="secondary" onClick={onClose}>
               {say(ACCOUNT_WORDS.common.cancel, locale)}
             </Button>
           </div>

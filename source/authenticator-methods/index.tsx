@@ -187,14 +187,14 @@ export function AuthenticatorMethods({
             >
               {say(words.code.confirm, locale)}
             </Button>
-            <Button look="quiet" onClick={() => setSetup(null)}>
+            <Button look="secondary" onClick={() => setSetup(null)}>
               {say(words.common.cancel, locale)}
             </Button>
           </div>
         </div>
       ) : (
         <Button
-          look="quiet"
+          look="secondary"
           icon="plus"
           onClick={begin}
           disabled={authenticators === undefined}
@@ -250,7 +250,7 @@ export function AuthenticatorMethods({
               >
                 {say(words.security.makeCodes, locale)}
               </Button>
-              <Button look="quiet" onClick={closeOffer}>
+              <Button look="secondary" onClick={closeOffer}>
                 {say(words.security.notNow, locale)}
               </Button>
             </div>
