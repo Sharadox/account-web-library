@@ -130,3 +130,11 @@ test("without rules, nobody can be banned; an account without roles or bans says
   expect(screen.getByText("Only the default roles.")).toBeTruthy();
   expect(screen.getByText("No bans.")).toBeTruthy();
 });
+
+test("while the roles and rules are on their way, the search shows and waits", () => {
+  renderAccountScreen(
+    <AccountAdministration locale="en" find={vi.fn()} grant={vi.fn()} revoke={vi.fn()} ban={vi.fn()} />,
+  );
+  expect(screen.getByRole("search")).toBeTruthy();
+  expect((screen.getByRole("button", { name: "Search" }) as HTMLButtonElement).disabled).toBe(true);
+});

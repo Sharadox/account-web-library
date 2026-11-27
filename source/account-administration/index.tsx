@@ -32,8 +32,8 @@ const optional = (form: FormData, name: string, key = name) => {
  */
 export function AccountAdministration({
   locale,
-  roles,
-  rules,
+  roles = [],
+  rules = [],
   banApplications,
   find,
   grant,
@@ -78,7 +78,7 @@ export function AccountAdministration({
             error={error}
             required
           />
-          <Button type="submit" pending={searching.pending}>
+          <Button type="submit" pending={searching.pending} disabled={!banApplications}>
             {say(words.search, locale)}
           </Button>
         </form>
@@ -175,7 +175,8 @@ export function AccountAdministration({
               ))}
             </ul>
           )}
-          {banApplications.length > 0 && rules.length > 0 ? (
+          {/* An account is found only once the search could run, so the lists are here by now. */}
+          {banApplications!.length > 0 && rules.length > 0 ? (
             <EditablePanel
               locale={locale}
               label={say(words.ban, locale)}
@@ -186,8 +187,8 @@ export function AccountAdministration({
                   <Select
                     label={say(words.where, locale)}
                     name="application"
-                    defaultValue={banApplications[0]}
-                    options={banApplications.map((application) => ({ value: application, label: application }))}
+                    defaultValue={banApplications![0]}
+                    options={banApplications!.map((application) => ({ value: application, label: application }))}
                   />
                   <fieldset className={styles.rules}>
                     <legend>{say(words.rulesBroken, locale)}</legend>

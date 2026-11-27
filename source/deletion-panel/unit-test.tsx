@@ -27,3 +27,8 @@ test("asks for the identifier first; only the right one deletes", async () => {
   act(endDialogAnimations);
   expect(screen.queryByLabelText("Type Your Identifier to Confirm")).toBeNull();
 });
+
+test("while the identifier is on its way, the card shows and Delete waits", () => {
+  renderAccountScreen(<DeletionPanel locale="en" remove={vi.fn()} />);
+  expect((screen.getByRole("button", { name: "Delete My Account" }) as HTMLButtonElement).disabled).toBe(true);
+});

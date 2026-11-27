@@ -453,7 +453,8 @@ description?, hideTitle? })` and marks the one being read as the page scrolls.
   `DownloadPanel`, `BanPanel`, `DeletionPanel`, and for administrators `AccountAdministration`, `RoleAdministration`,
   `BanAdministration`, `AppealAdministration`, `RuleAdministration`. A list still on its way shows its card with
   `PendingRows` in place of its rows: the same list and row classes, a value skeleton where each value will be, said
-  once to be loading, and nothing to press until the data is there.
+  once to be loading, and nothing to press until the data is there (`DeletionPanel` without `identifier` and
+  `AccountAdministration` without `roles`, `rules`, `banApplications` show at once, their button waiting).
 - **Pieces:** the generic ones come from `@sharadox/interface-web-library` (`Button`, `Card`, `TextField`, `Tip`,
   `CopyButton`, `Skeleton`, `Dialog`, `CodeBoxes`, `Switch`, `PendingMark`, `ToastProvider`/`useToast`), dressed by
   `AccountTheme` too. The account's own: `CodeDialog` (`lifetimeSeconds`: a countdown, then Send a new code or Cancel;
