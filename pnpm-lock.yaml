@@ -18,8 +18,8 @@ importers:
         specifier: 0.7.0-development.36
         version: 0.7.0-development.36(react@19.3.1)
       '@sharadox/interface-web-library':
-        specifier: 0.3.0-shared-buttons.15
-        version: 0.3.0-shared-buttons.15(next@16.4.5(@babel/core@7.29.13)(@types/node@26.6.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(sass@1.108.2))(react@19.3.1)
+        specifier: 0.3.0-development.16
+        version: 0.3.0-development.16(next@16.4.5(@babel/core@7.29.13)(@types/node@26.6.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(sass@1.108.2))(react@19.3.1)
       '@sharadox/internationalization-web-library':
         specifier: 0.4.1-development.39
         version: 0.4.1-development.39(next@16.4.5(@babel/core@7.29.13)(@types/node@26.6.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(sass@1.108.2))(react@19.3.1)
@@ -991,8 +991,8 @@ packages:
       react:
         optional: true
 
-  '@sharadox/interface-web-library@0.3.0-shared-buttons.15':
-    resolution: {integrity: sha512-8k8LjRm/Vq7cvWM6UGndEd1AAjz2/8XaLlrI7WXu1D/NnvzN8jJ736gBTSUUXmleUiwQlkTCCQD27MsyfQuG2Q==}
+  '@sharadox/interface-web-library@0.3.0-development.16':
+    resolution: {integrity: sha512-MvT4+9qHy9EKL2j1vL9brE8uM75yZwBCm9h/1bZNdtKXQxIhP3eUURewuAsQj/k7NEJiet9TrZqc+y6Jxdlp7w==}
     engines: {node: '>=26'}
     peerDependencies:
       next: '>=16'
@@ -3093,7 +3093,7 @@ snapshots:
     optionalDependencies:
       react: 19.3.1
 
-  '@sharadox/interface-web-library@0.3.0-shared-buttons.15(next@16.4.5(@babel/core@7.29.13)(@types/node@26.6.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(sass@1.108.2))(react@19.3.1)':
+  '@sharadox/interface-web-library@0.3.0-development.16(next@16.4.5(@babel/core@7.29.13)(@types/node@26.6.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(sass@1.108.2))(react@19.3.1)':
     dependencies:
       '@sharadox/icon-web-library': 0.7.0-development.36(react@19.3.1)
       '@sharadox/pointer-web-library': 0.4.0-development.33(react@19.3.1)
