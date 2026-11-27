@@ -137,4 +137,6 @@ test("while the roles and rules are on their way, the search shows and waits", (
   );
   expect(screen.getByRole("search")).toBeTruthy();
   expect((screen.getByRole("button", { name: "Search" }) as HTMLButtonElement).disabled).toBe(true);
+  // Nothing can be typed yet: the search is replaced when the lists arrive, and would lose it.
+  expect((screen.getByLabelText("Find an Account") as HTMLInputElement).disabled).toBe(true);
 });

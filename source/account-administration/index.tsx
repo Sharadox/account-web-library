@@ -77,6 +77,7 @@ export function AccountAdministration({
             tip={{ label: say(ACCOUNT_WORDS.common.tip, locale), text: say(words.findTip, locale) }}
             error={error}
             required
+            disabled={!banApplications}
           />
           <Button type="submit" pending={searching.pending} disabled={!banApplications}>
             {say(words.search, locale)}

@@ -4,7 +4,7 @@ What changed in each version of `@sharadox/account-web-library`, newest first.
 
 ## 0.3.0
 
-Every list panel (devices, activity, inbox, notification preferences, bans, and the administration's roles, bans, appeals and rules) draws its card at once while its data is on its way, with value skeletons in place of its rows (the new PendingRows) and nothing to press until the data is there; the deletion card and the administration's account search show at once too, their button waiting for the identifier or the roles and rules. Greetings are in sentence case ("Good morning,", "Bom dia,").
+Every list panel (devices, activity, inbox, notification preferences, bans, and the administration's roles, bans, appeals and rules) draws its card at once while its data is on its way, with value skeletons in place of its rows (the new PendingRows) and nothing to press until the data is there; the deletion card and the administration's account search show at once too, their button (and the search field: whatever is typed before would be lost when the card is replaced) waiting for the identifier or the roles and rules. Greetings are in sentence case ("Good morning,", "Bom dia,").
 
 ## 0.2.0
 
